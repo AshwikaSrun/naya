@@ -69,13 +69,18 @@ async function scrapeGrailed(query, limit = 10) {
         const card = link.closest('article') || link.closest('li') || link.closest('div');
         if (!card) continue;
 
+        let title = '';
         const titleEl = card.querySelector('h3') || card.querySelector('h2');
-        let title = titleEl ? titleEl.textContent.trim() : '';
+        if (titleEl) {
+          title = titleEl.textContent.trim();
+        }
         if (!title) {
           title = link.getAttribute('aria-label') || '';
         }
         if (!title) {
-          const slug = href.split('/listings/')[1];
+          let slug = href.split('/listings/')[1] || '';
+          slug = slug.split('?')[0];
+          slug = slug.replace(/^\d+-/, '');
           if (slug) {
             title = slug
               .replace(/-/g, ' ')
@@ -83,6 +88,7 @@ async function scrapeGrailed(query, limit = 10) {
               .trim();
           }
         }
+        title = title.split('?')[0].trim();
 
         const priceText = (() => {
           const priceEl = card.querySelector('[class*="Price"], [class*="price"]');

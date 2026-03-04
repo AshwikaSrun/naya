@@ -26,13 +26,23 @@ async function scrapeGoogleShopping(query, limit = 10) {
 
     const context = await browser.newContext({
       userAgent:
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
       viewport: { width: 1920, height: 1080 },
+      locale: 'en-US',
+      extraHTTPHeaders: {
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
     });
 
     const page = await context.newPage();
 
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+
+    // Handle Google consent form if it appears
+    try {
+      const consentBtn = await page.$('button[aria-label="Accept all"], form[action*="consent"] button');
+      if (consentBtn) await consentBtn.click();
+    } catch { /* no consent form */ }
 
     try {
       await page.waitForSelector('.sh-dgr__content, .sh-dlr__list-result, div[data-docid]', {
