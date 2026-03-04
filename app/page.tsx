@@ -112,9 +112,23 @@ export default function Home() {
         limit: limit.toString(),
         platform: platformOverride ?? platform,
       });
-      const response = await fetch(`/api/search?${params}`);
-      if (!response.ok) throw new Error('Search failed');
-      const data = await response.json();
+
+      let data;
+      try {
+        const response = await fetch(`/api/search?${params}`);
+        if (!response.ok) throw new Error('Proxy search failed');
+        data = await response.json();
+      } catch {
+        const directUrl = process.env.NEXT_PUBLIC_SCRAPER_URL;
+        if (directUrl) {
+          const directResponse = await fetch(`${directUrl}/search?${params}`);
+          if (!directResponse.ok) throw new Error('Direct search failed');
+          data = await directResponse.json();
+        } else {
+          throw new Error('Search failed');
+        }
+      }
+
       setResults(data);
       if (typeof window !== 'undefined') {
         const next = [
