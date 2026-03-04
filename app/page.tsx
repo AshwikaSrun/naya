@@ -113,20 +113,17 @@ export default function Home() {
         platform: platformOverride ?? platform,
       });
 
+      const scraperUrl = process.env.NEXT_PUBLIC_SCRAPER_URL;
       let data;
-      try {
-        const response = await fetch(`/api/search?${params}`);
-        if (!response.ok) throw new Error('Proxy search failed');
+
+      if (scraperUrl) {
+        const response = await fetch(`${scraperUrl}/search?${params}`);
+        if (!response.ok) throw new Error('Search failed');
         data = await response.json();
-      } catch {
-        const directUrl = process.env.NEXT_PUBLIC_SCRAPER_URL;
-        if (directUrl) {
-          const directResponse = await fetch(`${directUrl}/search?${params}`);
-          if (!directResponse.ok) throw new Error('Direct search failed');
-          data = await directResponse.json();
-        } else {
-          throw new Error('Search failed');
-        }
+      } else {
+        const response = await fetch(`/api/search?${params}`);
+        if (!response.ok) throw new Error('Search failed');
+        data = await response.json();
       }
 
       setResults(data);
