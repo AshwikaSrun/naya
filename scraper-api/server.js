@@ -11,7 +11,7 @@ const { scrapeGoogleShopping } = require('./lib/googleShoppingScraper');
 const app = express();
 app.use(cors());
 
-const SCRAPER_TIMEOUT_MS = 15000;
+const SCRAPER_TIMEOUT_MS = 25000;
 
 const allPlatforms = [
   'ebay',
@@ -133,4 +133,13 @@ app.listen(port, () => {
   console.log(`Scraper API listening on ${port}`);
   console.log(`Platforms: ${allPlatforms.join(', ')}`);
   console.log(`Per-scraper timeout: ${SCRAPER_TIMEOUT_MS}ms`);
+
+  // Warm up Playwright browser on startup so first search isn't slow
+  const { playwrightManager } = require('./lib/playwrightManager');
+  playwrightManager.createBrowser().then((browser) => {
+    console.log('[warmup] Playwright browser ready');
+    playwrightManager.closeBrowser(browser);
+  }).catch((err) => {
+    console.error('[warmup] Playwright warmup failed:', err.message);
+  });
 });
