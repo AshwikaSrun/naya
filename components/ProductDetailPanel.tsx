@@ -8,7 +8,7 @@ interface Product {
   price: number;
   image: string;
   url: string;
-  source: 'ebay' | 'grailed' | 'depop' | 'poshmark' | 'etsy' | 'google_shopping';
+  source: 'ebay' | 'grailed' | 'depop' | 'poshmark';
 }
 
 interface ProductDetailPanelProps {

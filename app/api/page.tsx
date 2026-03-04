@@ -10,7 +10,7 @@ interface Product {
   price: number;
   image: string;
   url: string;
-  source: 'ebay' | 'grailed' | 'depop' | 'poshmark' | 'etsy' | 'google_shopping';
+  source: 'ebay' | 'grailed' | 'depop' | 'poshmark';
 }
 
 interface SearchResults {
@@ -22,8 +22,6 @@ interface SearchResults {
     grailed: Product[];
     depop: Product[];
     poshmark: Product[];
-    etsy: Product[];
-    google_shopping: Product[];
   };
 }
 
@@ -39,8 +37,6 @@ export default function Home() {
     'grailed',
     'depop',
     'poshmark',
-    'etsy',
-    'google_shopping',
   ] as const;
   type Platform = (typeof allPlatforms)[number];
   const [platform, setPlatform] = useState<'all' | Platform>('all');

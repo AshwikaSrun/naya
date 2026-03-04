@@ -2,9 +2,7 @@
 import { scrapeEbay } from '@/lib/ebayScraper';
 import { scrapeDepop } from '@/lib/depopScraper';
 import { scrapePoshmark } from '@/lib/poshmarkScraper';
-import { scrapeEtsy } from '@/lib/etsyScraper';
 import { scrapeGrailed } from '@/lib/grailedScraper';
-import { scrapeGoogleShopping } from '@/lib/googleShoppingScraper';
 
 export const maxDuration = 60;
 
@@ -114,18 +112,6 @@ export async function GET(request) {
             return [];
           })
         : Promise.resolve([]),
-      selectedPlatforms.has('etsy')
-        ? scrapeEtsy(query, validLimit).catch((err) => {
-            console.error('Etsy scrape error:', err);
-            return [];
-          })
-        : Promise.resolve([]),
-      selectedPlatforms.has('google_shopping')
-        ? scrapeGoogleShopping(query, validLimit).catch((err) => {
-            console.error('Google Shopping scrape error:', err);
-            return [];
-          })
-        : Promise.resolve([]),
     ];
 
     const [
@@ -133,8 +119,6 @@ export async function GET(request) {
       depopResults,
       grailedResults,
       poshmarkResults,
-      etsyResults,
-      googleShoppingResults,
     ] = await Promise.all(promises);
 
     return Response.json({
@@ -146,10 +130,6 @@ export async function GET(request) {
         depop: selectedPlatforms.has('depop') ? depopResults : [],
         grailed: selectedPlatforms.has('grailed') ? grailedResults : [],
         poshmark: selectedPlatforms.has('poshmark') ? poshmarkResults : [],
-        etsy: selectedPlatforms.has('etsy') ? etsyResults : [],
-        google_shopping: selectedPlatforms.has('google_shopping')
-          ? googleShoppingResults
-          : [],
       }
     });
   } catch (error) {
