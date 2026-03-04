@@ -22,17 +22,32 @@ export async function GET(request) {
     }
 
     if (backendUrl) {
-      const proxyParams = new URLSearchParams({
-        q: query,
-        limit: limit.toString(),
-        platform: platformParam || 'all',
-      });
-      const proxyResponse = await fetch(
-        `${backendUrl.replace(/\/$/, '')}/search?${proxyParams.toString()}`
-      );
+      try {
+        const proxyParams = new URLSearchParams({
+          q: query,
+          limit: limit.toString(),
+          platform: platformParam || 'all',
+        });
+        const targetUrl = `${backendUrl.replace(/\/$/, '')}/search?${proxyParams.toString()}`;
+        console.log(`[proxy] forwarding to: ${targetUrl}`);
 
-      const body = await proxyResponse.json();
-      return Response.json(body, { status: proxyResponse.status });
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 55000);
+
+        const proxyResponse = await fetch(targetUrl, {
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+
+        const body = await proxyResponse.json();
+        body._proxy = true;
+        body._backend = backendUrl;
+        return Response.json(body, { status: proxyResponse.status });
+      } catch (proxyErr) {
+        console.error(`[proxy] failed: ${proxyErr.message}, falling back to local scrapers`);
+      }
+    } else {
+      console.log('[search] no SCRAPER_BACKEND_URL set, using local scrapers');
     }
 
     // Validate limit (max 50 per platform to prevent abuse)
