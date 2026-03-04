@@ -60,8 +60,6 @@ export async function GET(request) {
       'grailed',
       'depop',
       'poshmark',
-      'etsy',
-      'google_shopping',
     ];
 
     // Validate platform filter (comma-separated or "all")

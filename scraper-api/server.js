@@ -18,9 +18,11 @@ const allPlatforms = [
   'grailed',
   'depop',
   'poshmark',
-  'etsy',
-  'google_shopping',
 ];
+
+// Etsy and Google Shopping are disabled — they block headless browsers from
+// cloud IPs. Re-enable once API keys or a residential proxy are set up.
+const disabledPlatforms = ['etsy', 'google_shopping'];
 
 const scraperMap = {
   ebay: scrapeEbay,

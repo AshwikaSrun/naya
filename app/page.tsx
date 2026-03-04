@@ -51,8 +51,6 @@ export default function Home() {
     'grailed',
     'depop',
     'poshmark',
-    'etsy',
-    'google_shopping',
   ] as const;
   const comingSoonPlatforms = [] as const;
   const allPlatforms = [...activePlatforms, ...comingSoonPlatforms] as const;

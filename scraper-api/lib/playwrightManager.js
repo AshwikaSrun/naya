@@ -64,6 +64,6 @@ class PlaywrightManager {
 }
 
 // Singleton instance
-const playwrightManager = new PlaywrightManager(2);
+const playwrightManager = new PlaywrightManager(3);
 
 module.exports = { playwrightManager };

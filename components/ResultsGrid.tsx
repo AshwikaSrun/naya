@@ -9,7 +9,7 @@ interface Product {
   price: number;
   image: string;
   url: string;
-  source: 'ebay' | 'grailed' | 'depop' | 'poshmark' | 'etsy' | 'google_shopping';
+  source: 'ebay' | 'grailed' | 'depop' | 'poshmark';
 }
 
 interface SearchResults {
@@ -21,8 +21,6 @@ interface SearchResults {
     grailed: Product[];
     depop: Product[];
     poshmark: Product[];
-    etsy: Product[];
-    google_shopping: Product[];
   };
 }
 
@@ -42,12 +40,10 @@ export default function ResultsGrid({ results, filters }: ResultsGridProps) {
   const perPage = 15;
 
   const allProducts = [
-    ...results.results.ebay.map((p) => ({ ...p, source: 'ebay' as const })),
-    ...results.results.grailed.map((p) => ({ ...p, source: 'grailed' as const })),
-    ...results.results.depop.map((p) => ({ ...p, source: 'depop' as const })),
-    ...results.results.poshmark.map((p) => ({ ...p, source: 'poshmark' as const })),
-    ...results.results.etsy.map((p) => ({ ...p, source: 'etsy' as const })),
-    ...results.results.google_shopping.map((p) => ({ ...p, source: 'google_shopping' as const })),
+    ...(results.results.ebay || []).map((p) => ({ ...p, source: 'ebay' as const })),
+    ...(results.results.grailed || []).map((p) => ({ ...p, source: 'grailed' as const })),
+    ...(results.results.depop || []).map((p) => ({ ...p, source: 'depop' as const })),
+    ...(results.results.poshmark || []).map((p) => ({ ...p, source: 'poshmark' as const })),
   ];
 
   const minPrice = filters.minPrice ? Number(filters.minPrice) : null;
