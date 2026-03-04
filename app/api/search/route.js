@@ -1,0 +1,147 @@
+// Unified search endpoint
+import { scrapeEbay } from '@/lib/ebayScraper';
+import { scrapeDepop } from '@/lib/depopScraper';
+import { scrapePoshmark } from '@/lib/poshmarkScraper';
+import { scrapeEtsy } from '@/lib/etsyScraper';
+import { scrapeGrailed } from '@/lib/grailedScraper';
+import { scrapeGoogleShopping } from '@/lib/googleShoppingScraper';
+
+export async function GET(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const query = searchParams.get('q');
+    const limit = parseInt(searchParams.get('limit') || '10', 10);
+    const platformParam = searchParams.get('platform')?.toLowerCase();
+    const backendUrl = process.env.SCRAPER_BACKEND_URL?.trim();
+
+    if (!query) {
+      return Response.json(
+        { error: 'Query parameter "q" is required' },
+        { status: 400 }
+      );
+    }
+
+    if (backendUrl) {
+      const proxyParams = new URLSearchParams({
+        q: query,
+        limit: limit.toString(),
+        platform: platformParam || 'all',
+      });
+      const proxyResponse = await fetch(
+        `${backendUrl.replace(/\/$/, '')}/search?${proxyParams.toString()}`
+      );
+
+      const body = await proxyResponse.json();
+      return Response.json(body, { status: proxyResponse.status });
+    }
+
+    // Validate limit (max 50 per platform to prevent abuse)
+    const validLimit = Math.min(Math.max(limit, 1), 50);
+
+    const allPlatforms = [
+      'ebay',
+      'grailed',
+      'depop',
+      'poshmark',
+      'etsy',
+      'google_shopping',
+    ];
+
+    // Validate platform filter (comma-separated or "all")
+    let platforms = allPlatforms;
+    if (platformParam && platformParam !== 'all' && platformParam !== 'both') {
+      platforms = platformParam
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean);
+    }
+
+    const invalidPlatforms = platforms.filter(
+      (value) => !allPlatforms.includes(value)
+    );
+
+    if (invalidPlatforms.length > 0) {
+      return Response.json(
+        {
+          error:
+            'Invalid platform parameter. Use "all" or a comma-separated list of: ' +
+            allPlatforms.join(', '),
+        },
+        { status: 400 }
+      );
+    }
+
+    const selectedPlatforms = new Set(platforms);
+
+    // Scrape platforms in parallel based on filter
+    const promises = [
+      selectedPlatforms.has('ebay')
+        ? scrapeEbay(query, validLimit).catch((err) => {
+            console.error('eBay scrape error:', err);
+            return [];
+          })
+        : Promise.resolve([]),
+      selectedPlatforms.has('depop')
+        ? scrapeDepop(query, validLimit).catch((err) => {
+            console.error('Depop scrape error:', err);
+            return [];
+          })
+        : Promise.resolve([]),
+      selectedPlatforms.has('grailed')
+        ? scrapeGrailed(query, validLimit).catch((err) => {
+            console.error('Grailed scrape error:', err);
+            return [];
+          })
+        : Promise.resolve([]),
+      selectedPlatforms.has('poshmark')
+        ? scrapePoshmark(query, validLimit).catch((err) => {
+            console.error('Poshmark scrape error:', err);
+            return [];
+          })
+        : Promise.resolve([]),
+      selectedPlatforms.has('etsy')
+        ? scrapeEtsy(query, validLimit).catch((err) => {
+            console.error('Etsy scrape error:', err);
+            return [];
+          })
+        : Promise.resolve([]),
+      selectedPlatforms.has('google_shopping')
+        ? scrapeGoogleShopping(query, validLimit).catch((err) => {
+            console.error('Google Shopping scrape error:', err);
+            return [];
+          })
+        : Promise.resolve([]),
+    ];
+
+    const [
+      ebayResults,
+      depopResults,
+      grailedResults,
+      poshmarkResults,
+      etsyResults,
+      googleShoppingResults,
+    ] = await Promise.all(promises);
+
+    return Response.json({
+      query,
+      limit: validLimit,
+      platform: platformParam || 'all',
+      results: {
+        ebay: selectedPlatforms.has('ebay') ? ebayResults : [],
+        depop: selectedPlatforms.has('depop') ? depopResults : [],
+        grailed: selectedPlatforms.has('grailed') ? grailedResults : [],
+        poshmark: selectedPlatforms.has('poshmark') ? poshmarkResults : [],
+        etsy: selectedPlatforms.has('etsy') ? etsyResults : [],
+        google_shopping: selectedPlatforms.has('google_shopping')
+          ? googleShoppingResults
+          : [],
+      }
+    });
+  } catch (error) {
+    console.error('Search error:', error);
+    return Response.json(
+      { error: 'Failed to search products' },
+      { status: 500 }
+    );
+  }
+}

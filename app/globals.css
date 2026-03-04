@@ -1,0 +1,97 @@
+@import "tailwindcss";
+
+@theme {
+  --color-night-bg: #faf9f7;
+  --color-night-surface: #ffffff;
+  --color-night-card: #ffffff;
+  --color-orange-glow: #a68b5b;
+  --color-orange-accent: #97794a;
+  --color-accent-pink: #a68b5b;
+  --color-accent-orange: #a68b5b;
+  --color-accent-green: #a68b5b;
+  --color-accent-blue: #a68b5b;
+  --color-accent-navy: #1a1a2e;
+  --color-warm-amber: #ece6df;
+  --color-soft-orange: #f4efe9;
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #2d2d2d;
+  --color-text-muted: #8a8a8a;
+  --color-border-dark: #e5e2de;
+  --color-border-glow: rgba(0, 0, 0, 0.08);
+  --color-ebay-badge: #1a1a1a;
+  --color-depop-badge: #1a1a1a;
+
+  --shadow-soft: 0 4px 24px rgba(0, 0, 0, 0.04);
+  --shadow-glow: 0 8px 32px rgba(0, 0, 0, 0.06);
+  --shadow-vibrant: 0 16px 48px rgba(0, 0, 0, 0.08);
+}
+
+:root {
+  --font-naya-serif: "Cormorant Garamond", "Garamond", "Georgia", serif;
+  --font-naya-sans: "DM Sans", "Inter", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+}
+
+body {
+  background-color: var(--color-night-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-naya-sans);
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.font-naya-serif {
+  font-family: var(--font-naya-serif);
+  letter-spacing: 0.005em;
+}
+
+.font-naya-sans {
+  font-family: var(--font-naya-sans);
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee {
+  width: max-content;
+  animation: marquee 18s linear infinite;
+}
+
+.avant-marquee-wrap {
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  padding-top: 18px;
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+}
+
+.avant-marquee {
+  display: flex;
+  gap: 48px;
+  width: max-content;
+  animation: marquee 24s linear infinite;
+  font-size: 10px;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: inherit;
+}
+
+.avant-marquee span {
+  white-space: nowrap;
+}
+
+.avant-marquee-wrap:hover .avant-marquee {
+  animation-play-state: paused;
+}
