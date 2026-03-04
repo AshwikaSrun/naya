@@ -11,7 +11,7 @@ const { scrapeGoogleShopping } = require('./lib/googleShoppingScraper');
 const app = express();
 app.use(cors());
 
-const SCRAPER_TIMEOUT_MS = 30000;
+const SCRAPER_TIMEOUT_MS = 15000;
 
 const allPlatforms = [
   'ebay',

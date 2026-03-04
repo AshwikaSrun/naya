@@ -6,6 +6,8 @@ import { scrapeEtsy } from '@/lib/etsyScraper';
 import { scrapeGrailed } from '@/lib/grailedScraper';
 import { scrapeGoogleShopping } from '@/lib/googleShoppingScraper';
 
+export const maxDuration = 60;
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
