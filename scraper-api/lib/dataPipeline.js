@@ -16,6 +16,20 @@ const TITLE_CRUFT = [
   /\bpromoted\b/gi,
   /\|\s*ebay$/gi,
   /\|\s*poshmark$/gi,
+  /\blike\s+new\b/gi,
+  /\bnew\s+with\s+tags?\b/gi,
+  /\bnwt\b/gi,
+  /\bnwot\b/gi,
+  /\beuc\b/gi,
+  /\bguc\b/gi,
+  /\bpre[- ]?owned\b/gi,
+  /\bauthentic\b/gi,
+  /\b100%\s*authentic\b/gi,
+  /\bauth\b/gi,
+  /\brare\s*!*\b/gi,
+  /\bmust\s+see\b/gi,
+  /\bbundle\s+and\s+save\b/gi,
+  /\bfast\s+ship(ping)?\b/gi,
 ];
 
 function cleanTitle(title, source) {
@@ -36,6 +50,11 @@ function cleanTitle(title, source) {
   // Depop slugs: replace remaining dashes-as-spaces if mostly dashes
   if (source === 'depop' && t.includes('-') && !t.includes(' ')) {
     t = t.replace(/-/g, ' ');
+  }
+
+  // Poshmark: strip leading "BrandName Category" pattern (e.g. "Coach Bags ...")
+  if (source === 'poshmark') {
+    t = t.replace(/^(\w[\w'&. ]{1,20})\s+(Bags|Shoes|Tops|Dresses|Jeans|Jackets|Coats|Pants|Shorts|Skirts|Jewelry|Accessories)\s+/i, '');
   }
 
   // Normalize whitespace

@@ -148,7 +148,7 @@ export default function ProductDetailPanel({ product, onClose }: ProductDetailPa
         </div>
 
         <div className="flex-1 px-6 py-6">
-          <h2 className="font-naya-serif text-2xl font-light text-black">
+          <h2 className="font-naya-serif line-clamp-3 text-2xl font-light text-black">
             {product.title}
           </h2>
           <p className="mt-1 text-xs uppercase tracking-[0.2em] text-black/50">
