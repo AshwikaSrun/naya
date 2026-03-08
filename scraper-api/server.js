@@ -8,6 +8,7 @@ const { scrapeEtsy } = require('./lib/etsyScraper');
 const { scrapeGrailed } = require('./lib/grailedScraper');
 const { scrapeGoogleShopping, lookupRetailPrices } = require('./lib/googleShoppingScraper');
 const { filterByRelevance } = require('./lib/relevance');
+const { runPipeline, runGlobalPipeline } = require('./lib/dataPipeline');
 
 const app = express();
 app.use(cors());
@@ -118,14 +119,19 @@ app.get('/search', async (req, res) => {
 
     for (const p of allPlatforms) {
       if (!results[p]) results[p] = [];
+      // Score relevance (attaches _relevanceScore to each item)
       results[p] = filterByRelevance(results[p], query);
     }
+
+    // Data quality pipeline: clean titles, validate, deduplicate, rank
+    const cleaned = runPipeline(results, query);
+    const finalResults = runGlobalPipeline(cleaned, query);
 
     // Enrich items missing originalPrice using retail median
     const median = retailData.medianRetailPrice;
     if (median && median > 0) {
       for (const p of allPlatforms) {
-        results[p] = results[p].map((item) => {
+        finalResults[p] = (finalResults[p] || []).map((item) => {
           if (!item.originalPrice && median > item.price) {
             return {
               ...item,
@@ -145,7 +151,7 @@ app.get('/search', async (req, res) => {
       query,
       limit: validLimit,
       platform: platformParam || 'all',
-      results,
+      results: finalResults,
       meta: {
         elapsed_ms: totalElapsed,
         timings,
