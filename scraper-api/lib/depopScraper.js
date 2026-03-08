@@ -156,19 +156,8 @@ async function scrapeDepop(query, limit = 10) {
         }
         if (!image) continue;
 
-        // Depop CDN: upgrade tiny thumbnails to 640px
-        if (image.includes('depop.com') || image.includes('depop-cdn')) {
-          try {
-            const u = new URL(image);
-            const w = parseInt(u.searchParams.get('width') || '0', 10);
-            if (w > 0 && w < 640) {
-              u.searchParams.set('width', '640');
-              image = u.toString();
-            }
-          } catch (_) {
-            // not a parseable URL, leave as-is
-          }
-        }
+        // Depop CDN: /P10.jpg is a tiny thumbnail, /P1.jpg is full-res
+        image = image.replace(/\/P\d+\.(jpg|jpeg|png|webp)/i, '/P1.$1');
         
         const item = { 
           title: title || 'Depop Item',

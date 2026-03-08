@@ -711,7 +711,7 @@ export default function Home() {
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {recentlyViewed.map((item) => {
-                  const displayImage = item.source === 'depop' ? item.image.replace(/\/P\d+(\.\w+)$/i, '/P1000$1') : item.image;
+                  const displayImage = item.source === 'depop' ? item.image.replace(/\/P\d+(\.\w+)$/i, '/P1$1') : item.image;
                   return (
                     <Link key={`${item.source}-${item.url}`} href={{ pathname: `/product/${buildSlug(item.title) || 'item'}`, query: { title: item.title, price: item.price.toFixed(2), image: item.image, url: item.url, source: item.source } }} className="group overflow-hidden rounded-2xl bg-white transition-all hover:shadow-soft">
                       <div className="relative aspect-[3/4] w-full overflow-hidden bg-neutral-100">

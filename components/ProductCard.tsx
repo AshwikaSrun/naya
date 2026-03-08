@@ -22,7 +22,7 @@ interface ProductCardProps {
 export default function ProductCard({ product, onSelect }: ProductCardProps) {
   const isDepop = product.source === 'depop';
   const preferredImage = isDepop
-    ? product.image.replace(/\/P\d+(\.\w+)$/i, '/P1000$1')
+    ? product.image.replace(/\/P\d+(\.\w+)$/i, '/P1$1')
     : product.image;
   const [imageSrc, setImageSrc] = useState(preferredImage);
   const [isWishlisted, setIsWishlisted] = useState(false);
