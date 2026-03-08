@@ -86,14 +86,7 @@ function filterByRelevance(results, query, threshold = 0.2) {
     _relevanceScore: scoreRelevance(item.title, query),
   }));
 
-  const relevant = scored.filter((item) => item._relevanceScore >= threshold);
-
-  // Only fall back to all results if nothing at all passes the threshold
-  if (relevant.length === 0) {
-    return scored;
-  }
-
-  return relevant;
+  return scored.filter((item) => item._relevanceScore >= threshold);
 }
 
 module.exports = { scoreRelevance, filterByRelevance, getQueryTokens };

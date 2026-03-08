@@ -5,7 +5,7 @@ async function scrapeGrailed(query, limit = 10) {
   try {
     if (!query) return [];
 
-    const url = `https://www.grailed.com/shop/${encodeURIComponent(query.trim())}`;
+    const url = `https://www.grailed.com/shop?query=${encodeURIComponent(query.trim())}`;
 
     browser = await playwrightManager.createBrowser();
 
