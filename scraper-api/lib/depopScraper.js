@@ -129,7 +129,7 @@ async function scrapeDepop(query, limit = 10) {
           }
         }
         
-        // Extract image
+        // Extract image — force high-res by rewriting Depop CDN width param
         const imgEl = card.querySelector('img');
         let image = '';
         if (imgEl) {
@@ -155,6 +155,20 @@ async function scrapeDepop(query, limit = 10) {
           }
         }
         if (!image) continue;
+
+        // Depop CDN: upgrade tiny thumbnails to 640px
+        if (image.includes('depop.com') || image.includes('depop-cdn')) {
+          try {
+            const u = new URL(image);
+            const w = parseInt(u.searchParams.get('width') || '0', 10);
+            if (w > 0 && w < 640) {
+              u.searchParams.set('width', '640');
+              image = u.toString();
+            }
+          } catch (_) {
+            // not a parseable URL, leave as-is
+          }
+        }
         
         const item = { 
           title: title || 'Depop Item',
