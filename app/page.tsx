@@ -100,11 +100,16 @@ export default function Home() {
   const [savedSearches, setSavedSearches] = useState<string[]>([]);
 
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isPurdue, setIsPurdue] = useState(false);
+  const [searchCount, setSearchCount] = useState(0);
   const [showEmailGate, setShowEmailGate] = useState(false);
+  const [showLimitGate, setShowLimitGate] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [emailLoading, setEmailLoading] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
   const pendingSearchRef = useRef<{ query: string; platform?: 'all' | Platform } | null>(null);
+
+  const SEARCH_LIMIT = 50;
 
   const productFeatures = [
     {
@@ -211,7 +216,13 @@ export default function Home() {
       const data = await response.json();
 
       setResults(data);
+
+      // Increment search counter
+      const newCount = searchCount + 1;
+      setSearchCount(newCount);
       if (typeof window !== 'undefined') {
+        window.localStorage.setItem('naya-search-count', String(newCount));
+
         const next = [
           searchQuery,
           ...savedSearches.filter((v) => v.toLowerCase() !== searchQuery.toLowerCase()),
@@ -233,10 +244,24 @@ export default function Home() {
   ) => {
     if (!searchQuery.trim()) return;
 
+    // Gate 1: need an email first
     if (!userEmail && typeof window !== 'undefined' && !window.localStorage.getItem('naya-user-email')) {
       pendingSearchRef.current = { query: searchQuery, platform: platformOverride };
       setShowEmailGate(true);
       return;
+    }
+
+    // Gate 2: non-Purdue users have a search limit
+    const currentIsPurdue = isPurdue || (typeof window !== 'undefined' && (window.localStorage.getItem('naya-user-email') || '').endsWith('@purdue.edu'));
+    if (!currentIsPurdue) {
+      const currentCount = typeof window !== 'undefined'
+        ? parseInt(window.localStorage.getItem('naya-search-count') || '0', 10)
+        : searchCount;
+      if (currentCount >= SEARCH_LIMIT) {
+        pendingSearchRef.current = { query: searchQuery, platform: platformOverride };
+        setShowLimitGate(true);
+        return;
+      }
     }
 
     runSearch(searchQuery, platformOverride);
@@ -265,7 +290,14 @@ export default function Home() {
 
     window.localStorage.setItem('naya-user-email', email);
     setUserEmail(email);
+    const purdueUser = email.endsWith('@purdue.edu');
+    setIsPurdue(purdueUser);
+    if (purdueUser) {
+      window.localStorage.setItem('naya-search-count', '0');
+      setSearchCount(0);
+    }
     setShowEmailGate(false);
+    setShowLimitGate(false);
     setEmailLoading(false);
 
     const pending = pendingSearchRef.current;
@@ -294,7 +326,12 @@ export default function Home() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const stored = window.localStorage.getItem('naya-user-email');
-    if (stored) setUserEmail(stored);
+    if (stored) {
+      setUserEmail(stored);
+      setIsPurdue(stored.endsWith('@purdue.edu'));
+    }
+    const count = parseInt(window.localStorage.getItem('naya-search-count') || '0', 10);
+    setSearchCount(count);
   }, []);
 
   useEffect(() => {
@@ -325,17 +362,28 @@ export default function Home() {
             <Link href="/" className="font-naya-serif text-2xl font-light lowercase tracking-[0.12em] text-black" onClick={() => { setResults(null); setQuery(''); }}>
               naya
             </Link>
-            <nav className="font-naya-sans hidden items-center gap-3 text-[10px] lowercase tracking-[0.15em] text-black/60 md:flex">
-              {NAV_LINKS.slice(0, 3).map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="px-3 py-1.5 transition-colors hover:text-black"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
+            <div className="hidden items-center gap-4 md:flex">
+              <nav className="font-naya-sans flex items-center gap-3 text-[10px] lowercase tracking-[0.15em] text-black/60">
+                {NAV_LINKS.slice(0, 3).map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="px-3 py-1.5 transition-colors hover:text-black"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </nav>
+              {userEmail && (
+                <span className={`rounded-full px-3 py-1 text-[10px] tracking-wide ${
+                  isPurdue
+                    ? 'bg-amber-50 font-medium text-amber-800'
+                    : 'bg-neutral-100 text-black/40'
+                }`}>
+                  {isPurdue ? '✦ purdue unlimited' : `${Math.max(0, SEARCH_LIMIT - searchCount)} searches left`}
+                </span>
+              )}
+            </div>
           </div>
         </header>
 
@@ -706,12 +754,68 @@ export default function Home() {
               </button>
             </form>
 
+            <div className="mt-5 rounded-lg bg-amber-50 px-4 py-3 text-center">
+              <p className="font-naya-sans text-[11px] font-medium text-amber-900">
+                purdue students get unlimited searches
+              </p>
+              <p className="font-naya-sans mt-0.5 text-[10px] text-amber-700/70">
+                use your @purdue.edu email for full access
+              </p>
+            </div>
+
             <button
               type="button"
               onClick={() => { setShowEmailGate(false); pendingSearchRef.current = null; }}
               className="font-naya-sans mt-4 w-full py-2 text-[11px] text-black/30 transition-colors hover:text-black/50"
             >
               maybe later
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Search limit reached modal ── */}
+      {showLimitGate && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-sm rounded-2xl bg-white p-8 shadow-2xl">
+            <h2 className="font-naya-serif text-2xl font-light text-black">
+              you&apos;ve used all {SEARCH_LIMIT} searches
+            </h2>
+            <p className="font-naya-sans mt-2 text-sm text-black/50">
+              want unlimited access? sign in with your @purdue.edu email.
+            </p>
+
+            <form onSubmit={handleEmailSubmit} className="mt-6">
+              <input
+                type="email"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                placeholder="you@purdue.edu"
+                required
+                autoComplete="email"
+                autoCapitalize="none"
+                inputMode="email"
+                autoFocus
+                className="font-naya-sans w-full rounded-full border border-black/10 bg-neutral-50 px-5 py-3.5 text-base text-black placeholder:text-black/30 focus:border-black/30 focus:outline-none"
+              />
+              {emailError && (
+                <p className="font-naya-sans mt-2 text-xs text-red-500">{emailError}</p>
+              )}
+              <button
+                type="submit"
+                disabled={emailLoading || !emailInput.trim()}
+                className="mt-4 w-full rounded-full bg-black px-6 py-3.5 text-[11px] font-medium lowercase tracking-[0.1em] text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+              >
+                {emailLoading ? 'one sec...' : 'unlock unlimited searches'}
+              </button>
+            </form>
+
+            <button
+              type="button"
+              onClick={() => { setShowLimitGate(false); pendingSearchRef.current = null; }}
+              className="font-naya-sans mt-4 w-full py-2 text-[11px] text-black/30 transition-colors hover:text-black/50"
+            >
+              close
             </button>
           </div>
         </div>
