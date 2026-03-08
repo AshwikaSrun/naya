@@ -117,6 +117,15 @@ export default function WaitlistPage() {
                 <p className="font-naya-sans mt-4 text-xs text-red-400">{error}</p>
               )}
 
+              <div className="mt-10 rounded-xl border border-white/20 bg-white/5 px-5 py-4 backdrop-blur-sm">
+                <p className="font-naya-sans text-[11px] font-medium lowercase tracking-[0.08em] text-white/90">
+                  purdue students get free access
+                </p>
+                <p className="font-naya-sans mt-1.5 text-[10px] lowercase tracking-[0.04em] text-white/50">
+                  use your @purdue.edu email as your invite code below — no waitlist needed.
+                </p>
+              </div>
+
               <button
                 type="button"
                 onClick={() => { setView('code'); setError(null); }}
@@ -133,6 +142,9 @@ export default function WaitlistPage() {
               <p className="font-naya-serif text-2xl font-light lowercase text-white/80 md:text-3xl">
                 enter your invite code.
               </p>
+              <p className="font-naya-sans mt-1.5 text-[10px] lowercase tracking-[0.04em] text-white/40">
+                purdue students: use your @purdue.edu email for free access
+              </p>
 
               <form onSubmit={handleCodeSubmit} className="mt-8">
                 <div className="flex items-center rounded-full border border-white/15 bg-white/8 px-5 py-3.5 backdrop-blur-md">
@@ -140,7 +152,7 @@ export default function WaitlistPage() {
                     type="text"
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
-                    placeholder="invite code"
+                    placeholder="invite code or you@purdue.edu"
                     required
                     autoComplete="off"
                     autoCapitalize="none"
