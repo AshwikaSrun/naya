@@ -6,6 +6,7 @@ import SearchBar from '@/components/SearchBar';
 import BottomSearchBar from '@/components/BottomSearchBar';
 import ResultsGrid from '@/components/ResultsGrid';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import CartPanel, { getCartCount } from '@/components/CartPanel';
 
 interface Product {
   title: string;
@@ -110,6 +111,16 @@ export default function Home() {
   const pendingSearchRef = useRef<{ query: string; platform?: 'all' | Platform } | null>(null);
 
   const SEARCH_LIMIT = 50;
+
+  const [cartOpen, setCartOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
+
+  useEffect(() => {
+    setCartCount(getCartCount());
+    const onCartUpdate = () => setCartCount(getCartCount());
+    window.addEventListener('naya-cart-update', onCartUpdate);
+    return () => window.removeEventListener('naya-cart-update', onCartUpdate);
+  }, []);
 
   const productFeatures = [
     {
@@ -383,6 +394,21 @@ export default function Home() {
                   {isPurdue ? '✦ purdue unlimited' : `${Math.max(0, SEARCH_LIMIT - searchCount)} searches left`}
                 </span>
               )}
+              <button
+                type="button"
+                onClick={() => setCartOpen(true)}
+                className="relative flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-black/5"
+                aria-label="Open cart"
+              >
+                <svg className="h-5 w-5 text-black/60" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                </svg>
+                {cartCount > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-black text-[9px] font-bold text-white">
+                    {cartCount}
+                  </span>
+                )}
+              </button>
             </div>
           </div>
         </header>
@@ -420,6 +446,9 @@ export default function Home() {
 
         {/* Bottom search bar */}
         <BottomSearchBar onSearch={handleSearch} disabled={loading} />
+
+        {/* Cart panel */}
+        <CartPanel open={cartOpen} onClose={() => setCartOpen(false)} />
       </div>
     );
   }
@@ -443,17 +472,34 @@ export default function Home() {
             <Link href="/" className="font-naya-serif text-3xl font-light lowercase tracking-[0.15em] text-white md:text-4xl">
               naya
             </Link>
-            <nav className="font-naya-sans hidden items-center gap-4 text-[10px] lowercase tracking-[0.15em] md:flex">
-              {NAV_LINKS.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="text-white/70 transition-colors hover:text-white"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
+            <div className="hidden items-center gap-4 md:flex">
+              <nav className="font-naya-sans flex items-center gap-4 text-[10px] lowercase tracking-[0.15em]">
+                {NAV_LINKS.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="text-white/70 transition-colors hover:text-white"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </nav>
+              <button
+                type="button"
+                onClick={() => setCartOpen(true)}
+                className="relative flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-white/10"
+                aria-label="Open cart"
+              >
+                <svg className="h-5 w-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                </svg>
+                {cartCount > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[9px] font-bold text-black">
+                    {cartCount}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -820,6 +866,9 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* ── Cart panel ── */}
+      <CartPanel open={cartOpen} onClose={() => setCartOpen(false)} />
     </div>
   );
 }
