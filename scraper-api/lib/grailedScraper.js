@@ -1,26 +1,11 @@
 const { playwrightManager } = require('./playwrightManager');
 
-function buildFocusedQuery(query) {
-  const q = query.trim();
-  if (!q) return '';
-  const lower = q.toLowerCase();
-  const hasVintageSignal =
-    lower.includes('vintage') ||
-    lower.includes('secondhand') ||
-    lower.includes('second hand') ||
-    lower.includes('preowned') ||
-    lower.includes('pre-owned') ||
-    lower.includes('thrift');
-  return hasVintageSignal ? q : `${q} vintage secondhand`;
-}
-
 async function scrapeGrailed(query, limit = 10) {
   let browser = null;
   try {
     if (!query) return [];
 
-    const focusedQuery = buildFocusedQuery(query);
-    const url = `https://www.grailed.com/shop/${encodeURIComponent(focusedQuery)}`;
+    const url = `https://www.grailed.com/shop/${encodeURIComponent(query.trim())}`;
 
     browser = await playwrightManager.createBrowser();
 
@@ -90,14 +75,31 @@ async function scrapeGrailed(query, limit = 10) {
         }
         title = title.split('?')[0].trim();
 
-        const priceText = (() => {
-          const priceEl = card.querySelector('[class*="Price"], [class*="price"]');
-          if (priceEl) return priceEl.textContent.trim();
-          const match = card.textContent.match(/\$\s?[\d,.]+/);
-          return match ? match[0] : '';
-        })();
-        const priceMatch = priceText.replace(/,/g, '').match(/[\d.]+/);
-        const price = priceMatch ? parseFloat(priceMatch[0]) : null;
+        // Extract current and original prices
+        let price = null;
+        let originalPrice = null;
+
+        const priceEls = card.querySelectorAll('[class*="Price"], [class*="price"]');
+        for (const el of priceEls) {
+          const style = window.getComputedStyle(el);
+          const isStruck = style.textDecorationLine === 'line-through' ||
+            el.tagName === 'S' || el.tagName === 'DEL';
+          const valMatch = el.textContent.replace(/,/g, '').match(/[\d.]+/);
+          if (!valMatch) continue;
+          const val = parseFloat(valMatch[0]);
+          if (isStruck) {
+            originalPrice = val;
+          } else {
+            price = val;
+          }
+        }
+
+        if (price === null) {
+          const fallback = card.textContent.match(/\$\s?[\d,.]+/);
+          if (fallback) {
+            price = parseFloat(fallback[0].replace(/[^\d.]/g, ''));
+          }
+        }
         if (price === null) continue;
 
         const imgEl = card.querySelector('img');
@@ -122,13 +124,18 @@ async function scrapeGrailed(query, limit = 10) {
         }
         if (!image) continue;
 
-        items.push({
+        const item = {
           title: title.length > 140 ? title.slice(0, 140) + '...' : title || 'Grailed Item',
           price,
           image,
           url: href,
           source: 'grailed',
-        });
+        };
+        if (originalPrice && originalPrice > price) {
+          item.originalPrice = originalPrice;
+          item.discountPercent = Math.round(((originalPrice - price) / originalPrice) * 100);
+        }
+        items.push(item);
       }
 
       return items;

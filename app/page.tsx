@@ -10,6 +10,8 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 interface Product {
   title: string;
   price: number;
+  originalPrice?: number;
+  discountPercent?: number;
   image: string;
   url: string;
   source: 'ebay' | 'grailed' | 'depop' | 'poshmark';
@@ -30,6 +32,7 @@ interface SearchResults {
 const NAV_LINKS = [
   { href: '/editorial', label: 'editorial' },
   { href: '/brands', label: 'brands' },
+  { href: '/deals', label: 'deals' },
   { href: '/featured', label: 'featured' },
   { href: '/college', label: 'college' },
   { href: '/app', label: 'concierge' },

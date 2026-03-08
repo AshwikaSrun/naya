@@ -7,6 +7,8 @@ import ProductDetailPanel from './ProductDetailPanel';
 interface Product {
   title: string;
   price: number;
+  originalPrice?: number;
+  discountPercent?: number;
   image: string;
   url: string;
   source: 'ebay' | 'grailed' | 'depop' | 'poshmark';
@@ -59,7 +61,8 @@ export default function ResultsGrid({ results, filters }: ResultsGridProps) {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [page, setPage] = useState(1);
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
-  const [sortBy, setSortBy] = useState<'mixed' | 'price-low' | 'price-high'>('mixed');
+  const [sortBy, setSortBy] = useState<'mixed' | 'price-low' | 'price-high' | 'discount'>('mixed');
+  const [minDiscount, setMinDiscount] = useState<number>(0);
   const perPage = 15;
 
   const platformArrays = useMemo(() => ({
@@ -101,14 +104,20 @@ export default function ResultsGrid({ results, filters }: ResultsGridProps) {
       });
     }
 
+    if (minDiscount > 0) {
+      products = products.filter((p) => (p.discountPercent ?? 0) >= minDiscount);
+    }
+
     if (sortBy === 'price-low') {
       products = [...products].sort((a, b) => a.price - b.price);
     } else if (sortBy === 'price-high') {
       products = [...products].sort((a, b) => b.price - a.price);
+    } else if (sortBy === 'discount') {
+      products = [...products].sort((a, b) => (b.discountPercent ?? 0) - (a.discountPercent ?? 0));
     }
 
     return products;
-  }, [platformArrays, sourceFilter, filters, sortBy]);
+  }, [platformArrays, sourceFilter, filters, sortBy, minDiscount]);
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / perPage));
   const saferPage = Math.min(page, totalPages);
@@ -124,6 +133,8 @@ export default function ResultsGrid({ results, filters }: ResultsGridProps) {
           sortBy={sortBy}
           setSortBy={(s) => { setSortBy(s); setPage(1); }}
           counts={platformCounts}
+          minDiscount={minDiscount}
+          setMinDiscount={(d) => { setMinDiscount(d); setPage(1); }}
         />
         <div className="mx-auto max-w-md rounded-xl border border-black/10 bg-white p-8 text-center">
           <p className="text-sm text-black/60">
@@ -146,6 +157,8 @@ export default function ResultsGrid({ results, filters }: ResultsGridProps) {
           sortBy={sortBy}
           setSortBy={(s) => { setSortBy(s); setPage(1); }}
           counts={platformCounts}
+          minDiscount={minDiscount}
+          setMinDiscount={(d) => { setMinDiscount(d); setPage(1); }}
         />
 
         <div className="flex flex-wrap items-center justify-between gap-4">
@@ -192,50 +205,78 @@ export default function ResultsGrid({ results, filters }: ResultsGridProps) {
   );
 }
 
+const DISCOUNT_TIERS = [0, 20, 40, 60] as const;
+
 function FilterBar({
   sourceFilter,
   setSourceFilter,
   sortBy,
   setSortBy,
   counts,
+  minDiscount,
+  setMinDiscount,
 }: {
   sourceFilter: SourceFilter;
   setSourceFilter: (f: SourceFilter) => void;
-  sortBy: 'mixed' | 'price-low' | 'price-high';
-  setSortBy: (s: 'mixed' | 'price-low' | 'price-high') => void;
+  sortBy: 'mixed' | 'price-low' | 'price-high' | 'discount';
+  setSortBy: (s: 'mixed' | 'price-low' | 'price-high' | 'discount') => void;
   counts: Record<SourceFilter, number>;
+  minDiscount: number;
+  setMinDiscount: (d: number) => void;
 }) {
   const platforms: SourceFilter[] = ['all', 'ebay', 'grailed', 'depop', 'poshmark'];
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {platforms.map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => setSourceFilter(p)}
+              className={`rounded-full border px-3 py-1.5 text-[11px] lowercase tracking-wider transition-all ${
+                sourceFilter === p
+                  ? 'border-black bg-black text-white'
+                  : 'border-black/15 bg-white text-black/60 hover:border-black/30 hover:text-black'
+              }`}
+            >
+              {PLATFORM_LABELS[p]}
+              <span className="ml-1.5 opacity-50">{counts[p]}</span>
+            </button>
+          ))}
+        </div>
+
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+          className="rounded-full border border-black/15 bg-white px-3 py-1.5 text-[11px] lowercase tracking-wider text-black/60 outline-none"
+        >
+          <option value="mixed">mixed</option>
+          <option value="price-low">price: low to high</option>
+          <option value="price-high">price: high to low</option>
+          <option value="discount">biggest discount</option>
+        </select>
+      </div>
+
+      {/* Discount filter pills */}
       <div className="flex flex-wrap items-center gap-2">
-        {platforms.map((p) => (
+        <span className="text-[10px] uppercase tracking-[0.15em] text-black/40">deals:</span>
+        {DISCOUNT_TIERS.map((tier) => (
           <button
-            key={p}
+            key={tier}
             type="button"
-            onClick={() => setSourceFilter(p)}
-            className={`rounded-full border px-3 py-1.5 text-[11px] lowercase tracking-wider transition-all ${
-              sourceFilter === p
-                ? 'border-black bg-black text-white'
-                : 'border-black/15 bg-white text-black/60 hover:border-black/30 hover:text-black'
+            onClick={() => setMinDiscount(tier)}
+            className={`rounded-full border px-3 py-1 text-[10px] tracking-wider transition-all ${
+              minDiscount === tier
+                ? 'border-emerald-600 bg-emerald-600 text-white'
+                : 'border-black/15 bg-white text-black/60 hover:border-emerald-600/40 hover:text-emerald-700'
             }`}
           >
-            {PLATFORM_LABELS[p]}
-            <span className="ml-1.5 opacity-50">{counts[p]}</span>
+            {tier === 0 ? 'all' : `${tier}%+ off`}
           </button>
         ))}
       </div>
-
-      <select
-        value={sortBy}
-        onChange={(e) => setSortBy(e.target.value as 'mixed' | 'price-low' | 'price-high')}
-        className="rounded-full border border-black/15 bg-white px-3 py-1.5 text-[11px] lowercase tracking-wider text-black/60 outline-none"
-      >
-        <option value="mixed">mixed</option>
-        <option value="price-low">price: low to high</option>
-        <option value="price-high">price: high to low</option>
-      </select>
     </div>
   );
 }

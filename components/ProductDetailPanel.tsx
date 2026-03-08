@@ -6,6 +6,8 @@ import Image from 'next/image';
 interface Product {
   title: string;
   price: number;
+  originalPrice?: number;
+  discountPercent?: number;
   image: string;
   url: string;
   source: 'ebay' | 'grailed' | 'depop' | 'poshmark';
@@ -153,14 +155,40 @@ export default function ProductDetailPanel({ product, onClose }: ProductDetailPa
             {product.source}
           </p>
 
-          <div className="mt-4 flex items-center gap-4">
+          <div className="mt-4 flex flex-wrap items-center gap-3">
             <span className="text-3xl font-bold text-black">
               ${product.price.toFixed(2)}
             </span>
+            {product.originalPrice && product.originalPrice > product.price && (
+              <span className="text-lg text-black/35 line-through">
+                ${product.originalPrice.toFixed(2)}
+              </span>
+            )}
             <span className="rounded-full bg-black/5 px-4 py-1.5 text-xs font-medium text-black/70">
               {meta.condition}
             </span>
           </div>
+
+          {/* Savings breakdown */}
+          {product.discountPercent && product.discountPercent > 0 && product.originalPrice && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-emerald-600 px-3 py-1 text-[11px] font-bold text-white">
+                -{product.discountPercent}% off
+              </span>
+              <span className="text-sm font-medium text-emerald-700">
+                You save ${(product.originalPrice - product.price).toFixed(2)}
+              </span>
+              {product.discountPercent >= 50 ? (
+                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-700">
+                  Great Deal
+                </span>
+              ) : product.discountPercent >= 30 ? (
+                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-700">
+                  Good Deal
+                </span>
+              ) : null}
+            </div>
+          )}
 
           <div className="mt-6 grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-white p-4">

@@ -6,7 +6,8 @@ const { scrapeDepop } = require('./lib/depopScraper');
 const { scrapePoshmark } = require('./lib/poshmarkScraper');
 const { scrapeEtsy } = require('./lib/etsyScraper');
 const { scrapeGrailed } = require('./lib/grailedScraper');
-const { scrapeGoogleShopping } = require('./lib/googleShoppingScraper');
+const { scrapeGoogleShopping, lookupRetailPrices } = require('./lib/googleShoppingScraper');
+const { filterByRelevance } = require('./lib/relevance');
 
 const app = express();
 app.use(cors());
@@ -97,6 +98,12 @@ app.get('/search', async (req, res) => {
     const results = {};
     const timings = {};
 
+    // Run retail price lookup in parallel with marketplace scrapers
+    let retailData = { prices: [], medianRetailPrice: null };
+    const retailLookupPromise = lookupRetailPrices(query, 10)
+      .then((data) => { retailData = data; })
+      .catch((err) => { console.error(`[search] retail lookup failed: ${err.message}`); });
+
     const entries = allPlatforms
       .filter((p) => selectedPlatforms.has(p))
       .map((name) => {
@@ -107,26 +114,85 @@ app.get('/search', async (req, res) => {
         });
       });
 
-    await Promise.all(entries);
+    await Promise.all([...entries, retailLookupPromise]);
 
     for (const p of allPlatforms) {
       if (!results[p]) results[p] = [];
+      results[p] = filterByRelevance(results[p], query);
+    }
+
+    // Enrich items missing originalPrice using retail median
+    const median = retailData.medianRetailPrice;
+    if (median && median > 0) {
+      for (const p of allPlatforms) {
+        results[p] = results[p].map((item) => {
+          if (!item.originalPrice && median > item.price) {
+            return {
+              ...item,
+              originalPrice: median,
+              discountPercent: Math.round(((median - item.price) / median) * 100),
+            };
+          }
+          return item;
+        });
+      }
     }
 
     const totalElapsed = Date.now() - requestStart;
-    console.log(`[search] completed in ${totalElapsed}ms | ${JSON.stringify(timings)}`);
+    console.log(`[search] completed in ${totalElapsed}ms | ${JSON.stringify(timings)} | retailMedian=${median}`);
 
     return res.json({
       query,
       limit: validLimit,
       platform: platformParam || 'all',
       results,
-      meta: { elapsed_ms: totalElapsed, timings },
+      meta: {
+        elapsed_ms: totalElapsed,
+        timings,
+        retailReference: {
+          medianRetailPrice: median,
+          sampleCount: retailData.prices.length,
+        },
+      },
     });
   } catch (error) {
     const totalElapsed = Date.now() - requestStart;
     console.error(`[search] fatal error after ${totalElapsed}ms:`, error);
     return res.status(500).json({ error: 'Failed to search products' });
+  }
+});
+
+app.get('/retail-lookup', async (req, res) => {
+  const start = Date.now();
+  try {
+    const query = req.query.q;
+    const limit = Math.min(Math.max(parseInt(req.query.limit || '10', 10), 1), 30);
+
+    if (!query) {
+      return res.status(400).json({ error: 'Query parameter "q" is required' });
+    }
+
+    console.log(`[retail-lookup] q="${query}" limit=${limit}`);
+
+    const result = await Promise.race([
+      lookupRetailPrices(query, limit),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Retail lookup timed out')), SCRAPER_TIMEOUT_MS)
+      ),
+    ]);
+
+    const elapsed = Date.now() - start;
+    console.log(`[retail-lookup] completed in ${elapsed}ms | ${result.prices.length} prices, median=${result.medianRetailPrice}`);
+
+    return res.json({
+      query,
+      ...result,
+      meta: { elapsed_ms: elapsed },
+    });
+  } catch (err) {
+    const elapsed = Date.now() - start;
+    console.error(`[retail-lookup] failed in ${elapsed}ms: ${err.message}`);
+    return res.json({ query: req.query.q, prices: [], medianRetailPrice: null, meta: { elapsed_ms: elapsed, error: err.message } });
   }
 });
 

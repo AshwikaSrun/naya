@@ -6,6 +6,8 @@ import Image from 'next/image';
 interface Product {
   title: string;
   price: number;
+  originalPrice?: number;
+  discountPercent?: number;
   image: string;
   url: string;
   source: 'ebay' | 'grailed' | 'depop' | 'poshmark';
@@ -106,14 +108,28 @@ export default function ProductCard({ product, onSelect }: ProductCardProps) {
           </svg>
         </button>
 
+        {/* Discount badge */}
+        {product.discountPercent && product.discountPercent > 0 && (
+          <div className="absolute left-3 top-3 z-10 rounded-md bg-emerald-600 px-2 py-1 text-[11px] font-bold text-white shadow-sm">
+            -{product.discountPercent}%
+          </div>
+        )}
+
         {/* Source badge */}
         <div className="absolute bottom-3 left-3 z-10 rounded-md bg-white/90 px-2 py-1 text-[11px] font-medium text-black shadow-sm">
           {product.source}
         </div>
 
         {/* Price badge */}
-        <div className="absolute bottom-3 right-3 z-10 rounded-md bg-white/90 px-2 py-1 text-[12px] font-semibold text-black shadow-sm">
-          ${product.price.toFixed(2)}
+        <div className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 rounded-md bg-white/90 px-2 py-1 shadow-sm">
+          {product.originalPrice && product.originalPrice > product.price && (
+            <span className="text-[10px] text-black/40 line-through">
+              ${product.originalPrice.toFixed(0)}
+            </span>
+          )}
+          <span className="text-[12px] font-semibold text-black">
+            ${product.price.toFixed(2)}
+          </span>
         </div>
       </div>
     </div>

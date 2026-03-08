@@ -126,4 +126,96 @@ async function scrapeGoogleShopping(query, limit = 10) {
   }
 }
 
-module.exports = { scrapeGoogleShopping };
+/**
+ * Retail price lookup: searches Google Shopping for the raw query (no vintage modifier)
+ * to find what items retail for at first-party stores.
+ */
+async function lookupRetailPrices(query, limit = 10) {
+  let browser = null;
+  try {
+    if (!query) return { prices: [], medianRetailPrice: null };
+
+    const url = `https://www.google.com/search?tbm=shop&hl=en&gl=us&q=${encodeURIComponent(query.trim())}`;
+
+    browser = await playwrightManager.createBrowser();
+
+    const context = await browser.newContext({
+      userAgent:
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+      viewport: { width: 1920, height: 1080 },
+      locale: 'en-US',
+      extraHTTPHeaders: { 'Accept-Language': 'en-US,en;q=0.9' },
+    });
+
+    const page = await context.newPage();
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+
+    try {
+      const consentBtn = await page.$('button[aria-label="Accept all"], form[action*="consent"] button');
+      if (consentBtn) await consentBtn.click();
+    } catch { /* no consent form */ }
+
+    try {
+      await page.waitForSelector('.sh-dgr__content, .sh-dlr__list-result, div[data-docid]', {
+        timeout: 15000,
+      });
+    } catch { /* continue */ }
+
+    await page.waitForTimeout(2000);
+
+    const prices = await page.evaluate((maxLimit) => {
+      const items = [];
+      const cards = document.querySelectorAll(
+        '.sh-dgr__content, .sh-dlr__list-result, div[data-docid]'
+      );
+
+      for (const card of cards) {
+        if (items.length >= maxLimit) break;
+
+        const title =
+          (card.querySelector('h3') || {}).textContent?.trim() ||
+          (card.querySelector('.tAxDx') || {}).textContent?.trim() ||
+          '';
+        if (!title) continue;
+
+        const priceText = (() => {
+          const priceEl =
+            card.querySelector('.a8Pemb') ||
+            card.querySelector('[class*="price"]') ||
+            card.querySelector('span[aria-label*="$"]');
+          if (priceEl) return priceEl.textContent.trim();
+          const match = card.textContent.match(/\$\s?[\d,.]+/);
+          return match ? match[0] : '';
+        })();
+        const priceMatch = priceText.replace(/,/g, '').match(/[\d.]+/);
+        const retailPrice = priceMatch ? parseFloat(priceMatch[0]) : null;
+        if (retailPrice === null || retailPrice <= 0) continue;
+
+        items.push({ title, retailPrice });
+      }
+
+      return items;
+    }, limit);
+
+    await playwrightManager.closeBrowser(browser);
+
+    // Calculate median retail price
+    const sortedPrices = prices.map((p) => p.retailPrice).sort((a, b) => a - b);
+    let medianRetailPrice = null;
+    if (sortedPrices.length > 0) {
+      const mid = Math.floor(sortedPrices.length / 2);
+      medianRetailPrice =
+        sortedPrices.length % 2 === 0
+          ? (sortedPrices[mid - 1] + sortedPrices[mid]) / 2
+          : sortedPrices[mid];
+    }
+
+    return { prices, medianRetailPrice };
+  } catch (err) {
+    console.error('Retail price lookup error:', err.message);
+    if (browser) await playwrightManager.closeBrowser(browser);
+    return { prices: [], medianRetailPrice: null };
+  }
+}
+
+module.exports = { scrapeGoogleShopping, lookupRetailPrices };

@@ -101,7 +101,7 @@ async function scrapeDepop(query, limit = 10) {
           }
         }
         
-        // Extract price
+        // Extract price and original price
         const priceEl = card.querySelector('[aria-label="Price"], p[class*="price"]');
         if (!priceEl) continue;
         const priceText = priceEl.textContent.trim();
@@ -109,6 +109,25 @@ async function scrapeDepop(query, limit = 10) {
         const priceMatch = priceText.replace(/,/g, '').match(/[\d.]+/);
         const price = priceMatch ? parseFloat(priceMatch[0]) : null;
         if (price === null) continue;
+
+        let originalPrice = null;
+        // Depop shows original price in a separate element or with line-through styling
+        const origEl = card.querySelector('[aria-label="Original price"], [class*="originalPrice"], s, del');
+        if (origEl) {
+          const origMatch = origEl.textContent.replace(/,/g, '').match(/[\d.]+/);
+          if (origMatch) originalPrice = parseFloat(origMatch[0]);
+        }
+        // Also check for a second price element in the card
+        if (!originalPrice) {
+          const allPriceEls = card.querySelectorAll('[class*="price"], [aria-label*="rice"]');
+          for (const el of allPriceEls) {
+            const style = window.getComputedStyle(el);
+            if (style.textDecorationLine === 'line-through') {
+              const m = el.textContent.replace(/,/g, '').match(/[\d.]+/);
+              if (m) originalPrice = parseFloat(m[0]);
+            }
+          }
+        }
         
         // Extract image
         const imgEl = card.querySelector('img');
@@ -137,13 +156,18 @@ async function scrapeDepop(query, limit = 10) {
         }
         if (!image) continue;
         
-        items.push({ 
-          title: title || 'Depop Item', // Fallback if no title found
+        const item = { 
+          title: title || 'Depop Item',
           price, 
           image, 
           url: urlPath, 
           source: 'depop' 
-        });
+        };
+        if (originalPrice && originalPrice > price) {
+          item.originalPrice = originalPrice;
+          item.discountPercent = Math.round(((originalPrice - price) / originalPrice) * 100);
+        }
+        items.push(item);
       }
       
       return items;
