@@ -116,8 +116,7 @@ export default function Home() {
         platform: platformOverride ?? platform,
       });
 
-      const RAILWAY_URL = process.env.NEXT_PUBLIC_SCRAPER_URL || 'https://scraper-api-production-d197.up.railway.app';
-      const response = await fetch(`${RAILWAY_URL}/search?${params}`);
+      const response = await fetch(`/api/search?${params}`);
       if (!response.ok) throw new Error('Search failed');
       const data = await response.json();
 

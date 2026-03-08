@@ -50,15 +50,12 @@ export default function DealsPage() {
 
     const fetchDeals = async () => {
       try {
-        const RAILWAY_URL =
-          process.env.NEXT_PUBLIC_SCRAPER_URL ||
-          'https://scraper-api-production-d197.up.railway.app';
         const params = new URLSearchParams({
           q: activeCategory.query,
           limit: '50',
           platform: 'all',
         });
-        const res = await fetch(`${RAILWAY_URL}/search?${params}`);
+        const res = await fetch(`/api/search?${params}`);
         if (!res.ok) throw new Error('fetch failed');
         const data: SearchResults = await res.json();
 
