@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import SearchBar from '@/components/SearchBar';
 import BottomSearchBar from '@/components/BottomSearchBar';
@@ -98,6 +98,90 @@ export default function Home() {
   const [recentlyViewed, setRecentlyViewed] = useState<Product[]>([]);
   const [filters] = useState({ minPrice: '', maxPrice: '', size: '', condition: '' });
   const [savedSearches, setSavedSearches] = useState<string[]>([]);
+
+  const productFeatures = [
+    {
+      tag: 'search',
+      title: 'one search, every marketplace.',
+      description: 'eBay, Grailed, Depop, Poshmark — all in one query. stop tab-hopping.',
+      icon: (
+        <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.2}>
+          <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" strokeLinecap="round" />
+        </svg>
+      ),
+    },
+    {
+      tag: 'relevance',
+      title: 'only what you searched for.',
+      description: 'AI-powered relevance scoring drops junk listings and surfaces real matches.',
+      icon: (
+        <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.2}>
+          <path d="M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="12" cy="12" r="10" />
+        </svg>
+      ),
+    },
+    {
+      tag: 'price',
+      title: 'compare prices across platforms.',
+      description: 'see the same item on multiple marketplaces. always get the best deal.',
+      icon: (
+        <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.2}>
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      ),
+    },
+    {
+      tag: 'dedup',
+      title: 'no more duplicates.',
+      description: 'cross-platform deduplication keeps the cheapest listing and hides the rest.',
+      icon: (
+        <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.2}>
+          <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><path d="M17.5 14v7m-3.5-3.5h7" strokeLinecap="round" />
+        </svg>
+      ),
+    },
+    {
+      tag: 'concierge',
+      title: 'AI concierge, just for you.',
+      description: 'describe your vibe. naya finds pieces that match — no keywords needed.',
+      icon: (
+        <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.2}>
+          <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      ),
+    },
+    {
+      tag: 'campus',
+      title: 'built for college students.',
+      description: 'curated campus merch, student-friendly prices, and big ten spotlight drops.',
+      icon: (
+        <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.2}>
+          <path d="M22 10v6M2 10l10-5 10 5-10 5z" strokeLinecap="round" strokeLinejoin="round" /><path d="M6 12v5c3 3 9 3 12 0v-5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      ),
+    },
+  ];
+
+  const [activeFeature, setActiveFeature] = useState(0);
+  const featureTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startFeatureTimer = useCallback(() => {
+    if (featureTimerRef.current) clearInterval(featureTimerRef.current);
+    featureTimerRef.current = setInterval(() => {
+      setActiveFeature((prev) => (prev + 1) % productFeatures.length);
+    }, 3500);
+  }, [productFeatures.length]);
+
+  useEffect(() => {
+    startFeatureTimer();
+    return () => { if (featureTimerRef.current) clearInterval(featureTimerRef.current); };
+  }, [startFeatureTimer]);
+
+  const handleFeatureClick = (index: number) => {
+    setActiveFeature(index);
+    startFeatureTimer();
+  };
 
   const handleSearch = async (
     searchQuery: string,
@@ -285,28 +369,84 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Why Naya ── */}
+      {/* ── Product Features — rotating showcase ── */}
       <section className="bg-night-bg px-6 py-24 md:px-10">
         <div className="mx-auto max-w-5xl">
           <p className="font-naya-sans text-[10px] lowercase tracking-[0.2em] text-text-muted">why naya</p>
           <h2 className="font-naya-serif mt-4 text-3xl font-light text-text-primary md:text-5xl">
             second-hand, without the friction.
           </h2>
-          <div className="mt-16 grid gap-12 md:grid-cols-3">
-            {[
-              { num: '01', title: 'one search, every marketplace', copy: 'stop jumping between apps. find deals in one place.' },
-              { num: '02', title: 'built for student budgets', copy: 'smart filters and curated categories save time and money.' },
-              { num: '03', title: 'lower waste, better style', copy: 'buy fewer, wear longer, keep great clothes in rotation.' },
-            ].map((item) => (
-              <div key={item.num}>
-                <span className="font-naya-serif text-5xl font-extralight text-black/8">{item.num}</span>
-                <p className="mt-4 text-[11px] font-medium lowercase tracking-[0.12em] text-text-primary">{item.title}</p>
-                <p className="mt-3 text-sm font-light leading-relaxed text-text-muted">{item.copy}</p>
-              </div>
-            ))}
+
+          <div className="mt-16 grid gap-10 md:grid-cols-[280px_1fr] md:gap-16">
+            {/* Feature list / nav */}
+            <div className="flex flex-row gap-1 overflow-x-auto md:flex-col md:gap-0 md:overflow-x-visible">
+              {productFeatures.map((feat, i) => (
+                <button
+                  key={feat.tag}
+                  type="button"
+                  onClick={() => handleFeatureClick(i)}
+                  className={`group relative flex-shrink-0 rounded-lg px-4 py-3 text-left transition-all duration-300 md:px-5 md:py-4 ${
+                    activeFeature === i
+                      ? 'bg-black/[0.04]'
+                      : 'hover:bg-black/[0.02]'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`font-naya-serif text-lg font-extralight transition-colors duration-300 ${
+                      activeFeature === i ? 'text-text-primary' : 'text-black/15'
+                    }`}>
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                    <span className={`text-[10px] font-medium lowercase tracking-[0.1em] transition-colors duration-300 md:text-[11px] ${
+                      activeFeature === i ? 'text-text-primary' : 'text-text-muted'
+                    }`}>
+                      {feat.tag}
+                    </span>
+                  </div>
+                  {/* Progress bar */}
+                  {activeFeature === i && (
+                    <div className="absolute bottom-0 left-4 right-4 h-[2px] overflow-hidden rounded-full bg-black/[0.06] md:left-5 md:right-5">
+                      <div
+                        className="h-full rounded-full bg-black/25"
+                        style={{ animation: 'featureProgress 3.5s linear' }}
+                      />
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* Active feature display */}
+            <div className="relative min-h-[260px]">
+              {productFeatures.map((feat, i) => (
+                <div
+                  key={feat.tag}
+                  className={`absolute inset-0 flex flex-col justify-center transition-all duration-500 ${
+                    activeFeature === i
+                      ? 'pointer-events-auto translate-y-0 opacity-100'
+                      : 'pointer-events-none translate-y-4 opacity-0'
+                  }`}
+                >
+                  <div className="text-black/10">{feat.icon}</div>
+                  <h3 className="font-naya-serif mt-6 text-2xl font-light text-text-primary md:text-4xl lg:text-5xl">
+                    {feat.title}
+                  </h3>
+                  <p className="mt-4 max-w-lg text-sm font-light leading-relaxed text-text-muted md:text-base">
+                    {feat.description}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
+
+      <style jsx>{`
+        @keyframes featureProgress {
+          from { width: 0%; }
+          to { width: 100%; }
+        }
+      `}</style>
 
       {/* ── Brand Spotlight — editorial masonry ── */}
       <section className="bg-[#111] px-6 py-24 md:px-10">
