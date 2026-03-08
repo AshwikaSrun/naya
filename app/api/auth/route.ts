@@ -33,13 +33,6 @@ export async function POST(request: Request) {
       .map((c) => c.trim().toLowerCase())
       .filter(Boolean);
 
-    if (validCodes.length === 0) {
-      return NextResponse.json(
-        { error: 'No invite codes configured.' },
-        { status: 500 }
-      );
-    }
-
     if (!validCodes.includes(code)) {
       return NextResponse.json({ error: 'Invalid invite code.' }, { status: 401 });
     }

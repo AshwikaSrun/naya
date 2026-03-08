@@ -373,8 +373,8 @@ export default function Home() {
             <Link href="/" className="font-naya-serif text-2xl font-light lowercase tracking-[0.12em] text-black" onClick={() => { setResults(null); setQuery(''); }}>
               naya
             </Link>
-            <div className="hidden items-center gap-4 md:flex">
-              <nav className="font-naya-sans flex items-center gap-3 text-[10px] lowercase tracking-[0.15em] text-black/60">
+            <div className="flex items-center gap-3">
+              <nav className="font-naya-sans hidden items-center gap-3 text-[10px] lowercase tracking-[0.15em] text-black/60 md:flex">
                 {NAV_LINKS.slice(0, 3).map((link) => (
                   <Link
                     key={link.href}
@@ -386,7 +386,7 @@ export default function Home() {
                 ))}
               </nav>
               {userEmail && (
-                <span className={`rounded-full px-3 py-1 text-[10px] tracking-wide ${
+                <span className={`hidden rounded-full px-3 py-1 text-[10px] tracking-wide md:inline ${
                   isPurdue
                     ? 'bg-amber-50 font-medium text-amber-800'
                     : 'bg-neutral-100 text-black/40'
@@ -423,9 +423,18 @@ export default function Home() {
         {/* Loading */}
         {loading && (
           <div className="mx-auto max-w-7xl px-6 pt-6">
-            <p className="mb-4 text-sm text-black/50">Searching across marketplaces...</p>
-            <div className="flex justify-center py-16">
+            <div className="flex flex-col items-center py-12">
               <LoadingSpinner />
+              <p className="mt-6 text-sm text-black/50">searching across marketplaces...</p>
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                {activePlatforms.map((p) => (
+                  <span key={p} className="inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-3 py-1.5 text-[10px] tracking-wide text-black/40">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />
+                    {p}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-3 text-[11px] text-black/25">this usually takes 15–20 seconds</p>
             </div>
           </div>
         )}
@@ -472,8 +481,8 @@ export default function Home() {
             <Link href="/" className="font-naya-serif text-3xl font-light lowercase tracking-[0.15em] text-white md:text-4xl">
               naya
             </Link>
-            <div className="hidden items-center gap-4 md:flex">
-              <nav className="font-naya-sans flex items-center gap-4 text-[10px] lowercase tracking-[0.15em]">
+            <div className="flex items-center gap-4">
+              <nav className="font-naya-sans hidden items-center gap-4 text-[10px] lowercase tracking-[0.15em] md:flex">
                 {NAV_LINKS.map((link) => (
                   <Link
                     key={link.href}
