@@ -25,7 +25,10 @@ interface SearchResults {
   };
 }
 
+const ALL_DEALS_QUERIES = ['vintage fashion', 'designer', 'streetwear'];
+
 const DEAL_CATEGORIES = [
+  { label: 'All deals', query: '', isBroad: true },
   { label: 'Nike', query: 'Nike' },
   { label: "Levi's", query: "Levi's denim" },
   { label: 'Adidas', query: 'Adidas' },
@@ -37,6 +40,18 @@ const DEAL_CATEGORIES = [
 ];
 
 const MIN_DISCOUNT = 30;
+
+/** Filter to Pinterest-style curated, aesthetic items — exclude junk, prefer fashion-forward */
+function isPinteresty(p: Product): boolean {
+  const t = (p.title || '').toLowerCase();
+  if (t.length < 12) return false;
+  if (/\b(bulk|lot\s+of|wholesale|bundle\s+deal|clearance\s+lot)\b/.test(t)) return false;
+  if (/^\d{6,}/.test(t) || /\b[A-Z]{3,}\d{4,}\b/.test(t)) return false; // sku-style
+  const fashionKeywords = ['vintage', 'leather', 'denim', 'silk', 'wool', 'linen', 'streetwear', 'y2k', 'minimal', 'cargo', 'coat', 'jacket', 'blazer', 'dress', 'bag', 'handbag', 'sneaker', 'boot', 'tee', 'graphic', 'designer', 'nike', 'adidas', 'jordan', 'levi', 'ralph', 'carhartt', 'champion', 'north face', 'patagonia'];
+  const hasFashion = fashionKeywords.some((k) => t.includes(k));
+  const fromCurated = ['depop', 'grailed'].includes(p.source);
+  return hasFashion || fromCurated;
+}
 
 export default function DealsPage() {
   const [activeCategory, setActiveCategory] = useState(DEAL_CATEGORIES[0]);
@@ -50,27 +65,44 @@ export default function DealsPage() {
 
     const fetchDeals = async () => {
       try {
-        const params = new URLSearchParams({
-          q: activeCategory.query,
-          limit: '50',
-          platform: 'all',
-        });
-        const res = await fetch(`/api/search?${params}`);
-        if (!res.ok) throw new Error('fetch failed');
-        const data: SearchResults = await res.json();
+        const queries = activeCategory.isBroad ? ALL_DEALS_QUERIES : [activeCategory.query];
+        const batches = await Promise.all(
+          queries.map(async (q) => {
+            const params = new URLSearchParams({ q, limit: '25', platform: 'all' });
+            const res = await fetch(`/api/search?${params}`);
+            if (!res.ok) return [];
+            const data: SearchResults = await res.json();
+            return [
+              ...(data.results.ebay || []).map((p) => ({ ...p, source: 'ebay' as const })),
+              ...(data.results.grailed || []).map((p) => ({ ...p, source: 'grailed' as const })),
+              ...(data.results.depop || []).map((p) => ({ ...p, source: 'depop' as const })),
+              ...(data.results.poshmark || []).map((p) => ({ ...p, source: 'poshmark' as const })),
+            ];
+          }),
+        );
 
         if (cancelled) return;
 
-        const all = [
-          ...(data.results.ebay || []).map((p) => ({ ...p, source: 'ebay' as const })),
-          ...(data.results.grailed || []).map((p) => ({ ...p, source: 'grailed' as const })),
-          ...(data.results.depop || []).map((p) => ({ ...p, source: 'depop' as const })),
-          ...(data.results.poshmark || []).map((p) => ({ ...p, source: 'poshmark' as const })),
-        ];
+        const seen = new Set<string>();
+        const all = batches.flat().filter((p) => {
+          const key = `${p.source}:${p.url}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
 
         const deals = all
           .filter((p) => (p.discountPercent ?? 0) >= MIN_DISCOUNT)
-          .sort((a, b) => (b.discountPercent ?? 0) - (a.discountPercent ?? 0));
+          .filter(isPinteresty)
+          .sort((a, b) => {
+            const discA = b.discountPercent ?? 0;
+            const discB = a.discountPercent ?? 0;
+            if (discA !== discB) return discA - discB;
+            const curated = ['depop', 'grailed'];
+            const aCurated = curated.includes(a.source) ? 1 : 0;
+            const bCurated = curated.includes(b.source) ? 1 : 0;
+            return bCurated - aCurated;
+          });
 
         setProducts(deals);
       } catch {
@@ -114,7 +146,7 @@ export default function DealsPage() {
           biggest discounts right now.
         </h1>
         <p className="mt-3 text-sm font-light text-black/50">
-          items with {MIN_DISCOUNT}%+ off across all marketplaces
+          {MIN_DISCOUNT}%+ off, curated to aesthetic picks only
         </p>
       </section>
 
