@@ -99,6 +99,13 @@ export default function Home() {
   const [filters] = useState({ minPrice: '', maxPrice: '', size: '', condition: '' });
   const [savedSearches, setSavedSearches] = useState<string[]>([]);
 
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [showEmailGate, setShowEmailGate] = useState(false);
+  const [emailInput, setEmailInput] = useState('');
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const pendingSearchRef = useRef<{ query: string; platform?: 'all' | Platform } | null>(null);
+
   const productFeatures = [
     {
       tag: 'search',
@@ -183,11 +190,10 @@ export default function Home() {
     startFeatureTimer();
   };
 
-  const handleSearch = async (
+  const runSearch = async (
     searchQuery: string,
     platformOverride?: 'all' | Platform
   ) => {
-    if (!searchQuery.trim()) return;
     setLoading(true);
     setError(null);
     setQuery(searchQuery);
@@ -221,6 +227,54 @@ export default function Home() {
     }
   };
 
+  const handleSearch = (
+    searchQuery: string,
+    platformOverride?: 'all' | Platform
+  ) => {
+    if (!searchQuery.trim()) return;
+
+    if (!userEmail && typeof window !== 'undefined' && !window.localStorage.getItem('naya-user-email')) {
+      pendingSearchRef.current = { query: searchQuery, platform: platformOverride };
+      setShowEmailGate(true);
+      return;
+    }
+
+    runSearch(searchQuery, platformOverride);
+  };
+
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const email = emailInput.trim().toLowerCase();
+    if (!email || !email.includes('@')) {
+      setEmailError('please enter a valid email.');
+      return;
+    }
+
+    setEmailLoading(true);
+    setEmailError(null);
+
+    try {
+      await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+    } catch {
+      // Still let them through even if recording fails
+    }
+
+    window.localStorage.setItem('naya-user-email', email);
+    setUserEmail(email);
+    setShowEmailGate(false);
+    setEmailLoading(false);
+
+    const pending = pendingSearchRef.current;
+    pendingSearchRef.current = null;
+    if (pending) {
+      runSearch(pending.query, pending.platform);
+    }
+  };
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
@@ -235,6 +289,12 @@ export default function Home() {
       const s = window.localStorage.getItem('savedSearches');
       setSavedSearches(s ? (JSON.parse(s) as string[]) : []);
     } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const stored = window.localStorage.getItem('naya-user-email');
+    if (stored) setUserEmail(stored);
   }, []);
 
   useEffect(() => {
@@ -609,6 +669,53 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* ── Email capture modal ── */}
+      {showEmailGate && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-sm rounded-2xl bg-white p-8 shadow-2xl">
+            <h2 className="font-naya-serif text-2xl font-light text-black">
+              before you search
+            </h2>
+            <p className="font-naya-sans mt-2 text-sm text-black/50">
+              enter your email to start shopping. that&apos;s it — no waitlist, no spam.
+            </p>
+
+            <form onSubmit={handleEmailSubmit} className="mt-6">
+              <input
+                type="email"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                placeholder="your email"
+                required
+                autoComplete="email"
+                autoCapitalize="none"
+                inputMode="email"
+                autoFocus
+                className="font-naya-sans w-full rounded-full border border-black/10 bg-neutral-50 px-5 py-3.5 text-base text-black placeholder:text-black/30 focus:border-black/30 focus:outline-none"
+              />
+              {emailError && (
+                <p className="font-naya-sans mt-2 text-xs text-red-500">{emailError}</p>
+              )}
+              <button
+                type="submit"
+                disabled={emailLoading || !emailInput.trim()}
+                className="mt-4 w-full rounded-full bg-black px-6 py-3.5 text-[11px] font-medium lowercase tracking-[0.1em] text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+              >
+                {emailLoading ? 'one sec...' : 'start searching'}
+              </button>
+            </form>
+
+            <button
+              type="button"
+              onClick={() => { setShowEmailGate(false); pendingSearchRef.current = null; }}
+              className="font-naya-sans mt-4 w-full py-2 text-[11px] text-black/30 transition-colors hover:text-black/50"
+            >
+              maybe later
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
