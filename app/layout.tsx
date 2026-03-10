@@ -1,14 +1,35 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/react";
+import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
+import InstallPrompt from "@/components/InstallPrompt";
 import "./globals.css";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#faf9f7",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.nayaeditorial.shop"),
-  icons: { icon: "/icon.svg" },
-  viewport: "width=device-width, initial-scale=1, viewport-fit=cover",
   title: "naya — second-hand shopping, simplified",
   description:
     "Search second-hand listings in one place. Built for college students who want better style, better prices, and less waste.",
+  manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "naya",
+  },
   openGraph: {
     title: "naya — second-hand shopping, simplified",
     description:
@@ -33,7 +54,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -41,10 +61,10 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body
-        className="antialiased"
-      >
+      <body className="antialiased">
         {children}
+        <ServiceWorkerRegistration />
+        <InstallPrompt />
         <Analytics />
       </body>
     </html>
