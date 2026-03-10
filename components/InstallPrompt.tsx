@@ -7,6 +7,38 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+declare global {
+  interface Window {
+    __nayaInstallPrompt?: BeforeInstallPromptEvent | null;
+  }
+}
+
+export function triggerInstall() {
+  const prompt = window.__nayaInstallPrompt;
+  if (prompt) {
+    prompt.prompt();
+    prompt.userChoice.then(() => {
+      window.__nayaInstallPrompt = null;
+      window.dispatchEvent(new Event('naya-install-used'));
+    });
+    return true;
+  }
+  return false;
+}
+
+export function isIOSDevice() {
+  if (typeof navigator === 'undefined') return false;
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as unknown as { MSStream?: unknown }).MSStream;
+}
+
+export function isStandaloneMode() {
+  if (typeof window === 'undefined') return false;
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (navigator as unknown as { standalone?: boolean }).standalone === true
+  );
+}
+
 export default function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showBanner, setShowBanner] = useState(false);
@@ -14,30 +46,35 @@ export default function InstallPrompt() {
   const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
-    const standalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (navigator as unknown as { standalone?: boolean }).standalone === true;
-    setIsStandalone(standalone);
-
-    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as unknown as { MSStream?: unknown }).MSStream;
-    setIsIOS(ios);
+    setIsStandalone(isStandaloneMode());
+    setIsIOS(isIOSDevice());
 
     const handler = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      const evt = e as BeforeInstallPromptEvent;
+      setDeferredPrompt(evt);
+      window.__nayaInstallPrompt = evt;
     };
     window.addEventListener('beforeinstallprompt', handler);
 
-    const dismissed = sessionStorage.getItem('naya-install-dismissed');
+    const onUsed = () => { setDeferredPrompt(null); setShowBanner(false); };
+    window.addEventListener('naya-install-used', onUsed);
+
+    const dismissed = localStorage.getItem('naya-install-dismissed');
+    const standalone = isStandaloneMode();
     if (!dismissed && !standalone) {
-      const timer = setTimeout(() => setShowBanner(true), 45000);
+      const timer = setTimeout(() => setShowBanner(true), 3000);
       return () => {
         clearTimeout(timer);
         window.removeEventListener('beforeinstallprompt', handler);
+        window.removeEventListener('naya-install-used', onUsed);
       };
     }
 
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+      window.removeEventListener('naya-install-used', onUsed);
+    };
   }, []);
 
   const handleInstall = useCallback(async () => {
@@ -52,7 +89,7 @@ export default function InstallPrompt() {
 
   const handleDismiss = useCallback(() => {
     setShowBanner(false);
-    sessionStorage.setItem('naya-install-dismissed', '1');
+    localStorage.setItem('naya-install-dismissed', '1');
   }, []);
 
   if (isStandalone || !showBanner) return null;
