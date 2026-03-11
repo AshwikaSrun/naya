@@ -9,13 +9,15 @@ import CartPanel from '@/components/CartPanel';
 import { triggerInstall, isIOSDevice } from '@/components/InstallPrompt';
 import { useNayaSearch, SEARCH_LIMIT } from '@/lib/useNayaSearch';
 import NewFindsSection from '@/components/NewFindsSection';
+import CampusProductGrid from '@/components/CampusProductGrid';
+import { ALL_CAMPUSES } from '@/lib/campuses';
 
 const NAV_LINKS = [
   { href: '/editorial', label: 'editorial' },
   { href: '/brands', label: 'brands' },
   { href: '/deals', label: 'deals' },
   { href: '/featured', label: 'featured' },
-  { href: '/college', label: 'college' },
+  { href: '/college', label: 'campus' },
   { href: '/app', label: 'concierge' },
   { href: '/profile', label: 'profile' },
 ];
@@ -28,8 +30,36 @@ const DEFAULT_TRENDING = [
   'vintage purdue hoodie',
 ];
 
+type PreviewProduct = {
+  title: string;
+  price: number;
+  originalPrice?: number;
+  discountPercent?: number;
+  image: string;
+  url: string;
+  source: 'ebay' | 'grailed' | 'depop' | 'poshmark';
+};
+
 export default function Home() {
   const s = useNayaSearch(DEFAULT_TRENDING);
+  const [previewProducts, setPreviewProducts] = useState<PreviewProduct[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/new-finds?preset=default')
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        const raw = (data.items || []) as (PreviewProduct & { source?: string })[];
+        const mapped = raw.map((p) => ({
+          ...p,
+          source: (['ebay', 'grailed', 'depop', 'poshmark'].includes(p.source || '') ? p.source : 'ebay') as PreviewProduct['source'],
+        }));
+        setPreviewProducts(mapped);
+      })
+      .catch(() => { if (!cancelled) setPreviewProducts([]); });
+    return () => { cancelled = true; };
+  }, []);
 
   const brandCards = [
     { name: 'Ralph Lauren', image: 'Ralph Lauren.png', query: 'Ralph Lauren' },
@@ -45,27 +75,6 @@ export default function Home() {
     { title: 'Outerwear', description: 'Leather, puffers, and layered classics.', query: 'vintage outerwear' },
     { title: 'Graphic tees', description: 'Band tees, sports, and pop culture.', query: 'vintage graphic tee' },
     { title: 'Accessories', description: 'Bags, belts, and statement jewelry.', query: 'vintage accessories' },
-  ];
-
-  const collegeMerch = [
-    { name: 'Illinois', query: 'Illinois merch' },
-    { name: 'Indiana', query: 'Indiana merch' },
-    { name: 'Iowa', query: 'Iowa merch' },
-    { name: 'Maryland', query: 'Maryland merch' },
-    { name: 'Michigan', query: 'Michigan merch' },
-    { name: 'Michigan State', query: 'Michigan State merch' },
-    { name: 'Minnesota', query: 'Minnesota merch' },
-    { name: 'Nebraska', query: 'Nebraska merch' },
-    { name: 'Northwestern', query: 'Northwestern merch' },
-    { name: 'Ohio State', query: 'Ohio State merch' },
-    { name: 'Oregon', query: 'Oregon merch' },
-    { name: 'Penn State', query: 'Penn State merch' },
-    { name: 'Purdue', query: 'Purdue merch' },
-    { name: 'Rutgers', query: 'Rutgers merch' },
-    { name: 'UCLA', query: 'UCLA merch' },
-    { name: 'USC', query: 'USC merch' },
-    { name: 'Washington', query: 'Washington merch' },
-    { name: 'Wisconsin', query: 'Wisconsin merch' },
   ];
 
   const dailyFinds = useMemo(() => {
@@ -315,6 +324,10 @@ export default function Home() {
           <div className="mt-8">
             <SearchBar onSearch={s.handleSearch} disabled={s.loading} value={s.searchInput} onValueChange={s.setSearchInput} showTabs />
           </div>
+          <Link href="/college" className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 py-2.5 text-[11px] lowercase tracking-[0.12em] text-white/90 backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/15">
+            <span>choose your campus</span>
+            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+          </Link>
         </div>
       </section>
 
@@ -336,6 +349,23 @@ export default function Home() {
                 </button>
               ))}
             </div>
+
+            {(previewProducts === null || previewProducts.length > 0) && (
+              <>
+                <p className="font-naya-sans mt-12 text-[10px] lowercase tracking-[0.2em] text-text-muted">picked for you</p>
+                <div className="mt-4">
+                  {previewProducts === null ? (
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="aspect-[3/4] animate-pulse rounded-2xl bg-neutral-100" />
+                      ))}
+                    </div>
+                  ) : (
+                    <CampusProductGrid products={previewProducts.slice(0, 6)} columns={6} />
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </section>
       )}
@@ -425,22 +455,23 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── College Merch ── */}
+      {/* ── Campus Mode ── */}
       <section className="relative overflow-hidden px-6 py-24 md:px-10">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('/brands/coll2.jpg')" }}></div>
         <div className="absolute inset-0 bg-black/50"></div>
         <div className="relative mx-auto max-w-5xl">
-          <p className="font-naya-sans text-[10px] lowercase tracking-[0.2em] text-white/40">college</p>
-          <h2 className="font-naya-serif mt-3 text-3xl font-light text-white md:text-5xl">big ten spotlight.</h2>
-          <p className="mt-4 max-w-lg text-sm font-light leading-relaxed text-white/65">vintage college hoodies, team gear, and campus classics at prices that won&apos;t break the bank.</p>
+          <p className="font-naya-sans text-[10px] lowercase tracking-[0.2em] text-white/40">campus mode</p>
+          <h2 className="font-naya-serif mt-3 text-3xl font-light text-white md:text-5xl">trending at your school.</h2>
+          <p className="mt-4 max-w-lg text-sm font-light leading-relaxed text-white/65">choose your campus for localized trending searches, vintage merch, and picks tailored to your school.</p>
           <div className="mt-10 flex flex-wrap gap-2">
-            {collegeMerch.slice(0, 8).map((school) => (
-              <button key={school.name} type="button" onClick={() => s.handleSearch(school.query)} className="rounded-full border border-white/20 px-4 py-2 text-[10px] lowercase tracking-[0.12em] text-white/75 transition-colors hover:border-white/50 hover:text-white">
-                {school.name.toLowerCase()}
-              </button>
+            {ALL_CAMPUSES.slice(0, 8).map((c) => (
+              <Link key={c.slug} href={`/campus/${c.slug}`} className="flex items-center gap-1.5 rounded-full border border-white/20 px-4 py-2 text-[10px] lowercase tracking-[0.12em] text-white/75 transition-colors hover:border-white/50 hover:text-white">
+                <span className="h-1.5 w-1.5 rounded-full" style={{ background: c.color }} />
+                {c.name.toLowerCase()}
+              </Link>
             ))}
           </div>
-          <Link href="/college" className="mt-10 inline-block text-[10px] lowercase tracking-[0.15em] text-white/50 transition-colors hover:text-white">view all colleges</Link>
+          <Link href="/college" className="mt-10 inline-block text-[10px] lowercase tracking-[0.15em] text-white/50 transition-colors hover:text-white">choose your campus →</Link>
         </div>
       </section>
 
