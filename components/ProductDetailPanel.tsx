@@ -40,6 +40,7 @@ export default function ProductDetailPanel({ product, onClose }: ProductDetailPa
   const [isGeneratingTryOn, setIsGeneratingTryOn] = useState(false);
   const [tryOnError, setTryOnError] = useState<string | null>(null);
   const [tryOnStep, setTryOnStep] = useState<'idle' | 'uploaded' | 'generating' | 'done'>('idle');
+  const [shareCopied, setShareCopied] = useState(false);
 
   useEffect(() => {
     if (!product) return;
@@ -117,6 +118,26 @@ export default function ProductDetailPanel({ product, onClose }: ProductDetailPa
     setGeneratedTryOnImage(null);
     setTryOnError(null);
     setTryOnStep('idle');
+  };
+
+  const handleShareProduct = async () => {
+    if (!product) return;
+    const slug = product.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    const shareUrl = `${window.location.origin}/product/${slug || 'item'}?title=${encodeURIComponent(product.title)}&price=${product.price.toFixed(2)}&image=${encodeURIComponent(product.image)}&url=${encodeURIComponent(product.url)}&source=${product.source}`;
+    const shareData = {
+      title: product.title,
+      text: `found this for $${product.price.toFixed(0)} on naya`,
+      url: shareUrl,
+    };
+
+    if (navigator.share) {
+      try { await navigator.share(shareData); return; } catch {}
+    }
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch {}
   };
 
   if (!product) return null;
@@ -348,6 +369,18 @@ export default function ProductDetailPanel({ product, onClose }: ProductDetailPa
             </a>
             <AddToCartButton product={product} />
           </div>
+
+          {/* ── Share ── */}
+          <button
+            type="button"
+            onClick={handleShareProduct}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-black/10 bg-white px-6 py-3 text-sm font-medium text-black/60 transition-all hover:border-black/20 hover:text-black"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+            </svg>
+            {shareCopied ? 'link copied!' : 'share this find'}
+          </button>
         </div>
       </div>
     </div>

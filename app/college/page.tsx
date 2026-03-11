@@ -1,24 +1,17 @@
 import Link from 'next/link';
+import { ALL_CAMPUSES } from '@/lib/campuses';
 
-const colleges = [
-  { name: 'Illinois', query: 'Illinois merch' },
-  { name: 'Indiana', query: 'Indiana merch' },
+const otherSchools = [
   { name: 'Iowa', query: 'Iowa merch' },
   { name: 'Maryland', query: 'Maryland merch' },
-  { name: 'Michigan', query: 'Michigan merch' },
-  { name: 'Michigan State', query: 'Michigan State merch' },
   { name: 'Minnesota', query: 'Minnesota merch' },
   { name: 'Nebraska', query: 'Nebraska merch' },
   { name: 'Northwestern', query: 'Northwestern merch' },
-  { name: 'Ohio State', query: 'Ohio State merch' },
   { name: 'Oregon', query: 'Oregon merch' },
-  { name: 'Penn State', query: 'Penn State merch' },
-  { name: 'Purdue', query: 'Purdue merch' },
   { name: 'Rutgers', query: 'Rutgers merch' },
   { name: 'UCLA', query: 'UCLA merch' },
   { name: 'USC', query: 'USC merch' },
   { name: 'Washington', query: 'Washington merch' },
-  { name: 'Wisconsin', query: 'Wisconsin merch' },
 ];
 
 export default function CollegePage() {
@@ -29,7 +22,7 @@ export default function CollegePage() {
           <Link href="/" className="transition-colors hover:text-text-primary">
             back to home
           </Link>
-          <span>college collection</span>
+          <span>campus collection</span>
         </div>
 
         <header className="relative mb-10 overflow-hidden border border-black/10 bg-white px-6 py-10 md:px-8">
@@ -40,33 +33,59 @@ export default function CollegePage() {
           <div className="absolute inset-0 bg-black/55"></div>
           <div className="relative max-w-3xl text-white">
             <p className="text-[11px] uppercase tracking-[0.3em] text-white/80">
-              big ten
+              campus mode
             </p>
-            <h1 className="mt-4 text-3xl font-[var(--font-playfair)] md:text-4xl">
-              All colleges, one collection
+            <h1 className="font-naya-serif mt-4 text-3xl font-light md:text-4xl">
+              find vintage gear for your school.
             </h1>
-            <p className="mt-4 text-sm text-white/85 leading-relaxed">
-              Tap a school to search second-hand team gear and campus classics.
+            <p className="mt-4 text-sm leading-relaxed text-white/85">
+              tap your school to get trending searches, vintage merch, and campus finds.
             </p>
           </div>
         </header>
 
+        <p className="font-naya-sans mb-6 text-[10px] lowercase tracking-[0.2em] text-text-muted">campus mode available</p>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {colleges.map((school) => (
+          {ALL_CAMPUSES.map((c) => (
             <Link
-              key={school.name}
-              href={`/?q=${encodeURIComponent(school.query)}&platform=all`}
-              className="flex items-center justify-between border border-black/10 bg-white px-5 py-4 text-left transition-all hover:border-black/30"
+              key={c.slug}
+              href={`/campus/${c.slug}`}
+              className="group flex items-center justify-between border border-black/10 bg-white px-5 py-4 text-left transition-all hover:border-black/30"
             >
-              <span className="text-sm font-semibold uppercase tracking-[0.18em] text-text-primary font-[var(--font-playfair)]">
-                {school.name}
+              <span className="flex items-center gap-2.5">
+                <span className="h-2 w-2 rounded-full" style={{ background: c.color }} />
+                <span className="font-naya-serif text-sm font-medium lowercase tracking-[0.08em] text-text-primary">
+                  {c.name.toLowerCase()}
+                </span>
               </span>
-              <span className="text-[10px] uppercase tracking-[0.26em] text-text-muted">
-                search →
+              <span className="text-[10px] lowercase tracking-[0.15em] text-text-muted transition-colors group-hover:text-text-primary">
+                campus mode →
               </span>
             </Link>
           ))}
         </div>
+
+        {otherSchools.length > 0 && (
+          <>
+            <p className="font-naya-sans mb-6 mt-14 text-[10px] lowercase tracking-[0.2em] text-text-muted">other schools</p>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {otherSchools.map((school) => (
+                <Link
+                  key={school.name}
+                  href={`/?q=${encodeURIComponent(school.query)}&platform=all`}
+                  className="flex items-center justify-between border border-black/10 bg-white px-5 py-4 text-left transition-all hover:border-black/30"
+                >
+                  <span className="font-naya-serif text-sm font-medium lowercase tracking-[0.08em] text-text-primary">
+                    {school.name.toLowerCase()}
+                  </span>
+                  <span className="text-[10px] uppercase tracking-[0.26em] text-text-muted">
+                    search →
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

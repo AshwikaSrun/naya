@@ -135,8 +135,14 @@ export default function ProductCard({ product, onSelect }: ProductCardProps) {
 
         {/* Discount badge */}
         {product.discountPercent && product.discountPercent > 0 && (
-          <div className="absolute left-3 top-3 z-10 rounded-md bg-emerald-600 px-2 py-1 text-[11px] font-bold text-white shadow-sm">
-            -{product.discountPercent}%
+          <div className={`absolute left-3 top-3 z-10 rounded-md px-2 py-1 text-[11px] font-bold text-white shadow-sm ${
+            product.discountPercent >= 60 ? 'bg-red-500' : 'bg-emerald-600'
+          }`}>
+            {product.discountPercent >= 60
+              ? `STEAL · ${product.discountPercent}% off`
+              : product.discountPercent >= 30
+                ? `${product.discountPercent}% OFF`
+                : `-${product.discountPercent}%`}
           </div>
         )}
 
@@ -146,15 +152,18 @@ export default function ProductCard({ product, onSelect }: ProductCardProps) {
         </div>
 
         {/* Price badge */}
-        <div className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 rounded-md bg-white/90 px-2 py-1 shadow-sm">
-          {product.originalPrice && product.originalPrice > product.price && (
-            <span className="text-[10px] text-black/40 line-through">
-              ${product.originalPrice.toFixed(0)}
-            </span>
-          )}
-          <span className="text-[12px] font-semibold text-black">
+        <div className="absolute bottom-3 right-3 z-10 rounded-md bg-white/90 px-2.5 py-1.5 shadow-sm">
+          <span className="text-[13px] font-bold text-black">
             ${product.price.toFixed(2)}
           </span>
+          {product.originalPrice && product.originalPrice > product.price && (
+            <div className="flex items-center gap-1">
+              <span className="text-[9px] text-black/40">Retail</span>
+              <span className="text-[9px] text-black/40 line-through">
+                ${product.originalPrice.toFixed(0)}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>
