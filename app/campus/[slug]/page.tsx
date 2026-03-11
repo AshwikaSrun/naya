@@ -11,6 +11,7 @@ import { triggerInstall, isIOSDevice } from '@/components/InstallPrompt';
 import { useNayaSearch, SEARCH_LIMIT } from '@/lib/useNayaSearch';
 import { getCampus, ALL_CAMPUSES, type CampusConfig } from '@/lib/campuses';
 import NewFindsSection from '@/components/NewFindsSection';
+import CampusProductGrid from '@/components/CampusProductGrid';
 
 const NAV_LINKS = [
   { href: '/editorial', label: 'editorial' },
@@ -37,13 +38,41 @@ export default function CampusPage() {
   return <CampusLanding campus={campus} />;
 }
 
+type PreviewProduct = {
+  title: string;
+  price: number;
+  originalPrice?: number;
+  discountPercent?: number;
+  image: string;
+  url: string;
+  source: 'ebay' | 'grailed' | 'depop' | 'poshmark';
+};
+
 function CampusLanding({ campus }: { campus: CampusConfig }) {
   const s = useNayaSearch(campus.defaultTrending, campus.slug);
   const [campusDropdownOpen, setCampusDropdownOpen] = useState(false);
   const [showIOSInstall, setShowIOSInstall] = useState(false);
+  const [previewProducts, setPreviewProducts] = useState<PreviewProduct[] | null>(null);
 
   useEffect(() => {
     window.localStorage.setItem('naya-campus', campus.slug);
+  }, [campus.slug]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/new-finds?preset=default&campus=${encodeURIComponent(campus.slug)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        const raw = (data.items || []) as (PreviewProduct & { source?: string })[];
+        const mapped = raw.map((p) => ({
+          ...p,
+          source: (['ebay', 'grailed', 'depop', 'poshmark'].includes(p.source || '') ? p.source : 'ebay') as PreviewProduct['source'],
+        }));
+        setPreviewProducts(mapped);
+      })
+      .catch(() => { if (!cancelled) setPreviewProducts([]); });
+    return () => { cancelled = true; };
   }, [campus.slug]);
 
   const brandCards = [
@@ -263,6 +292,23 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
                 </button>
               ))}
             </div>
+
+            {(previewProducts === null || previewProducts.length > 0) && (
+              <>
+                <p className="font-naya-sans mt-12 text-[10px] lowercase tracking-[0.2em] text-text-muted">picked for you</p>
+                <div className="mt-4">
+                  {previewProducts === null ? (
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="aspect-[3/4] animate-pulse rounded-2xl bg-neutral-100" />
+                      ))}
+                    </div>
+                  ) : (
+                    <CampusProductGrid products={previewProducts.slice(0, 6)} columns={6} />
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </section>
       )}
@@ -286,6 +332,23 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
               </button>
             ))}
           </div>
+
+          {(previewProducts === null || previewProducts.length > 6) && (
+            <>
+              <p className="font-naya-sans mt-12 text-[10px] lowercase tracking-[0.2em] text-text-muted">vintage {campus.name.toLowerCase()} finds</p>
+              <div className="mt-4">
+                {previewProducts === null ? (
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i} className="aspect-[3/4] animate-pulse rounded-2xl bg-neutral-100" />
+                    ))}
+                  </div>
+                ) : (
+                  <CampusProductGrid products={previewProducts.slice(6, 12)} columns={6} />
+                )}
+              </div>
+            </>
+          )}
         </div>
       </section>
 
@@ -311,6 +374,23 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
               </button>
             ))}
           </div>
+
+          {(previewProducts === null || previewProducts.length > 12) && (
+            <>
+              <p className="font-naya-sans mt-12 text-[10px] lowercase tracking-[0.2em] text-text-muted">popular picks</p>
+              <div className="mt-4">
+                {previewProducts === null ? (
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i} className="aspect-[3/4] animate-pulse rounded-2xl bg-neutral-100" />
+                    ))}
+                  </div>
+                ) : (
+                  <CampusProductGrid products={previewProducts.slice(12, 18)} columns={6} />
+                )}
+              </div>
+            </>
+          )}
         </div>
       </section>
 

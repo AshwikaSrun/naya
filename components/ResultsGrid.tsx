@@ -131,7 +131,7 @@ export default function ResultsGrid({ results, filters }: ResultsGridProps) {
           sourceFilter={sourceFilter}
           setSourceFilter={(f) => { setSourceFilter(f); setPage(1); }}
           sortBy={sortBy}
-          setSortBy={(s) => { setSortBy(s); setPage(1); }}
+          setSortBy={(s) => { setSortBy(s); setPage(1); if (s !== 'discount') setMinDiscount(0); }}
           counts={platformCounts}
           minDiscount={minDiscount}
           setMinDiscount={(d) => { setMinDiscount(d); setPage(1); }}
@@ -155,7 +155,7 @@ export default function ResultsGrid({ results, filters }: ResultsGridProps) {
           sourceFilter={sourceFilter}
           setSourceFilter={(f) => { setSourceFilter(f); setPage(1); }}
           sortBy={sortBy}
-          setSortBy={(s) => { setSortBy(s); setPage(1); }}
+          setSortBy={(s) => { setSortBy(s); setPage(1); if (s !== 'discount') setMinDiscount(0); }}
           counts={platformCounts}
           minDiscount={minDiscount}
           setMinDiscount={(d) => { setMinDiscount(d); setPage(1); }}
@@ -205,6 +205,13 @@ export default function ResultsGrid({ results, filters }: ResultsGridProps) {
   );
 }
 
+const SORT_OPTIONS: { value: 'mixed' | 'price-low' | 'price-high' | 'discount'; label: string; icon?: true }[] = [
+  { value: 'mixed', label: 'best match' },
+  { value: 'price-low', label: 'lowest price' },
+  { value: 'price-high', label: 'highest price' },
+  { value: 'discount', label: 'best deal', icon: true },
+];
+
 const DISCOUNT_TIERS = [0, 20, 40, 60] as const;
 
 function FilterBar({
@@ -228,54 +235,77 @@ function FilterBar({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          {platforms.map((p) => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => setSourceFilter(p)}
-              className={`rounded-full border px-3 py-1.5 text-[11px] lowercase tracking-wider transition-all ${
-                sourceFilter === p
-                  ? 'border-black bg-black text-white'
-                  : 'border-black/15 bg-white text-black/60 hover:border-black/30 hover:text-black'
-              }`}
-            >
-              {PLATFORM_LABELS[p]}
-              <span className="ml-1.5 opacity-50">{counts[p]}</span>
-            </button>
-          ))}
-        </div>
-
-        <select
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-          className="rounded-full border border-black/15 bg-white px-3 py-1.5 text-[11px] lowercase tracking-wider text-black/60 outline-none"
-        >
-          <option value="mixed">mixed</option>
-          <option value="price-low">price: low to high</option>
-          <option value="price-high">price: high to low</option>
-          <option value="discount">biggest discount</option>
-        </select>
-      </div>
-
-      {/* Discount filter pills */}
+      {/* Platform filters */}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-[10px] uppercase tracking-[0.15em] text-black/40">deals:</span>
-        {DISCOUNT_TIERS.map((tier) => (
+        {platforms.map((p) => (
           <button
-            key={tier}
+            key={p}
             type="button"
-            onClick={() => setMinDiscount(tier)}
-            className={`rounded-full border px-3 py-1 text-[10px] tracking-wider transition-all ${
-              minDiscount === tier
-                ? 'border-emerald-600 bg-emerald-600 text-white'
-                : 'border-black/15 bg-white text-black/60 hover:border-emerald-600/40 hover:text-emerald-700'
+            onClick={() => setSourceFilter(p)}
+            className={`rounded-full border px-3 py-1.5 text-[11px] lowercase tracking-wider transition-all ${
+              sourceFilter === p
+                ? 'border-black bg-black text-white'
+                : 'border-black/15 bg-white text-black/60 hover:border-black/30 hover:text-black'
             }`}
           >
-            {tier === 0 ? 'all' : `${tier}%+ off`}
+            {PLATFORM_LABELS[p]}
+            <span className="ml-1.5 opacity-50">{counts[p]}</span>
           </button>
         ))}
+      </div>
+
+      {/* Sort pills */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-[10px] uppercase tracking-[0.15em] text-black/30">sort:</span>
+        {SORT_OPTIONS.map((opt) => {
+          const isActive = sortBy === opt.value;
+          const isDeal = opt.value === 'discount';
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setSortBy(opt.value)}
+              className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-[11px] lowercase tracking-wider transition-all ${
+                isActive
+                  ? isDeal
+                    ? 'border-emerald-600 bg-emerald-600 text-white'
+                    : 'border-black bg-black text-white'
+                  : isDeal
+                    ? 'border-emerald-600/30 bg-emerald-50 text-emerald-700 hover:border-emerald-600/50'
+                    : 'border-black/15 bg-white text-black/60 hover:border-black/30 hover:text-black'
+              }`}
+            >
+              {opt.icon && (
+                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" />
+                </svg>
+              )}
+              {opt.label}
+            </button>
+          );
+        })}
+
+        {/* Discount tiers — show inline when "best deal" is active */}
+        {sortBy === 'discount' && (
+          <>
+            <span className="ml-1 text-[10px] text-black/20">|</span>
+            {DISCOUNT_TIERS.filter((t) => t > 0).map((tier) => (
+              <button
+                key={tier}
+                type="button"
+                onClick={() => setMinDiscount(minDiscount === tier ? 0 : tier)}
+                className={`rounded-full border px-2.5 py-1 text-[10px] tracking-wider transition-all ${
+                  minDiscount === tier
+                    ? 'border-emerald-600 bg-emerald-600 text-white'
+                    : 'border-emerald-600/20 bg-white text-emerald-700/60 hover:border-emerald-600/40'
+                }`}
+              >
+                {tier}%+ off
+              </button>
+            ))}
+          </>
+        )}
       </div>
     </div>
   );
