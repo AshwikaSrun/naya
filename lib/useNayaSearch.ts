@@ -29,6 +29,31 @@ const ACTIVE_PLATFORMS = ['ebay', 'grailed', 'depop', 'poshmark'] as const;
 type Platform = (typeof ACTIVE_PLATFORMS)[number];
 
 export const SEARCH_LIMIT = 50;
+const FAST_LIMIT = 25;
+const FULL_LIMIT = 50;
+const PLATFORM_TIMEOUT_MS = 15000;
+const CLIENT_CACHE_TTL = 5 * 60 * 1000; // 5 min
+
+function getSearchCache(key: string): SearchResults | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.sessionStorage.getItem(`naya-sc-${key}`);
+    if (!raw) return null;
+    const entry = JSON.parse(raw) as { data: SearchResults; ts: number };
+    if (Date.now() - entry.ts > CLIENT_CACHE_TTL) {
+      window.sessionStorage.removeItem(`naya-sc-${key}`);
+      return null;
+    }
+    return entry.data;
+  } catch { return null; }
+}
+
+function setSearchCache(key: string, data: SearchResults): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(`naya-sc-${key}`, JSON.stringify({ data, ts: Date.now() }));
+  } catch { /* quota exceeded — ignore */ }
+}
 
 export type PlatformStatus = Record<Platform, 'idle' | 'loading' | 'done' | 'error'>;
 
@@ -45,7 +70,8 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
   const [platformStatus, setPlatformStatus] = useState<PlatformStatus>(initialPlatformStatus);
   const didHydrateSearch = useRef(false);
   const searchAbortRef = useRef<AbortController | null>(null);
-  const limit = 50;
+  const backfillAbortRef = useRef<AbortController | null>(null);
+  const limit = FULL_LIMIT;
   const [platform] = useState<'all' | Platform>('all');
 
   const [recentlyViewed, setRecentlyViewed] = useState<Product[]>([]);
@@ -152,7 +178,6 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
     searchQuery: string,
     platformOverride?: 'all' | Platform
   ) => {
-    // Abort any in-flight search
     if (searchAbortRef.current) searchAbortRef.current.abort();
     const abort = new AbortController();
     searchAbortRef.current = abort;
@@ -163,16 +188,34 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
     setSearchInput(searchQuery);
 
     const targetPlatform = platformOverride ?? platform;
+    const cacheKey = `${searchQuery.toLowerCase().trim()}|${targetPlatform}`;
 
-    // Single-platform search — keep the old simple path
+    // Instant cache hit — show immediately, then refresh in background
+    const cached = getSearchCache(cacheKey);
+    if (cached) {
+      setResults(cached);
+      setPlatformStatus(
+        targetPlatform === 'all'
+          ? { ebay: 'done', grailed: 'done', depop: 'done', poshmark: 'done' }
+          : { ...initialPlatformStatus, [targetPlatform]: 'done' }
+      );
+      setLoading(false);
+      trackSearch(searchQuery);
+      return;
+    }
+
+    // Single-platform search
     if (targetPlatform !== 'all') {
       try {
         setPlatformStatus({ ...initialPlatformStatus, [targetPlatform]: 'loading' });
         const params = new URLSearchParams({ q: searchQuery, limit: limit.toString(), platform: targetPlatform });
-        const response = await fetch(`/api/search?${params}`, { signal: abort.signal });
+        const response = await fetch(`/api/search?${params}`, {
+          signal: abort.signal,
+        });
         if (!response.ok) throw new Error('Search failed');
         const data = await response.json();
         setResults(data);
+        setSearchCache(cacheKey, data);
         setPlatformStatus((prev) => ({ ...prev, [targetPlatform]: 'done' }));
       } catch (err) {
         if ((err as Error).name !== 'AbortError') {
@@ -186,10 +229,10 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
       return;
     }
 
-    // Parallel streaming: fire all 4 platforms independently, merge as each resolves
+    // Phase 1: Fast fetch (25 per platform) — gets results on screen quickly
     const emptyResults: SearchResults = {
       query: searchQuery,
-      limit,
+      limit: FAST_LIMIT,
       platform: 'all',
       results: { ebay: [], grailed: [], depop: [], poshmark: [] },
     };
@@ -199,21 +242,27 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
     let doneCount = 0;
     let anySuccess = false;
 
-    const fetchPlatform = async (p: Platform) => {
-      try {
-        const params = new URLSearchParams({ q: searchQuery, limit: limit.toString(), platform: p });
-        const response = await fetch(`/api/search?${params}`, { signal: abort.signal });
-        if (!response.ok) throw new Error(`${p} failed`);
-        const data = await response.json();
-        const platformItems: Product[] = data.results?.[p] || [];
+    const fetchPlatform = async (p: Platform, fetchLimit: number, signal: AbortSignal) => {
+      const params = new URLSearchParams({ q: searchQuery, limit: fetchLimit.toString(), platform: p });
+      const response = await Promise.race([
+        fetch(`/api/search?${params}`, { signal }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`${p} timed out`)), PLATFORM_TIMEOUT_MS)
+        ),
+      ]);
+      if (!response.ok) throw new Error(`${p} failed`);
+      const data = await response.json();
+      return (data.results?.[p] || []) as Product[];
+    };
 
-        // Merge this platform's results into state
+    const fastFetch = async (p: Platform) => {
+      try {
+        const platformItems = await fetchPlatform(p, FAST_LIMIT, abort.signal);
         setResults((prev) => {
           if (!prev) return prev;
-          return {
-            ...prev,
-            results: { ...prev.results, [p]: platformItems },
-          };
+          const updated = { ...prev, results: { ...prev.results, [p]: platformItems } };
+          setSearchCache(cacheKey, updated);
+          return updated;
         });
         setPlatformStatus((prev) => ({ ...prev, [p]: 'done' }));
         anySuccess = true;
@@ -226,12 +275,47 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
         if (doneCount === ACTIVE_PLATFORMS.length && !abort.signal.aborted) {
           setLoading(false);
           if (!anySuccess) setError('oops, something went wrong. try again?');
+          else backfillResults(searchQuery, cacheKey, abort);
         }
       }
     };
 
-    ACTIVE_PLATFORMS.forEach((p) => fetchPlatform(p));
+    ACTIVE_PLATFORMS.forEach((p) => fastFetch(p));
     trackSearch(searchQuery);
+  };
+
+  // Phase 2: Backfill to full 50 per platform silently in the background
+  const backfillResults = (searchQuery: string, cacheKey: string, primaryAbort: AbortController) => {
+    if (backfillAbortRef.current) backfillAbortRef.current.abort();
+    const backfillAbort = new AbortController();
+    backfillAbortRef.current = backfillAbort;
+
+    const mergeIfNotAborted = (abort: AbortController) => (p: Platform, items: Product[]) => {
+      if (abort.signal.aborted || primaryAbort.signal.aborted) return;
+      setResults((prev) => {
+        if (!prev) return prev;
+        const existing = prev.results[p] || [];
+        if (items.length <= existing.length) return prev;
+        const updated = { ...prev, results: { ...prev.results, [p]: items } };
+        setSearchCache(cacheKey, updated);
+        return updated;
+      });
+    };
+
+    const merge = mergeIfNotAborted(backfillAbort);
+
+    ACTIVE_PLATFORMS.forEach(async (p) => {
+      try {
+        const params = new URLSearchParams({ q: searchQuery, limit: FULL_LIMIT.toString(), platform: p });
+        const response = await fetch(`/api/search?${params}`, { signal: backfillAbort.signal });
+        if (!response.ok) return;
+        const data = await response.json();
+        const items: Product[] = data.results?.[p] || [];
+        merge(p, items);
+      } catch {
+        // Backfill failures are silent
+      }
+    });
   };
 
   const trackSearch = (searchQuery: string) => {

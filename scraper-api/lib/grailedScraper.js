@@ -20,7 +20,7 @@ async function scrapeGrailed(query, limit = 10) {
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
     try {
-      await page.waitForSelector('a[href*="/listings/"]', { timeout: 15000 });
+      await page.waitForSelector('a[href*="/listings/"]', { timeout: 8000 });
     } catch {
       // Page may have loaded differently; continue extraction anyway
     }
@@ -29,7 +29,7 @@ async function scrapeGrailed(query, limit = 10) {
       const scrollAttempts = Math.ceil((limit - 10) / 20);
       for (let i = 0; i < scrollAttempts; i++) {
         await page.evaluate(() => window.scrollBy(0, window.innerHeight * 2));
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(800);
         const currentCount = await page.evaluate(() =>
           document.querySelectorAll('a[href*="/listings/"]').length
         );
@@ -37,7 +37,7 @@ async function scrapeGrailed(query, limit = 10) {
       }
     }
 
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(500);
 
     const results = await page.evaluate((maxLimit) => {
       const items = [];

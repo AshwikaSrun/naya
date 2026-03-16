@@ -179,6 +179,7 @@ const CAMPUS_LIST: CampusConfig[] = [
       { label: 'baggy denim • minimal', query: 'baggy levi jeans' },
       { label: 'streetwear • aesthetic', query: 'vintage streetwear' },
     ],
+    ambassador: 'Jordan P.',
   },
   {
     slug: 'ohio-state',
@@ -233,6 +234,7 @@ const CAMPUS_LIST: CampusConfig[] = [
       { label: 'baggy denim • minimal', query: 'baggy levi jeans' },
       { label: 'streetwear • aesthetic', query: 'vintage streetwear' },
     ],
+    ambassador: 'Morgan S.',
   },
   {
     slug: 'texas',

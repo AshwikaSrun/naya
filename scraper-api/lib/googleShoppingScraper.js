@@ -46,13 +46,13 @@ async function scrapeGoogleShopping(query, limit = 10) {
 
     try {
       await page.waitForSelector('.sh-dgr__content, .sh-dlr__list-result, div[data-docid]', {
-        timeout: 15000,
+        timeout: 8000,
       });
     } catch {
       // Google may render differently; continue extraction
     }
 
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(500);
 
     const results = await page.evaluate((maxLimit) => {
       const items = [];
@@ -157,11 +157,11 @@ async function lookupRetailPrices(query, limit = 10) {
 
     try {
       await page.waitForSelector('.sh-dgr__content, .sh-dlr__list-result, div[data-docid]', {
-        timeout: 15000,
+        timeout: 8000,
       });
     } catch { /* continue */ }
 
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(500);
 
     const prices = await page.evaluate((maxLimit) => {
       const items = [];

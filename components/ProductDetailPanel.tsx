@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { addToCart, isInCart } from './CartPanel';
+import { addToCompare, isInCompare, removeFromCompare } from '@/lib/compare';
+import { addPriceAlert, getPriceAlerts } from '@/lib/priceAlerts';
+import { recordProductView } from '@/lib/impact';
+import { deriveCompleteTheLookQuery } from '@/lib/completeTheLook';
 
 interface Product {
   title: string;
@@ -60,6 +65,20 @@ export default function ProductDetailPanel({ product, onClose }: ProductDetailPa
       setTryOnError(null);
       setIsGeneratingTryOn(false);
       setTryOnStep('idle');
+    } else {
+      recordProductView();
+    }
+  }, [product]);
+
+  const router = useRouter();
+  const [inCompare, setInCompare] = useState(false);
+  const [alertAdded, setAlertAdded] = useState(false);
+  const [alertPrice, setAlertPrice] = useState('');
+
+  useEffect(() => {
+    if (product) {
+      setInCompare(isInCompare(product.url));
+      setAlertPrice(String(Math.round(product.price * 0.9)));
     }
   }, [product]);
 
@@ -190,6 +209,31 @@ export default function ProductDetailPanel({ product, onClose }: ProductDetailPa
               {meta.condition}
             </span>
           </div>
+
+          {/* Is this a good deal? */}
+          {(product.originalPrice || product.discountPercent) && (
+            <div className="mt-3 rounded-xl border border-emerald-200/60 bg-emerald-50/50 p-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-800/80">
+                is this a good deal?
+              </p>
+              {product.originalPrice && product.originalPrice > product.price ? (
+                <p className="mt-1 text-sm text-emerald-800">
+                  Typical retail: ${product.originalPrice.toFixed(0)}. You&apos;re paying ${product.price.toFixed(0)} —{' '}
+                  {product.discountPercent && product.discountPercent >= 50 ? (
+                    <span className="font-semibold">great deal</span>
+                  ) : product.discountPercent && product.discountPercent >= 30 ? (
+                    <span className="font-semibold">good deal</span>
+                  ) : (
+                    <span className="font-semibold">fair price</span>
+                  )}
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-emerald-800">
+                  Price is in line with similar listings. Compare across platforms to find the best option.
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Savings breakdown */}
           {product.discountPercent && product.discountPercent > 0 && product.originalPrice && (

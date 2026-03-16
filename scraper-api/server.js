@@ -15,6 +15,27 @@ app.use(cors());
 
 const SCRAPER_TIMEOUT_MS = 25000;
 
+// ── In-memory cache ──
+const SEARCH_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const RETAIL_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+const searchCache = new Map();
+const retailCache = new Map();
+
+function getCached(cache, key, ttl) {
+  const entry = cache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.ts > ttl) { cache.delete(key); return null; }
+  return entry.data;
+}
+
+function setCache(cache, key, data) {
+  cache.set(key, { data, ts: Date.now() });
+  if (cache.size > 200) {
+    const oldest = cache.keys().next().value;
+    cache.delete(oldest);
+  }
+}
+
 const allPlatforms = [
   'ebay',
   'grailed',
@@ -94,16 +115,34 @@ app.get('/search', async (req, res) => {
 
     const selectedPlatforms = new Set(platforms);
 
+    const cacheKey = `${query.toLowerCase().trim()}|${[...selectedPlatforms].sort().join(',')}|${validLimit}`;
+
     console.log(`[search] q="${query}" limit=${validLimit} platforms=${[...selectedPlatforms].join(',')}`);
+
+    // Check search cache
+    const cached = getCached(searchCache, cacheKey, SEARCH_CACHE_TTL);
+    if (cached) {
+      const totalElapsed = Date.now() - requestStart;
+      console.log(`[search] CACHE HIT in ${totalElapsed}ms for q="${query}"`);
+      return res.json({ ...cached, meta: { ...cached.meta, elapsed_ms: totalElapsed, cached: true } });
+    }
 
     const results = {};
     const timings = {};
 
-    // Run retail price lookup in parallel with marketplace scrapers
-    let retailData = { prices: [], medianRetailPrice: null };
-    const retailLookupPromise = lookupRetailPrices(query, 10)
-      .then((data) => { retailData = data; })
-      .catch((err) => { console.error(`[search] retail lookup failed: ${err.message}`); });
+    // Check retail cache first, only look up if not cached
+    const retailCacheKey = query.toLowerCase().trim();
+    let retailData = getCached(retailCache, retailCacheKey, RETAIL_CACHE_TTL) || { prices: [], medianRetailPrice: null };
+    const needsRetail = !retailData.medianRetailPrice;
+
+    const retailLookupPromise = needsRetail
+      ? lookupRetailPrices(query, 10)
+          .then((data) => {
+            retailData = data;
+            setCache(retailCache, retailCacheKey, data);
+          })
+          .catch((err) => { console.error(`[search] retail lookup failed: ${err.message}`); })
+      : Promise.resolve();
 
     const entries = allPlatforms
       .filter((p) => selectedPlatforms.has(p))
@@ -115,19 +154,22 @@ app.get('/search', async (req, res) => {
         });
       });
 
-    await Promise.all([...entries, retailLookupPromise]);
+    // Don't block on retail lookup — use a race with a 5s grace period
+    const retailWithTimeout = Promise.race([
+      retailLookupPromise,
+      new Promise((resolve) => setTimeout(resolve, 5000)),
+    ]);
+
+    await Promise.all([...entries, retailWithTimeout]);
 
     for (const p of allPlatforms) {
       if (!results[p]) results[p] = [];
-      // Score relevance (attaches _relevanceScore to each item)
       results[p] = filterByRelevance(results[p], query);
     }
 
-    // Data quality pipeline: clean titles, validate, deduplicate, rank
     const cleaned = runPipeline(results, query);
     const finalResults = runGlobalPipeline(cleaned, query);
 
-    // Enrich items missing originalPrice using retail median
     const median = retailData.medianRetailPrice;
     if (median && median > 0) {
       for (const p of allPlatforms) {
@@ -147,7 +189,7 @@ app.get('/search', async (req, res) => {
     const totalElapsed = Date.now() - requestStart;
     console.log(`[search] completed in ${totalElapsed}ms | ${JSON.stringify(timings)} | retailMedian=${median}`);
 
-    return res.json({
+    const responseBody = {
       query,
       limit: validLimit,
       platform: platformParam || 'all',
@@ -160,7 +202,11 @@ app.get('/search', async (req, res) => {
           sampleCount: retailData.prices.length,
         },
       },
-    });
+    };
+
+    setCache(searchCache, cacheKey, responseBody);
+
+    return res.json(responseBody);
   } catch (error) {
     const totalElapsed = Date.now() - requestStart;
     console.error(`[search] fatal error after ${totalElapsed}ms:`, error);
@@ -202,18 +248,63 @@ app.get('/retail-lookup', async (req, res) => {
   }
 });
 
+// Pre-warm popular queries so first users get cache hits
+const PREWARM_QUERIES = [
+  'vintage carhartt jacket',
+  'vintage purdue hoodie',
+  'vintage nike crewneck',
+  'baggy levi 550',
+  'y2k zip hoodie',
+  'vintage michigan hoodie',
+  'vintage indiana hoodie',
+  'vintage band tee',
+  'vintage ralph lauren',
+  'vintage streetwear',
+];
+
+async function prewarmCache() {
+  console.log(`[prewarm] warming ${PREWARM_QUERIES.length} popular queries...`);
+  for (const q of PREWARM_QUERIES) {
+    try {
+      const cacheKey = `${q}|${allPlatforms.sort().join(',')}|25`;
+      if (getCached(searchCache, cacheKey, SEARCH_CACHE_TTL)) continue;
+
+      const results = {};
+      const entries = allPlatforms.map((name) => {
+        const wrappedScraper = withTimeout(scraperMap[name], name, SCRAPER_TIMEOUT_MS);
+        return wrappedScraper(q, 25).then((data) => { results[name] = data; });
+      });
+      await Promise.all(entries);
+
+      for (const p of allPlatforms) {
+        if (!results[p]) results[p] = [];
+        results[p] = filterByRelevance(results[p], q);
+      }
+      const cleaned = runPipeline(results, q);
+      const finalResults = runGlobalPipeline(cleaned, q);
+
+      const body = { query: q, limit: 25, platform: 'all', results: finalResults, meta: { prewarm: true } };
+      setCache(searchCache, cacheKey, body);
+      console.log(`[prewarm] cached "${q}"`);
+    } catch (err) {
+      console.error(`[prewarm] failed for "${q}": ${err.message}`);
+    }
+  }
+  console.log('[prewarm] done');
+}
+
 const port = process.env.PORT || 3005;
 app.listen(port, () => {
   console.log(`Scraper API listening on ${port}`);
   console.log(`Platforms: ${allPlatforms.join(', ')}`);
   console.log(`Per-scraper timeout: ${SCRAPER_TIMEOUT_MS}ms`);
 
-  // Warm up Playwright browser on startup so first search isn't slow
   const { playwrightManager } = require('./lib/playwrightManager');
-  playwrightManager.createBrowser().then((browser) => {
-    console.log('[warmup] Playwright browser ready');
-    playwrightManager.closeBrowser(browser);
-  }).catch((err) => {
-    console.error('[warmup] Playwright warmup failed:', err.message);
-  });
+  playwrightManager.init()
+    .then(() => {
+      setTimeout(() => prewarmCache(), 2000);
+    })
+    .catch((err) => {
+      console.error('[warmup] Playwright pool init failed:', err.message);
+    });
 });

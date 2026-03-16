@@ -23,7 +23,7 @@ async function scrapeDepop(query, limit = 10) {
     
     // Wait for listings to load
     try {
-      await page.waitForSelector('.styles_productCardRoot__DaYPT', { timeout: 15000 });
+      await page.waitForSelector('.styles_productCardRoot__DaYPT', { timeout: 8000 });
     } catch (e) {
       // Continue anyway
     }
@@ -36,8 +36,7 @@ async function scrapeDepop(query, limit = 10) {
         await page.evaluate(() => {
           window.scrollBy(0, window.innerHeight * 2);
         });
-        // Wait for new content to load
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(800);
         
         // Check if we have enough items
         const currentCount = await page.evaluate(() => {
@@ -48,8 +47,7 @@ async function scrapeDepop(query, limit = 10) {
       }
     }
     
-    // Give it time for lazy-loaded content
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(500);
     
     // Extract listings
     const results = await page.evaluate((maxLimit) => {

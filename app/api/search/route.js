@@ -6,6 +6,24 @@ export const fetchCache = 'force-no-store';
 
 const BACKEND_URL = 'https://scraper-api-production-d197.up.railway.app';
 
+const apiCache = new Map();
+const API_CACHE_TTL = 2 * 60 * 1000; // 2 minutes
+
+function getApiCached(key) {
+  const entry = apiCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.ts > API_CACHE_TTL) { apiCache.delete(key); return null; }
+  return entry.data;
+}
+
+function setApiCache(key, data) {
+  apiCache.set(key, { data, ts: Date.now() });
+  if (apiCache.size > 100) {
+    const oldest = apiCache.keys().next().value;
+    apiCache.delete(oldest);
+  }
+}
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q');
@@ -17,6 +35,15 @@ export async function GET(request) {
       { error: 'Query parameter "q" is required' },
       { status: 400 }
     );
+  }
+
+  const cacheKey = `${query.toLowerCase().trim()}|${platformParam}|${limit}`;
+  const cached = getApiCached(cacheKey);
+  if (cached) {
+    return Response.json(cached, {
+      status: 200,
+      headers: { 'Cache-Control': 'public, max-age=120', 'X-Cache': 'HIT' },
+    });
   }
 
   const backendUrl = (process.env.SCRAPER_BACKEND_URL || BACKEND_URL).replace(/\/$/, '');
@@ -40,25 +67,26 @@ export async function GET(request) {
     }
 
     const body = await proxyRes.json();
+    setApiCache(cacheKey, body);
     return Response.json(body, {
       status: 200,
-      headers: { 'Cache-Control': 'no-store, max-age=0' },
+      headers: { 'Cache-Control': 'public, max-age=120', 'X-Cache': 'MISS' },
     });
   } catch (proxyErr) {
     console.error(`[search] Railway proxy failed for q="${query}": ${proxyErr.message}`);
 
-    // Local eBay-only fallback
     try {
       const validLimit = Math.min(Math.max(limit, 1), 50);
       const ebayResults = await scrapeEbay(query, validLimit).catch(() => []);
 
-      return Response.json({
+      const fallbackBody = {
         query,
         limit: validLimit,
         platform: platformParam,
         results: { ebay: ebayResults, grailed: [], depop: [], poshmark: [] },
         _fallback: true,
-      }, {
+      };
+      return Response.json(fallbackBody, {
         headers: { 'Cache-Control': 'no-store, max-age=0' },
       });
     } catch (fallbackErr) {

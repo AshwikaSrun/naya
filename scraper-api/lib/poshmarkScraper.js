@@ -19,7 +19,7 @@ async function scrapePoshmark(query, limit = 10) {
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
     try {
-      await page.waitForSelector('a[href*="/listing/"]', { timeout: 15000 });
+      await page.waitForSelector('a[href*="/listing/"]', { timeout: 8000 });
     } catch (e) {
       // Continue even if selector times out
     }
