@@ -154,16 +154,13 @@ export default function NewFindsSection({ campus, onSearch }: Props) {
             return (
               <Link
                 key={item.url}
-                href={{
-                  pathname: `/product/${buildSlug(item.title) || 'item'}`,
-                  query: {
-                    title: item.title,
-                    price: item.price.toFixed(2),
-                    image: item.image,
-                    url: item.url,
-                    source: item.source,
-                  },
-                }}
+                href={`/product/${buildSlug(item.title) || 'item'}?${new URLSearchParams({
+                  title: item.title,
+                  price: item.price.toFixed(2),
+                  image: item.image,
+                  url: item.url,
+                  source: item.source,
+                }).toString()}`}
                 className="group flex items-center gap-4 rounded-xl border border-black/[0.04] px-4 py-3 transition-all hover:border-black/10 hover:shadow-sm md:gap-5"
               >
                 <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-neutral-100 md:h-20 md:w-20">

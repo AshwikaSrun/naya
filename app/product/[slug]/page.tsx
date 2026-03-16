@@ -2,21 +2,22 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 interface ProductPageProps {
-  searchParams: {
+  searchParams: Promise<{
     title?: string;
     price?: string;
     image?: string;
     url?: string;
     source?: string;
-  };
+  }>;
 }
 
-export default function ProductPage({ searchParams }: ProductPageProps) {
-  const title = searchParams.title ?? 'Editorial piece';
-  const price = searchParams.price ?? '--';
-  const image = searchParams.image;
-  const url = searchParams.url;
-  const source = searchParams.source ?? 'source';
+export default async function ProductPage({ searchParams }: ProductPageProps) {
+  const params = await searchParams;
+  const title = params.title ?? 'Editorial piece';
+  const price = params.price ?? '--';
+  const image = params.image;
+  const url = params.url;
+  const source = params.source ?? 'source';
 
   return (
     <div className="min-h-screen bg-night-bg">
