@@ -27,18 +27,21 @@ export default function CollegePage() {
         </div>
 
         <header className="relative mb-10 overflow-hidden rounded-2xl border border-black/10 bg-white">
-          <div className="grid grid-cols-3 gap-0.5 md:grid-cols-6" style={{ gridTemplateRows: 'auto auto' }}>
-            <div className="col-span-2 row-span-2">
+          <div
+            className="grid grid-cols-3 md:grid-cols-6"
+            style={{ gridTemplateRows: '8rem 8rem', gap: '2px' }}
+          >
+            <div className="col-span-2 row-span-2 overflow-hidden">
               <img src="/finds/purduevintagehoodie.jpg" alt="" className="h-full w-full object-cover" />
             </div>
-            <div><img src="/finds/michiganvintagecrewneck.jpg" alt="" className="h-32 w-full object-cover md:h-40" /></div>
-            <div><img src="/finds/Illinoisvintagehoodie.jpg" alt="" className="h-32 w-full object-cover md:h-40" /></div>
-            <div><img src="/finds/ohiostatevintagecrewneck.jpg" alt="" className="h-32 w-full object-cover md:h-40" /></div>
-            <div><img src="/finds/pennstatevintagehoodie.jpg" alt="" className="h-32 w-full object-cover md:h-40" /></div>
-            <div><img src="/finds/wisconsinvintagecrewneck.jpg" alt="" className="h-32 w-full object-cover md:h-40" /></div>
-            <div><img src="/finds/indianavintagecrewneck.jpg" alt="" className="h-32 w-full object-cover md:h-40" /></div>
-            <div><img src="/finds/texasvintagehoodie.jpg" alt="" className="h-32 w-full object-cover md:h-40" /></div>
-            <div><img src="/finds/michstatecrewneck.jpg" alt="" className="h-32 w-full object-cover md:h-40" /></div>
+            <div className="overflow-hidden"><img src="/finds/michiganvintagecrewneck.jpg" alt="" className="h-full w-full object-cover" /></div>
+            <div className="overflow-hidden"><img src="/finds/Illinoisvintagehoodie.jpg" alt="" className="h-full w-full object-cover" /></div>
+            <div className="overflow-hidden"><img src="/finds/ohiostatevintagecrewneck.jpg" alt="" className="h-full w-full object-cover" /></div>
+            <div className="overflow-hidden"><img src="/finds/pennstatevintagehoodie.jpg" alt="" className="h-full w-full object-cover" /></div>
+            <div className="overflow-hidden"><img src="/finds/wisconsinvintagecrewneck.jpg" alt="" className="h-full w-full object-cover" /></div>
+            <div className="overflow-hidden"><img src="/finds/indianavintagecrewneck.jpg" alt="" className="h-full w-full object-cover" /></div>
+            <div className="overflow-hidden"><img src="/finds/texasvintagehoodie.jpg" alt="" className="h-full w-full object-cover" /></div>
+            <div className="overflow-hidden"><img src="/finds/michstatecrewneck.jpg" alt="" className="h-full w-full object-cover" /></div>
           </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10" />
           <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-10">
