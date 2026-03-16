@@ -153,6 +153,17 @@ function deduplicateResults(items) {
 
 // ── Step 4: Rank by quality ──────────────────────────────────────────
 
+const VINTAGE_SIGNALS = [
+  'vintage', 'vtg', 'retro', '90s', '80s', '70s', 'y2k',
+  'distressed', 'faded', 'worn', 'patina', 'thrashed',
+  'single stitch', 'made in usa', 'deadstock',
+];
+
+const NEW_ITEM_SIGNALS = [
+  'brand new', 'new with tags', 'nwt', 'retail', 'msrp',
+  'factory sealed', 'unopened', 'current season',
+];
+
 function rankResults(items, query) {
   if (items.length === 0) return items;
 
@@ -163,6 +174,7 @@ function rankResults(items, query) {
   return items
     .map((item) => {
       const relevance = item._relevanceScore || 0;
+      const titleLower = item.title.toLowerCase();
 
       const hasImage = item.image && !item.image.startsWith('data:') ? 1 : 0;
 
@@ -174,11 +186,20 @@ function rankResults(items, query) {
       const goodLength = titleLen >= 15 && titleLen <= 100 ? 1 : 0.5;
       const titleScore = (isAllCaps + goodLength) / 2;
 
+      const isVintage = VINTAGE_SIGNALS.some((s) => titleLower.includes(s)) ? 0.15 : 0;
+      const isNew = NEW_ITEM_SIGNALS.some((s) => titleLower.includes(s)) ? -0.1 : 0;
+
+      const hasDiscount = item.discountPercent && item.discountPercent > 15 ? 0.05 : 0;
+
       const score =
-        relevance * 0.50 +
-        hasImage * 0.20 +
-        priceScore * 0.15 +
-        titleScore * 0.15;
+        relevance * 0.45 +
+        hasImage * 0.15 +
+        priceScore * 0.10 +
+        titleScore * 0.10 +
+        isVintage +
+        isNew +
+        hasDiscount +
+        0.05; // base
 
       return { ...item, _qualityScore: score };
     })

@@ -6,9 +6,9 @@ async function scrapeEbay(query, limit = 10) {
   try {
     if (!query) return [];
     
-    // Use _ipg=100 to get more items per page (max 200)
     const itemsPerPage = Math.min(limit, 200);
-    const searchUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}&_ipg=${itemsPerPage}`;
+    // Filter to used/pre-owned condition (LH_ItemCondition=4) to get vintage items
+    const searchUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}&_ipg=${itemsPerPage}&LH_ItemCondition=4`;
     
     // Fetch the page
     const response = await axios.get(searchUrl, {

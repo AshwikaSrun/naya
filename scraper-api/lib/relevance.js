@@ -1,6 +1,6 @@
 /**
- * Relevance scoring for search results.
- * Returns numeric scores (0-1) with weighted token matching.
+ * Relevance scoring and filtering for search results.
+ * Ensures results closely match the query — right brand, right item type.
  */
 
 const STOP_WORDS = new Set([
@@ -11,7 +11,6 @@ const STOP_WORDS = new Set([
   'size', 'new', 'nwt', 'nwot', 'shipping', 'free',
 ]);
 
-// Common fashion brand names get extra weight when matching
 const BRAND_NAMES = new Set([
   'nike', 'adidas', 'jordan', 'gucci', 'prada', 'balenciaga', 'louis', 'vuitton',
   'chanel', 'hermes', 'dior', 'versace', 'burberry', 'supreme', 'stussy',
@@ -21,12 +20,41 @@ const BRAND_NAMES = new Set([
   'gap', 'zara', 'uniqlo', 'aeropostale', 'hollister', 'abercrombie',
 ]);
 
+// Item type groups — if query contains one type, results with a conflicting type are penalized
+const ITEM_TYPE_GROUPS = {
+  tops: ['shirt', 'tee', 't-shirt', 'tshirt', 'top', 'blouse', 'tank'],
+  bottoms: ['jeans', 'pants', 'trousers', 'shorts', 'skirt'],
+  jackets: ['jacket', 'coat', 'blazer', 'parka', 'windbreaker', 'anorak'],
+  hoodies: ['hoodie', 'sweatshirt', 'pullover', 'crewneck', 'crew neck'],
+  shoes: ['shoes', 'sneakers', 'boots', 'sandals', 'loafers', 'heels'],
+  bags: ['bag', 'purse', 'backpack', 'tote', 'clutch', 'satchel'],
+  accessories: ['hat', 'cap', 'beanie', 'scarf', 'belt', 'watch', 'jewelry', 'sunglasses'],
+  vests: ['vest', 'gilet', 'waistcoat'],
+  dresses: ['dress', 'gown', 'romper', 'jumpsuit'],
+};
+
+// Build a reverse lookup: item word -> group name
+const WORD_TO_GROUP = {};
+for (const [group, words] of Object.entries(ITEM_TYPE_GROUPS)) {
+  for (const w of words) {
+    WORD_TO_GROUP[w] = group;
+  }
+}
+
 function getQueryTokens(query) {
   return query
     .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
     .split(/\s+/)
     .filter((w) => w.length >= 2 && !STOP_WORDS.has(w));
+}
+
+function detectItemType(text) {
+  const lower = text.toLowerCase();
+  for (const [word, group] of Object.entries(WORD_TO_GROUP)) {
+    if (lower.includes(word)) return group;
+  }
+  return null;
 }
 
 /**
@@ -47,7 +75,7 @@ function scoreRelevance(title, query) {
 
   for (const token of queryTokens) {
     const isBrand = BRAND_NAMES.has(token);
-    const weight = isBrand ? 2.0 : 1.0;
+    const weight = isBrand ? 2.5 : 1.0;
     totalWeight += weight;
 
     if (titleLower.includes(token)) {
@@ -57,10 +85,8 @@ function scoreRelevance(title, query) {
 
   const tokenScore = totalWeight > 0 ? weightedScore / totalWeight : 0;
 
-  // Exact phrase bonus: if the full query appears as a substring
   const phraseBonus = titleLower.includes(queryLower) ? 0.15 : 0;
 
-  // Consecutive token bonus: reward adjacent query tokens appearing in order
   let consecutiveBonus = 0;
   if (queryTokens.length >= 2) {
     let adjacentPairs = 0;
@@ -71,14 +97,22 @@ function scoreRelevance(title, query) {
     consecutiveBonus = (adjacentPairs / (queryTokens.length - 1)) * 0.1;
   }
 
-  return Math.min(1, tokenScore + phraseBonus + consecutiveBonus);
+  // Item type mismatch penalty
+  const queryType = detectItemType(query);
+  const titleType = detectItemType(title);
+  let typePenalty = 0;
+  if (queryType && titleType && queryType !== titleType) {
+    typePenalty = -0.4;
+  }
+
+  return Math.max(0, Math.min(1, tokenScore + phraseBonus + consecutiveBonus + typePenalty));
 }
 
 /**
  * Score and filter results, attaching _relevanceScore to each item.
- * Items below the threshold are dropped.
+ * Threshold raised to 0.4 for tighter matching.
  */
-function filterByRelevance(results, query, threshold = 0.2) {
+function filterByRelevance(results, query, threshold = 0.4) {
   if (!query || !results || results.length === 0) return results;
 
   const scored = results.map((item) => ({
