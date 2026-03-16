@@ -27,17 +27,16 @@ export default function CollegePage() {
         </div>
 
         <header className="relative mb-10 overflow-hidden rounded-2xl border border-black/10 bg-white">
-          <div className="grid grid-cols-3 gap-0.5 md:grid-cols-6">
+          <div className="grid grid-cols-4 gap-0.5 md:grid-cols-4">
             <div className="col-span-2 row-span-2">
               <img src="/finds/vintagecarharttjacket.jpg" alt="" className="h-full w-full object-cover" />
             </div>
-            <div><img src="/finds/purduevintagehoodie.jpg" alt="" className="h-32 w-full object-cover md:h-40" /></div>
-            <div><img src="/finds/denim1.jpg" alt="" className="h-32 w-full object-cover md:h-40" /></div>
-            <div><img src="/finds/michiganvintagehoodie.jpg" alt="" className="h-32 w-full object-cover md:h-40" /></div>
-            <div><img src="/finds/streetwear.jpg" alt="" className="h-32 w-full object-cover md:h-40" /></div>
-            <div><img src="/finds/tee.jpg" alt="" className="h-32 w-full object-cover md:h-40" /></div>
+            <div><img src="/finds/purduevintagecrewneck.jpg" alt="" className="h-36 w-full object-cover md:h-44" /></div>
+            <div><img src="/finds/michiganvintagecrewneck.jpg" alt="" className="h-36 w-full object-cover md:h-44" /></div>
+            <div><img src="/finds/indianavintagecrewneck.jpg" alt="" className="h-36 w-full object-cover md:h-44" /></div>
+            <div><img src="/finds/michstatecrewneck.jpg" alt="" className="h-36 w-full object-cover md:h-44" /></div>
           </div>
-          <div className="absolute inset-0 bg-black/40" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10" />
           <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-10">
             <p className="text-[11px] uppercase tracking-[0.3em] text-white/90">campus mode</p>
             <h1 className="font-naya-serif mt-2 text-3xl font-light text-white md:text-4xl">
@@ -53,7 +52,7 @@ export default function CollegePage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {ALL_CAMPUSES.map((c) => {
             const imgs = CAMPUS_IMAGES[c.slug];
-            const imageSrc = imgs ? `/finds/${imgs.hoodie}` : '/finds/purduevintagehoodie.jpg';
+            const imageSrc = imgs ? `/finds/${imgs.crewneck}` : '/finds/purduevintagecrewneck.jpg';
             return (
               <Link
                 key={c.slug}
