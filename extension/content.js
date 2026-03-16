@@ -104,13 +104,27 @@ function buildQuery(title) {
 
 // ── Rendering ──
 
+function brandedHeader(showMinimize) {
+  return `
+    <div class="naya-header">
+      <div class="naya-header-left">
+        <div class="naya-logo-mark">n</div>
+        <div>
+          <div class="naya-logo-text">naya</div>
+          <div class="naya-logo-sub">price intelligence</div>
+        </div>
+      </div>
+      <div class="naya-header-actions">
+        ${showMinimize ? '<button class="naya-minimize-btn" data-action="minimize" title="Minimize">&#x2015;</button>' : ''}
+        <button class="naya-close-btn" data-action="close">&times;</button>
+      </div>
+    </div>`;
+}
+
 function renderLoading(container) {
   container.innerHTML = `
     <div class="naya-card">
-      <div class="naya-header">
-        <span class="naya-logo">naya</span>
-        <button class="naya-close-btn" data-action="close">&times;</button>
-      </div>
+      ${brandedHeader(false)}
       <div class="naya-loading">
         <div class="naya-spinner"></div>
         <span>checking prices across platforms...</span>
@@ -170,13 +184,7 @@ function renderFullOverlay(container, data, info, query) {
 
   container.innerHTML = `
     <div class="naya-card">
-      <div class="naya-header">
-        <span class="naya-logo">naya</span>
-        <div class="naya-header-actions">
-          <button class="naya-minimize-btn" data-action="minimize" title="Minimize">&#x2015;</button>
-          <button class="naya-close-btn" data-action="close">&times;</button>
-        </div>
-      </div>
+      ${brandedHeader(true)}
       <div class="naya-body" id="naya-body">
         ${dealHtml}
 
@@ -208,6 +216,7 @@ function renderFullOverlay(container, data, info, query) {
           </button>
         </div>
       </div>
+      <div class="naya-footer"><div class="naya-footer-text">powered by naya — resale search engine</div></div>
     </div>
   `;
 
@@ -217,13 +226,7 @@ function renderFullOverlay(container, data, info, query) {
 function renderMinimalOverlay(container, info, query) {
   container.innerHTML = `
     <div class="naya-card">
-      <div class="naya-header">
-        <span class="naya-logo">naya</span>
-        <div class="naya-header-actions">
-          <button class="naya-minimize-btn" data-action="minimize" title="Minimize">&#x2015;</button>
-          <button class="naya-close-btn" data-action="close">&times;</button>
-        </div>
-      </div>
+      ${brandedHeader(true)}
       <div class="naya-body" id="naya-body">
         <div class="naya-empty-msg">No market data yet for this item.</div>
         <div class="naya-actions">
@@ -237,6 +240,7 @@ function renderMinimalOverlay(container, info, query) {
           </button>
         </div>
       </div>
+      <div class="naya-footer"><div class="naya-footer-text">powered by naya — resale search engine</div></div>
     </div>
   `;
 
@@ -245,7 +249,7 @@ function renderMinimalOverlay(container, info, query) {
 
 function renderMinimized(container, info, query) {
   container.innerHTML = `
-    <button class="naya-fab" data-action="expand" title="Open Naya">
+    <button class="naya-fab" data-action="expand" title="Open Naya Price Check">
       <span class="naya-fab-logo">n</span>
     </button>
   `;
