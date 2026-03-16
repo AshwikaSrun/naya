@@ -144,9 +144,9 @@ export default function NewFindsSection({ campus, onSearch }: Props) {
           ))}
         </div>
 
-        {/* Pinterest-style masonry feed */}
-        <div className="mt-10 columns-2 gap-4 sm:columns-3 lg:columns-4 [&>a]:mb-4 [&>a]:break-inside-avoid">
-          {items.slice(0, 12).map((item) => {
+        {/* Feed */}
+        <div className="mt-10 space-y-3">
+          {items.slice(0, 8).map((item) => {
             const displayImage = item.source === 'depop'
               ? item.image.replace(/\/P\d+(\.\w+)$/i, '/P1$1')
               : item.image;
@@ -161,35 +161,33 @@ export default function NewFindsSection({ campus, onSearch }: Props) {
                   url: item.url,
                   source: item.source,
                 }).toString()}`}
-                className="group block overflow-hidden rounded-2xl border border-black/[0.06] bg-white transition-all hover:border-black/15 hover:shadow-md"
+                className="group flex items-center gap-4 rounded-xl border border-black/[0.04] px-4 py-3 transition-all hover:border-black/10 hover:shadow-sm md:gap-5"
               >
-                <div className="relative w-full overflow-hidden bg-neutral-100">
+                <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-neutral-100 md:h-20 md:w-20">
                   <img
                     src={displayImage}
                     alt={item.title}
-                    className="w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     loading="lazy"
                     onError={(e) => { if (displayImage !== item.image) e.currentTarget.src = item.image; }}
                   />
-                  {item.discountPercent && item.discountPercent >= 30 && (
-                    <span className="absolute left-2 top-2 rounded-md bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
-                      {item.discountPercent}% off
-                    </span>
-                  )}
-                  <span className="absolute bottom-2 left-2 rounded-md bg-white/90 px-2 py-0.5 text-[10px] font-medium text-black shadow-sm">
-                    {item.source}
-                  </span>
                 </div>
-                <div className="p-3">
-                  <p className="font-naya-serif line-clamp-2 text-[13px] font-light leading-snug text-text-primary">
-                    {item.title}
-                  </p>
-                  <div className="mt-2 flex items-center gap-2">
-                    <span className="text-sm font-bold text-black">${item.price.toFixed(2)}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-naya-serif truncate text-sm font-light text-text-primary md:text-base">{item.title}</p>
+                  <div className="mt-1 flex items-center gap-3">
+                    <span className="text-sm font-semibold text-text-secondary">${item.price.toFixed(2)}</span>
                     {item.originalPrice && item.originalPrice > item.price && (
-                      <span className="text-[11px] text-black/40 line-through">${item.originalPrice.toFixed(0)}</span>
+                      <span className="text-xs text-text-muted line-through">${item.originalPrice.toFixed(2)}</span>
+                    )}
+                    {item.discountPercent && item.discountPercent >= 30 && (
+                      <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-medium text-red-600">
+                        {item.discountPercent}% off
+                      </span>
                     )}
                   </div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="text-[10px] uppercase tracking-[0.15em] text-text-muted">{item.source}</p>
                   <p className="mt-1 text-[10px] text-text-muted">{timeAgo(item.discoveredAt)}</p>
                 </div>
               </Link>
