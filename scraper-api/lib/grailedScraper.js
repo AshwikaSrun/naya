@@ -1,151 +1,107 @@
-const { playwrightManager } = require('./playwrightManager');
+const axios = require('axios');
+
+const ALGOLIA_APP_ID = 'MNRWEFSS2Q';
+const ALGOLIA_INDEX = 'Listing_by_heat_production';
+const FALLBACK_KEY = 'c89dbaddf15fe70e1941a109bf7c2a3d';
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
+
+let cachedAlgoliaKey = null;
+let keyFetchedAt = 0;
+const KEY_TTL = 60 * 60 * 1000;
+
+async function fetchAlgoliaKey() {
+  try {
+    const r = await axios.get('https://www.grailed.com/shop?query=test', {
+      headers: { 'User-Agent': UA },
+      timeout: 10000,
+    });
+    const hexKeys = new Set();
+    const matches = r.data.matchAll(/['"]([a-f0-9]{20,})['"]/g);
+    for (const m of matches) hexKeys.add(m[1]);
+
+    for (const key of hexKeys) {
+      try {
+        const res = await axios.post(
+          `https://${ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/${ALGOLIA_INDEX}/query`,
+          { params: 'query=test&hitsPerPage=1' },
+          {
+            headers: {
+              'x-algolia-application-id': ALGOLIA_APP_ID,
+              'x-algolia-api-key': key,
+            },
+            timeout: 5000,
+          }
+        );
+        if (res.data.hits) return key;
+      } catch {}
+    }
+  } catch {}
+  return FALLBACK_KEY;
+}
+
+async function getAlgoliaKey() {
+  if (cachedAlgoliaKey && Date.now() - keyFetchedAt < KEY_TTL) return cachedAlgoliaKey;
+  const key = await fetchAlgoliaKey();
+  cachedAlgoliaKey = key;
+  keyFetchedAt = Date.now();
+  return key;
+}
 
 async function scrapeGrailed(query, limit = 10) {
-  let browser = null;
   try {
     if (!query) return [];
 
-    const url = `https://www.grailed.com/shop?query=${encodeURIComponent(query.trim())}`;
+    const apiKey = await getAlgoliaKey();
 
-    browser = await playwrightManager.createBrowser();
-
-    const context = await browser.newContext({
-      userAgent:
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-      viewport: { width: 1920, height: 1080 },
-    });
-
-    const page = await context.newPage();
-
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
-
-    try {
-      await page.waitForSelector('a[href*="/listings/"]', { timeout: 8000 });
-    } catch {
-      // Page may have loaded differently; continue extraction anyway
-    }
-
-    if (limit > 10) {
-      const scrollAttempts = Math.ceil((limit - 10) / 20);
-      for (let i = 0; i < scrollAttempts; i++) {
-        await page.evaluate(() => window.scrollBy(0, window.innerHeight * 2));
-        await page.waitForTimeout(800);
-        const currentCount = await page.evaluate(() =>
-          document.querySelectorAll('a[href*="/listings/"]').length
-        );
-        if (currentCount >= limit) break;
+    const r = await axios.post(
+      `https://${ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/${ALGOLIA_INDEX}/query`,
+      {
+        params: `query=${encodeURIComponent(query)}&hitsPerPage=${Math.min(limit, 40)}`,
+      },
+      {
+        headers: {
+          'x-algolia-application-id': ALGOLIA_APP_ID,
+          'x-algolia-api-key': apiKey,
+          'Content-Type': 'application/json',
+        },
+        timeout: 10000,
       }
-    }
+    );
 
-    await page.waitForTimeout(500);
+    const hits = r.data.hits || [];
 
-    const results = await page.evaluate((maxLimit) => {
-      const items = [];
-      const seen = new Set();
-      const links = document.querySelectorAll('a[href*="/listings/"]');
+    return hits.slice(0, limit).map((hit) => {
+      let image = '';
+      if (hit.cover_photo) {
+        image = hit.cover_photo.url || hit.cover_photo.image_url || '';
+      }
+      if (!image.startsWith('http') && image) image = 'https:' + image;
 
-      for (const link of links) {
-        if (items.length >= maxLimit) break;
+      const designers = hit.designer_names || '';
+      const title = designers
+        ? `${designers} ${hit.title || ''}`
+        : (hit.title || 'Grailed Item');
 
-        const href = link.href;
-        if (!href || seen.has(href)) continue;
-        seen.add(href);
+      const item = {
+        title: title.trim(),
+        price: hit.price || 0,
+        image,
+        url: `https://www.grailed.com/listings/${hit.id}`,
+        source: 'grailed',
+      };
 
-        const card = link.closest('article') || link.closest('li') || link.closest('div');
-        if (!card) continue;
-
-        let title = '';
-        const titleEl = card.querySelector('h3') || card.querySelector('h2');
-        if (titleEl) {
-          title = titleEl.textContent.trim();
+      if (hit.price_drops?.length > 0) {
+        const original = hit.price_drops[hit.price_drops.length - 1]?.from;
+        if (original && original > hit.price) {
+          item.originalPrice = original;
+          item.discountPercent = Math.round(((original - hit.price) / original) * 100);
         }
-        if (!title) {
-          title = link.getAttribute('aria-label') || '';
-        }
-        if (!title) {
-          let slug = href.split('/listings/')[1] || '';
-          slug = slug.split('?')[0];
-          slug = slug.replace(/^\d+-/, '');
-          if (slug) {
-            title = slug
-              .replace(/-/g, ' ')
-              .replace(/\b\w/g, (l) => l.toUpperCase())
-              .trim();
-          }
-        }
-        title = title.split('?')[0].trim();
-
-        // Extract current and original prices
-        let price = null;
-        let originalPrice = null;
-
-        const priceEls = card.querySelectorAll('[class*="Price"], [class*="price"]');
-        for (const el of priceEls) {
-          const style = window.getComputedStyle(el);
-          const isStruck = style.textDecorationLine === 'line-through' ||
-            el.tagName === 'S' || el.tagName === 'DEL';
-          const valMatch = el.textContent.replace(/,/g, '').match(/[\d.]+/);
-          if (!valMatch) continue;
-          const val = parseFloat(valMatch[0]);
-          if (isStruck) {
-            originalPrice = val;
-          } else {
-            price = val;
-          }
-        }
-
-        if (price === null) {
-          const fallback = card.textContent.match(/\$\s?[\d,.]+/);
-          if (fallback) {
-            price = parseFloat(fallback[0].replace(/[^\d.]/g, ''));
-          }
-        }
-        if (price === null) continue;
-
-        const imgEl = card.querySelector('img');
-        let image = '';
-        if (imgEl) {
-          const srcset = imgEl.getAttribute('srcset') || imgEl.getAttribute('data-srcset');
-          if (srcset) {
-            const candidates = srcset
-              .split(',')
-              .map((e) => e.trim())
-              .map((e) => {
-                const [u, s] = e.split(/\s+/);
-                const wm = s ? s.match(/(\d+)w/i) : null;
-                return { url: u, width: wm ? parseInt(wm[1], 10) : 0 };
-              })
-              .filter((c) => c.url);
-            candidates.sort((a, b) => b.width - a.width);
-            image = (candidates[0] && candidates[0].url) || '';
-          } else {
-            image = imgEl.src || imgEl.getAttribute('data-src') || '';
-          }
-        }
-        if (!image) continue;
-
-        const item = {
-          title: title.length > 140 ? title.slice(0, 140) + '...' : title || 'Grailed Item',
-          price,
-          image,
-          url: href,
-          source: 'grailed',
-        };
-        if (originalPrice && originalPrice > price) {
-          item.originalPrice = originalPrice;
-          item.discountPercent = Math.round(((originalPrice - price) / originalPrice) * 100);
-        }
-        items.push(item);
       }
 
-      return items;
-    }, limit);
-
-    await playwrightManager.closeBrowser(browser);
-    return results;
+      return item;
+    }).filter((item) => item.price > 0 && item.image);
   } catch (err) {
     console.error('Grailed scrape error:', err.message);
-    await playwrightManager.closeBrowser(browser);
     return [];
   }
 }
