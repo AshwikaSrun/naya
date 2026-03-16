@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head><title>Generate Naya Extension Icons</title></head>
+<body>
+<p>Open this file in a browser, right-click each canvas, and "Save image as" to the icons folder.</p>
+<div>
+  <p>16x16:</p><canvas id="c16" width="16" height="16"></canvas>
+  <p>48x48:</p><canvas id="c48" width="48" height="48"></canvas>
+  <p>128x128:</p><canvas id="c128" width="128" height="128"></canvas>
+</div>
+<script>
+function drawIcon(canvas) {
+  const ctx = canvas.getContext('2d');
+  const s = canvas.width;
+  // Background
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.roundRect(0, 0, s, s, s * 0.2);
+  ctx.fill();
+  // Letter "n"
+  ctx.fillStyle = '#fff';
+  ctx.font = `italic ${s * 0.6}px -apple-system, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('n', s / 2, s / 2 + s * 0.03);
+}
+drawIcon(document.getElementById('c16'));
+drawIcon(document.getElementById('c48'));
+drawIcon(document.getElementById('c128'));
+</script>
+</body>
+</html>

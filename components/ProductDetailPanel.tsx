@@ -404,9 +404,7 @@ export default function ProductDetailPanel({ product, onClose }: ProductDetailPa
           {/* ── Purchase CTA ── */}
           <div className="mt-4 flex items-center gap-3">
             <a
-              href={product.url}
-              target="_blank"
-              rel="noopener noreferrer"
+              href={`/go?url=${encodeURIComponent(product.url)}&title=${encodeURIComponent(product.title)}&price=${product.price.toFixed(2)}&source=${encodeURIComponent(product.source)}&image=${encodeURIComponent(product.image)}`}
               className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-black px-6 py-3.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
             >
               View on {product.source}
