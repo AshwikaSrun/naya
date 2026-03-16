@@ -3,7 +3,7 @@
   "name": "Naya — Resale Price Intelligence",
   "version": "1.0.0",
   "description": "Instant deal scores, cross-platform price checks, and wishlist saves while you browse eBay, Grailed, Depop, and Poshmark.",
-  "permissions": ["activeTab", "storage"],
+  "permissions": ["activeTab", "storage", "scripting"],
   "host_permissions": [
     "https://www.ebay.com/*",
     "https://www.grailed.com/*",

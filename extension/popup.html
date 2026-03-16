@@ -5,91 +5,147 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      width: 320px;
-      max-height: 500px;
+      width: 340px;
+      max-height: 560px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
       background: #faf9f7;
       color: #000;
       overflow-y: auto;
     }
+
+    /* Header */
     .header {
-      padding: 16px 18px 10px;
-      text-align: center;
-      border-bottom: 1px solid rgba(0,0,0,0.05);
-      background: white;
-      position: sticky;
-      top: 0;
-      z-index: 10;
+      padding: 16px 18px 14px;
+      background: #000;
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
-    .logo { font-size: 20px; font-weight: 300; font-style: italic; letter-spacing: -0.02em; }
-    .tagline { font-size: 9px; text-transform: uppercase; letter-spacing: 0.2em; color: rgba(0,0,0,0.25); margin-top: 3px; }
+    .logo-mark {
+      width: 32px; height: 32px; border-radius: 9px;
+      background: #fff; display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 300; font-style: italic; color: #000;
+      letter-spacing: -0.03em; flex-shrink: 0;
+    }
+    .logo-text { font-size: 18px; font-weight: 300; font-style: italic; color: #fff; letter-spacing: -0.02em; }
+    .logo-sub { font-size: 8px; text-transform: uppercase; letter-spacing: 0.18em; color: rgba(255,255,255,0.3); margin-top: 1px; }
+
+    /* Tabs */
     .tabs {
       display: flex;
-      border-bottom: 1px solid rgba(0,0,0,0.05);
+      border-bottom: 1px solid rgba(0,0,0,0.06);
       background: white;
-      position: sticky;
-      top: 52px;
-      z-index: 10;
     }
     .tab {
-      flex: 1;
-      padding: 10px;
-      text-align: center;
-      font-size: 10px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: rgba(0,0,0,0.3);
-      background: none;
-      border: none;
+      flex: 1; padding: 10px; text-align: center;
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.12em; color: rgba(0,0,0,0.25);
+      background: none; border: none;
       border-bottom: 2px solid transparent;
-      cursor: pointer;
-      transition: all 0.15s;
+      cursor: pointer; transition: all 0.15s;
     }
     .tab.active { color: #000; border-bottom-color: #000; }
-    .tab:hover { color: rgba(0,0,0,0.6); }
-    .body { padding: 12px; }
-    .status {
-      display: flex; align-items: center; gap: 8px;
-      padding: 10px 12px; background: white;
-      border: 1px solid rgba(0,0,0,0.05);
-      border-radius: 10px; margin-bottom: 10px;
+    .tab:hover { color: rgba(0,0,0,0.5); }
+
+    /* Body */
+    .body { padding: 14px; }
+
+    /* Price check section */
+    .price-check { margin-bottom: 12px; }
+    .price-check-title {
+      font-size: 9px; text-transform: uppercase; letter-spacing: 0.18em;
+      color: rgba(0,0,0,0.3); margin-bottom: 8px;
     }
-    .dot { width: 7px; height: 7px; border-radius: 50%; background: #10b981; flex-shrink: 0; }
-    .status-text { font-size: 11px; color: rgba(0,0,0,0.5); }
-    .stat-row {
-      display: flex; gap: 8px; margin-bottom: 10px;
+    .price-check-item {
+      padding: 12px; background: white;
+      border: 1px solid rgba(0,0,0,0.06); border-radius: 12px;
     }
+    .pci-title {
+      font-size: 12px; color: #000; line-height: 1.4;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .pci-source {
+      font-size: 9px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: rgba(0,0,0,0.3); margin-top: 4px;
+    }
+    .pci-prices {
+      display: flex; gap: 10px; margin-top: 10px;
+    }
+    .pci-col {
+      flex: 1; padding: 8px; background: #faf9f7;
+      border-radius: 8px; text-align: center;
+    }
+    .pci-label {
+      font-size: 8px; text-transform: uppercase; letter-spacing: 0.15em;
+      color: rgba(0,0,0,0.25);
+    }
+    .pci-value {
+      font-size: 22px; font-weight: 300; color: #000; margin-top: 2px;
+      letter-spacing: -0.02em;
+    }
+    .pci-deal {
+      margin-top: 10px; padding: 8px 10px; border-radius: 8px;
+      font-size: 12px; font-weight: 700; text-align: center;
+    }
+    .pci-deal-good { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
+    .pci-deal-bad { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+    .pci-deal-fair { background: #f9fafb; border: 1px solid #e5e7eb; color: #6b7280; }
+    .pci-platforms {
+      display: flex; gap: 6px; margin-top: 10px;
+    }
+    .pci-plat {
+      flex: 1; padding: 6px 4px; background: #faf9f7;
+      border-radius: 6px; text-align: center;
+    }
+    .pci-plat-name { font-size: 8px; font-weight: 700; text-transform: capitalize; color: rgba(0,0,0,0.35); }
+    .pci-plat-price { font-size: 13px; font-weight: 300; color: #000; margin-top: 1px; }
+
+    .pci-loading {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      padding: 20px; font-size: 12px; color: rgba(0,0,0,0.35);
+    }
+    .pci-spinner {
+      width: 14px; height: 14px;
+      border: 2px solid rgba(0,0,0,0.08); border-top-color: rgba(0,0,0,0.4);
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .pci-none {
+      text-align: center; padding: 16px; font-size: 12px;
+      color: rgba(0,0,0,0.25); line-height: 1.6;
+    }
+
+    /* Stats */
+    .stat-row { display: flex; gap: 8px; margin-bottom: 12px; }
     .stat-box {
-      flex: 1; padding: 10px;
-      background: white; border: 1px solid rgba(0,0,0,0.05);
-      border-radius: 10px; text-align: center;
+      flex: 1; padding: 10px; background: white;
+      border: 1px solid rgba(0,0,0,0.05); border-radius: 10px; text-align: center;
     }
-    .stat-num { font-size: 20px; font-weight: 300; color: #000; }
-    .stat-label { font-size: 8px; text-transform: uppercase; letter-spacing: 0.15em; color: rgba(0,0,0,0.25); margin-top: 2px; }
+    .stat-num { font-size: 22px; font-weight: 300; color: #000; }
+    .stat-label { font-size: 8px; text-transform: uppercase; letter-spacing: 0.15em; color: rgba(0,0,0,0.2); margin-top: 2px; }
+
+    /* CTA */
     .cta {
-      display: block; width: 100%;
-      padding: 10px; background: #000; color: #fff;
-      border: none; border-radius: 9px;
-      font-size: 11px; font-weight: 500; letter-spacing: 0.08em;
+      display: block; width: 100%; padding: 11px;
+      background: #000; color: #fff; border: none; border-radius: 10px;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
       text-transform: uppercase; text-align: center;
       text-decoration: none; cursor: pointer; transition: opacity 0.15s;
     }
     .cta:hover { opacity: 0.85; }
+
+    /* Wishlist */
     .wishlist-list { list-style: none; }
     .wishlist-item {
       display: flex; align-items: center; gap: 10px;
       padding: 10px; background: white;
-      border: 1px solid rgba(0,0,0,0.05);
-      border-radius: 10px; margin-bottom: 6px;
-      cursor: pointer; transition: all 0.15s;
+      border: 1px solid rgba(0,0,0,0.05); border-radius: 10px;
+      margin-bottom: 6px; cursor: pointer; transition: all 0.15s;
       text-decoration: none; color: #000;
     }
     .wishlist-item:hover { border-color: rgba(0,0,0,0.12); }
-    .wl-img {
-      width: 44px; height: 44px; border-radius: 8px;
-      object-fit: cover; background: #eee; flex-shrink: 0;
-    }
+    .wl-img { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; background: #eee; flex-shrink: 0; }
     .wl-info { flex: 1; min-width: 0; }
     .wl-title { font-size: 12px; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .wl-meta { font-size: 10px; color: rgba(0,0,0,0.35); margin-top: 2px; }
@@ -100,33 +156,34 @@
       transition: color 0.15s; flex-shrink: 0;
     }
     .wl-remove:hover { color: rgba(0,0,0,0.5); }
-    .empty-state {
-      text-align: center; padding: 24px 12px;
-      color: rgba(0,0,0,0.25); font-size: 12px;
-    }
-    .footer {
-      padding: 10px 18px; text-align: center;
-      border-top: 1px solid rgba(0,0,0,0.05);
-    }
-    .footer-text { font-size: 8px; text-transform: uppercase; letter-spacing: 0.2em; color: rgba(0,0,0,0.12); }
+    .empty-state { text-align: center; padding: 24px 12px; color: rgba(0,0,0,0.2); font-size: 12px; line-height: 1.6; }
     .hidden { display: none; }
+
+    /* Footer */
+    .footer { padding: 8px 18px; text-align: center; border-top: 1px solid rgba(0,0,0,0.04); }
+    .footer-text { font-size: 7px; text-transform: uppercase; letter-spacing: 0.22em; color: rgba(0,0,0,0.12); }
   </style>
 </head>
 <body>
   <div class="header">
-    <div class="logo">naya</div>
-    <div class="tagline">resale price intelligence</div>
+    <div class="logo-mark">n</div>
+    <div>
+      <div class="logo-text">naya</div>
+      <div class="logo-sub">price intelligence</div>
+    </div>
   </div>
 
   <div class="tabs">
-    <button class="tab active" data-tab="home">Home</button>
+    <button class="tab active" data-tab="home">Price Check</button>
     <button class="tab" data-tab="wishlist">Wishlist</button>
   </div>
 
   <div id="tab-home" class="body">
-    <div class="status">
-      <div class="dot"></div>
-      <div class="status-text">Active on marketplace pages</div>
+    <div class="price-check" id="price-check">
+      <div class="pci-loading">
+        <div class="pci-spinner"></div>
+        <span>checking current page...</span>
+      </div>
     </div>
     <div class="stat-row">
       <div class="stat-box">
