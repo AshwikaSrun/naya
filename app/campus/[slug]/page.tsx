@@ -12,6 +12,8 @@ import { useNayaSearch, SEARCH_LIMIT } from '@/lib/useNayaSearch';
 import { getCampus, ALL_CAMPUSES, type CampusConfig } from '@/lib/campuses';
 import NewFindsSection from '@/components/NewFindsSection';
 import CampusProductGrid from '@/components/CampusProductGrid';
+import SearchPromptCard from '@/components/SearchPromptCard';
+import { getFallbackForCampus } from '@/lib/fallbackProducts';
 
 const NAV_LINKS = [
   { href: '/editorial', label: 'editorial' },
@@ -60,7 +62,10 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/api/new-finds?preset=default&campus=${encodeURIComponent(campus.slug)}`)
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000);
+
+    fetch(`/api/new-finds?preset=default&campus=${encodeURIComponent(campus.slug)}`, { signal: controller.signal })
       .then((r) => r.json())
       .then((data) => {
         if (cancelled) return;
@@ -71,8 +76,9 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
         }));
         setPreviewProducts(mapped);
       })
-      .catch(() => { if (!cancelled) setPreviewProducts([]); });
-    return () => { cancelled = true; };
+      .catch(() => { if (!cancelled) setPreviewProducts([]); })
+      .finally(() => clearTimeout(timeout));
+    return () => { cancelled = true; controller.abort(); clearTimeout(timeout); };
   }, [campus.slug]);
 
   const brandCards = [
@@ -256,14 +262,14 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
         {/* Headline + search */}
         <div className="relative z-10 w-full max-w-3xl px-6 text-center">
           <h1 className="font-naya-serif text-4xl font-light lowercase text-white md:text-6xl lg:text-7xl">
-            find the best vintage clothes on the internet.
+            what are you looking for?
           </h1>
           <p className="font-naya-sans mt-4 flex items-center justify-center gap-2 text-xs lowercase tracking-[0.12em] text-white/60 md:text-sm">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ background: campus.color }} />
               <span className="relative inline-flex h-2 w-2 rounded-full" style={{ background: campus.color }} />
             </span>
-            trending at {campus.name.toLowerCase()} right now.
+            the entire resale market in one search
           </p>
           <div className="mt-8">
             <SearchBar onSearch={s.handleSearch} disabled={s.loading} value={s.searchInput} onValueChange={s.setSearchInput} showTabs />
@@ -293,22 +299,28 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
               ))}
             </div>
 
-            {(previewProducts === null || previewProducts.length > 0) && (
-              <>
-                <p className="font-naya-sans mt-12 text-[10px] lowercase tracking-[0.2em] text-text-muted">picked for you</p>
-                <div className="mt-4">
-                  {previewProducts === null ? (
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-                      {Array.from({ length: 6 }).map((_, i) => (
-                        <div key={i} className="aspect-[3/4] animate-pulse rounded-2xl bg-neutral-100" />
-                      ))}
-                    </div>
-                  ) : (
-                    <CampusProductGrid products={previewProducts.slice(0, 6)} columns={6} />
-                  )}
-                </div>
-              </>
-            )}
+            {(() => {
+              const fallback = getFallbackForCampus(campus.name);
+              const pickedForYou = previewProducts && previewProducts.length > 0
+                ? previewProducts.slice(0, 6)
+                : fallback.slice(0, 6);
+              return (
+                <>
+                  <p className="font-naya-sans mt-12 text-[10px] lowercase tracking-[0.2em] text-text-muted">picked for you</p>
+                  <div className="mt-4">
+                    {previewProducts && previewProducts.length > 0 ? (
+                      <CampusProductGrid products={pickedForYou} columns={6} />
+                    ) : (
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                        {pickedForYou.map((item, i) => (
+                          <SearchPromptCard key={i} {...item} onSearch={s.handleSearch} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </section>
       )}
@@ -333,22 +345,27 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
             ))}
           </div>
 
-          {(previewProducts === null || previewProducts.length > 6) && (
-            <>
-              <p className="font-naya-sans mt-12 text-[10px] lowercase tracking-[0.2em] text-text-muted">vintage {campus.name.toLowerCase()} finds</p>
-              <div className="mt-4">
-                {previewProducts === null ? (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                      <div key={i} className="aspect-[3/4] animate-pulse rounded-2xl bg-neutral-100" />
-                    ))}
-                  </div>
-                ) : (
-                  <CampusProductGrid products={previewProducts.slice(6, 12)} columns={6} />
-                )}
-              </div>
-            </>
-          )}
+          {(() => {
+            const fallback = getFallbackForCampus(campus.name);
+            const hasReal = previewProducts && previewProducts.length > 6;
+            const vintageFinds = hasReal ? previewProducts!.slice(6, 12) : fallback.slice(6, 12);
+            return (
+              <>
+                <p className="font-naya-sans mt-12 text-[10px] lowercase tracking-[0.2em] text-text-muted">vintage {campus.name.toLowerCase()} finds</p>
+                <div className="mt-4">
+                  {hasReal ? (
+                    <CampusProductGrid products={vintageFinds} columns={6} />
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                      {vintageFinds.map((item, i) => (
+                        <SearchPromptCard key={i} {...item} onSearch={s.handleSearch} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            );
+          })()}
         </div>
       </section>
 
@@ -375,22 +392,27 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
             ))}
           </div>
 
-          {(previewProducts === null || previewProducts.length > 12) && (
-            <>
-              <p className="font-naya-sans mt-12 text-[10px] lowercase tracking-[0.2em] text-text-muted">popular picks</p>
-              <div className="mt-4">
-                {previewProducts === null ? (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                      <div key={i} className="aspect-[3/4] animate-pulse rounded-2xl bg-neutral-100" />
-                    ))}
-                  </div>
-                ) : (
-                  <CampusProductGrid products={previewProducts.slice(12, 18)} columns={6} />
-                )}
-              </div>
-            </>
-          )}
+          {(() => {
+            const fallback = getFallbackForCampus(campus.name);
+            const hasReal = previewProducts && previewProducts.length > 12;
+            const popularPicks = hasReal ? previewProducts!.slice(12, 18) : fallback.slice(12, 18);
+            return (
+              <>
+                <p className="font-naya-sans mt-12 text-[10px] lowercase tracking-[0.2em] text-text-muted">popular picks</p>
+                <div className="mt-4">
+                  {hasReal ? (
+                    <CampusProductGrid products={popularPicks} columns={6} />
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                      {popularPicks.map((item, i) => (
+                        <SearchPromptCard key={i} {...item} onSearch={s.handleSearch} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            );
+          })()}
         </div>
       </section>
 

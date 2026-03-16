@@ -316,10 +316,10 @@ export default function Home() {
 
         <div className="relative z-10 w-full max-w-3xl px-6 text-center">
           <h1 className="font-naya-serif text-4xl font-light lowercase text-white md:text-6xl lg:text-7xl">
-            find the best vintage clothes on the internet.
+            what are you looking for?
           </h1>
           <p className="font-naya-sans mt-4 text-xs lowercase tracking-[0.12em] text-white/60 md:text-sm">
-            search thousands of listings instantly. vintage, streetwear, and rare finds.
+            the entire resale market in one search
           </p>
           <div className="mt-8">
             <SearchBar onSearch={s.handleSearch} disabled={s.loading} value={s.searchInput} onValueChange={s.setSearchInput} showTabs />
