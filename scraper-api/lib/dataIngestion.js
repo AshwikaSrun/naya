@@ -8,6 +8,9 @@ const BRAND_NAMES = new Set([
   'converse', 'vans', 'reebok', 'asics', 'puma', 'fila', 'champion',
   'gap', 'zara', 'uniqlo', 'aeropostale', 'hollister', 'abercrombie',
   'dickies', 'wrangler', 'starter', 'russell', 'hanes', 'fruit of the loom',
+  'fear of god', 'essentials', 'fog', 'off-white', 'stone island', 'acne studios',
+  'comme des garcons', 'cdg', 'bape', 'palace', 'kith', 'rhude', 'amiri',
+  'gallery dept', 'represent', 'eric emanuel', 'corteiz', 'chrome hearts',
 ]);
 
 const ITEM_TYPES = {
