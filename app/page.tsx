@@ -339,7 +339,7 @@ export default function Home() {
         <section className="bg-night-bg px-6 py-16 md:px-10">
           <div className="mx-auto max-w-5xl">
             <p className="font-naya-sans text-[10px] lowercase tracking-[0.2em] text-text-muted">trending now</p>
-            <h2 className="font-naya-serif mt-3 text-2xl font-light text-text-primary md:text-4xl">trending at purdue.</h2>
+            <h2 className="font-naya-serif mt-3 text-2xl font-light text-text-primary md:text-4xl">trending right now.</h2>
             <div className="mt-8 space-y-1">
               {s.trendingSearches.map((tq, i) => (
                 <button key={tq.query} type="button" onClick={() => s.handleSearch(tq.query)} className="group flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left transition-all hover:bg-black/[0.03]">
