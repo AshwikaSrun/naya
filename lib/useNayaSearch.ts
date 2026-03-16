@@ -31,7 +31,7 @@ type Platform = (typeof ACTIVE_PLATFORMS)[number];
 export const SEARCH_LIMIT = 50;
 const FAST_LIMIT = 25;
 const FULL_LIMIT = 50;
-const PLATFORM_TIMEOUT_MS = 15000;
+const PLATFORM_TIMEOUT_MS = 30000;
 const CLIENT_CACHE_TTL = 5 * 60 * 1000; // 5 min
 
 function getSearchCache(key: string): SearchResults | null {
@@ -50,6 +50,8 @@ function getSearchCache(key: string): SearchResults | null {
 
 function setSearchCache(key: string, data: SearchResults): void {
   if (typeof window === 'undefined') return;
+  const total = Object.values(data.results).reduce((s, arr) => s + arr.length, 0);
+  if (total === 0) return;
   try {
     window.sessionStorage.setItem(`naya-sc-${key}`, JSON.stringify({ data, ts: Date.now() }));
   } catch { /* quota exceeded — ignore */ }

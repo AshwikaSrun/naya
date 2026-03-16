@@ -253,51 +253,6 @@ app.get('/retail-lookup', async (req, res) => {
   }
 });
 
-// Pre-warm popular queries so first users get cache hits
-const PREWARM_QUERIES = [
-  'vintage carhartt jacket',
-  'vintage purdue hoodie',
-  'vintage nike crewneck',
-  'baggy levi 550',
-  'y2k zip hoodie',
-  'vintage michigan hoodie',
-  'vintage indiana hoodie',
-  'vintage band tee',
-  'vintage ralph lauren',
-  'vintage streetwear',
-];
-
-async function prewarmCache() {
-  console.log(`[prewarm] warming ${PREWARM_QUERIES.length} popular queries...`);
-  for (const q of PREWARM_QUERIES) {
-    try {
-      const cacheKey = `${q}|${allPlatforms.sort().join(',')}|25`;
-      if (getCached(searchCache, cacheKey, SEARCH_CACHE_TTL)) continue;
-
-      const results = {};
-      const entries = allPlatforms.map((name) => {
-        const wrappedScraper = withTimeout(scraperMap[name], name, SCRAPER_TIMEOUT_MS);
-        return wrappedScraper(q, 25).then((data) => { results[name] = data; });
-      });
-      await Promise.all(entries);
-
-      for (const p of allPlatforms) {
-        if (!results[p]) results[p] = [];
-        results[p] = filterByRelevance(results[p], q);
-      }
-      const cleaned = runPipeline(results, q);
-      const finalResults = runGlobalPipeline(cleaned, q);
-
-      const body = { query: q, limit: 25, platform: 'all', results: finalResults, meta: { prewarm: true } };
-      setCache(searchCache, cacheKey, body);
-      console.log(`[prewarm] cached "${q}"`);
-    } catch (err) {
-      console.error(`[prewarm] failed for "${q}": ${err.message}`);
-    }
-  }
-  console.log('[prewarm] done');
-}
-
 const port = process.env.PORT || 3005;
 app.listen(port, () => {
   console.log(`Scraper API listening on ${port}`);
@@ -306,9 +261,6 @@ app.listen(port, () => {
 
   const { playwrightManager } = require('./lib/playwrightManager');
   playwrightManager.init()
-    .then(() => {
-      setTimeout(() => prewarmCache(), 2000);
-    })
     .catch((err) => {
       console.error('[warmup] Playwright pool init failed:', err.message);
     });
