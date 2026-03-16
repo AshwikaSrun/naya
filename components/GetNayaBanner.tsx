@@ -31,7 +31,7 @@ export default function GetNayaBanner({ variant = 'full' }: GetNayaBannerProps) 
       <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-black/5 bg-white/95 px-4 py-3 backdrop-blur-md md:hidden">
         <div className="mx-auto flex max-w-md items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black">
-            <span className="text-[14px] font-light italic text-white">n</span>
+            <span className="text-[14px] font-light text-white">n</span>
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[12px] font-semibold text-black">get naya on your phone</p>
@@ -59,7 +59,7 @@ export default function GetNayaBanner({ variant = 'full' }: GetNayaBannerProps) 
     return (
       <div className="flex items-center gap-4 rounded-2xl border border-black/8 bg-white p-4">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-black">
-          <span className="text-[16px] font-light italic text-white">n</span>
+          <span className="text-[16px] font-light text-white">n</span>
         </div>
         <div className="flex-1 min-w-0">
           {platform === 'mobile' ? (
@@ -201,7 +201,7 @@ function IOSInstructions({ onClose }: { onClose: () => void }) {
       <div className="mx-4 mb-6 w-full max-w-sm overflow-hidden rounded-2xl bg-white p-8 shadow-2xl sm:mb-0">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-black">
-            <span className="text-[18px] font-light italic text-white">n</span>
+            <span className="text-[18px] font-light text-white">n</span>
           </div>
           <div>
             <p className="font-naya-serif text-xl font-light text-black">install naya</p>
