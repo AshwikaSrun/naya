@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ALL_CAMPUSES } from '@/lib/campuses';
 import { CAMPUS_IMAGES } from '@/lib/fallbackProducts';
+import GetNayaBanner from '@/components/GetNayaBanner';
 
 const otherSchools = [
   { name: 'Iowa', query: 'Iowa merch' },
@@ -88,6 +89,10 @@ export default function CollegePage() {
               </Link>
             );
           })}
+        </div>
+
+        <div className="mt-12">
+          <GetNayaBanner variant="inline" />
         </div>
 
         {otherSchools.length > 0 && (

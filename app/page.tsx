@@ -6,8 +6,8 @@ import SearchBar from '@/components/SearchBar';
 import BottomSearchBar from '@/components/BottomSearchBar';
 import ResultsGrid from '@/components/ResultsGrid';
 import CartPanel from '@/components/CartPanel';
-import { triggerInstall, isIOSDevice } from '@/components/InstallPrompt';
 import { useNayaSearch, SEARCH_LIMIT } from '@/lib/useNayaSearch';
+import GetNayaBanner from '@/components/GetNayaBanner';
 import NewFindsSection from '@/components/NewFindsSection';
 import CampusProductGrid from '@/components/CampusProductGrid';
 import { ALL_CAMPUSES } from '@/lib/campuses';
@@ -97,8 +97,6 @@ export default function Home() {
     const startIdx = (dayOfYear * 3) % allFinds.length;
     return Array.from({ length: 4 }, (_, i) => allFinds[(startIdx + i) % allFinds.length]);
   }, []);
-
-  const [showIOSInstall, setShowIOSInstall] = useState(false);
 
   const productFeatures = [
     {
@@ -526,20 +524,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Get the App ── */}
-      <section className="bg-[#111] px-6 py-24 md:px-10">
-        <div className="mx-auto grid max-w-5xl gap-12 md:grid-cols-[1.2fr_0.8fr] md:items-center">
-          <div>
-            <p className="font-naya-sans text-[10px] lowercase tracking-[0.2em] text-white/35">get the app</p>
-            <h2 className="font-naya-serif mt-4 text-3xl font-light text-white md:text-5xl">naya on your home screen.</h2>
-            <p className="mt-5 text-sm font-light leading-relaxed text-white/50">one tap and naya lives on your home screen. faster finds, no app store needed.</p>
-          </div>
-          <div className="flex flex-col gap-3">
-            <button type="button" onClick={() => { if (!triggerInstall() && isIOSDevice()) { setShowIOSInstall(true); } }} className="rounded-full bg-white px-6 py-3.5 text-[10px] font-medium lowercase tracking-[0.12em] text-black transition-opacity hover:opacity-85">install naya</button>
-            <Link href="/app" className="mt-3 text-center text-[10px] lowercase tracking-[0.15em] text-white/40 transition-colors hover:text-white">or try the AI concierge</Link>
-          </div>
-        </div>
-      </section>
+      {/* ── Get the App / Extension ── */}
+      <GetNayaBanner variant="full" />
 
       {/* ── Footer ── */}
       <footer className="bg-night-bg px-6 py-14 md:px-10">
@@ -596,39 +582,8 @@ export default function Home() {
         </div>
       )}
 
-      {/* ── iOS install instructions modal ── */}
-      {showIOSInstall && (
-        <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center">
-          <div className="mx-4 mb-6 w-full max-w-sm overflow-hidden rounded-2xl bg-white p-8 shadow-2xl sm:mb-0">
-            <div className="flex items-center gap-3">
-              <img src="/icon-192.png" alt="naya" className="h-12 w-12 rounded-xl" />
-              <div>
-                <p className="font-naya-serif text-xl font-light text-black">install naya</p>
-                <p className="text-xs text-text-muted">add to your home screen</p>
-              </div>
-            </div>
-            <div className="mt-6 space-y-4">
-              <div className="flex items-start gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black text-[10px] font-bold text-white">1</span>
-                <p className="text-sm text-text-secondary">
-                  tap the share button{' '}
-                  <svg className="inline h-4 w-4 align-text-bottom text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15m0-3l-3-3m0 0l-3 3m3-3V15" /></svg>{' '}
-                  in the browser toolbar
-                </p>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black text-[10px] font-bold text-white">2</span>
-                <p className="text-sm text-text-secondary">scroll down and tap <strong>&quot;Add to Home Screen&quot;</strong></p>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black text-[10px] font-bold text-white">3</span>
-                <p className="text-sm text-text-secondary">tap <strong>&quot;Add&quot;</strong> — that&apos;s it, naya is on your home screen</p>
-              </div>
-            </div>
-            <button type="button" onClick={() => setShowIOSInstall(false)} className="mt-6 w-full rounded-full bg-black py-3.5 text-[11px] font-medium lowercase tracking-[0.1em] text-white transition-opacity hover:opacity-90">got it</button>
-          </div>
-        </div>
-      )}
+      {/* ── Sticky mobile app banner ── */}
+      <GetNayaBanner variant="sticky" />
 
       {/* ── Cart panel ── */}
       <CartPanel open={s.cartOpen} onClose={() => s.setCartOpen(false)} />

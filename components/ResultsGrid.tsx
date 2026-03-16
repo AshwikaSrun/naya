@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import ProductCard from './ProductCard';
 import ProductDetailPanel from './ProductDetailPanel';
 import PriceIndexBadge from './PriceIndexBadge';
+import GetNayaBanner from './GetNayaBanner';
 
 interface Product {
   title: string;
@@ -213,6 +214,10 @@ export default function ResultsGrid({ results, filters, onSearch, relatedSearche
               />
             </div>
           ))}
+        </div>
+
+        <div className="mt-8">
+          <GetNayaBanner variant="inline" />
         </div>
 
         {onSearch && relatedSearches.length > 0 && (

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import GetNayaBanner from '@/components/GetNayaBanner';
 
 interface TrendingItem {
   query: string;
@@ -325,6 +326,11 @@ export default function InsightsPage() {
               ))
             )}
           </div>
+        </section>
+
+        {/* Get Naya */}
+        <section className="mb-16">
+          <GetNayaBanner variant="inline" />
         </section>
 
         {/* Footer */}
