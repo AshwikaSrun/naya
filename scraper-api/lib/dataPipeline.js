@@ -77,6 +77,15 @@ function cleanTitle(title, source) {
 
 // ── Step 2: Validate items ───────────────────────────────────────────
 
+const REJECT_TITLE_PATTERNS = [
+  /\blot\s+of\s+\d/i,
+  /\bbundle\s+of\s+\d/i,
+  /\bwholesale\b/i,
+  /\bmystery\s*box\b/i,
+  /\bfor\s+parts\b/i,
+  /\bparts\s+only\b/i,
+];
+
 function validateItem(item) {
   if (!item) return false;
   if (!item.title || item.title.length < 5) return false;
@@ -86,6 +95,10 @@ function validateItem(item) {
   if (!item.image) return false;
   if (item.image.startsWith('data:')) return false;
   if (item.image.length < 10) return false;
+
+  for (const pat of REJECT_TITLE_PATTERNS) {
+    if (pat.test(item.title)) return false;
+  }
 
   return true;
 }
@@ -153,15 +166,11 @@ function deduplicateResults(items) {
 
 // ── Step 4: Rank by quality ──────────────────────────────────────────
 
-const VINTAGE_SIGNALS = [
-  'vintage', 'vtg', 'retro', '90s', '80s', '70s', 'y2k',
-  'distressed', 'faded', 'worn', 'patina', 'thrashed',
-  'single stitch', 'made in usa', 'deadstock',
-];
-
-const NEW_ITEM_SIGNALS = [
-  'brand new', 'new with tags', 'nwt', 'retail', 'msrp',
-  'factory sealed', 'unopened', 'current season',
+const JUNK_SIGNALS = [
+  'lot of', 'bundle of', 'wholesale', 'bulk',
+  'for parts', 'parts only', 'as is', 'damaged',
+  'stained', 'broken', 'defect', 'flaw',
+  'mystery box', 'grab bag', 'random',
 ];
 
 function rankResults(items, query) {
@@ -186,18 +195,16 @@ function rankResults(items, query) {
       const goodLength = titleLen >= 15 && titleLen <= 100 ? 1 : 0.5;
       const titleScore = (isAllCaps + goodLength) / 2;
 
-      const isVintage = VINTAGE_SIGNALS.some((s) => titleLower.includes(s)) ? 0.15 : 0;
-      const isNew = NEW_ITEM_SIGNALS.some((s) => titleLower.includes(s)) ? -0.1 : 0;
+      const isJunk = JUNK_SIGNALS.some((s) => titleLower.includes(s)) ? -0.3 : 0;
 
       const hasDiscount = item.discountPercent && item.discountPercent > 15 ? 0.05 : 0;
 
       const score =
-        relevance * 0.45 +
-        hasImage * 0.15 +
+        relevance * 0.50 +
+        hasImage * 0.20 +
         priceScore * 0.10 +
         titleScore * 0.10 +
-        isVintage +
-        isNew +
+        isJunk +
         hasDiscount +
         0.05; // base
 
