@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Naya — Resale Price Intelligence",
+  "name": "naya — resale price intelligence",
   "version": "1.0.0",
   "description": "Instant deal scores, cross-platform price checks, and wishlist saves while you browse eBay, Grailed, Depop, and Poshmark.",
   "permissions": ["activeTab", "storage", "scripting"],

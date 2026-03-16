@@ -174,7 +174,7 @@ function showNoData(container, info) {
     <div class="price-check-item">
       <div class="pci-title">${esc(info.title)}</div>
       <div class="pci-source">${esc(info.source)}</div>
-      <div class="pci-none">No market data yet for this item.<br>Search on Naya to start building price data.</div>
+      <div class="pci-none">No market data yet for this item.<br>Search on naya to start building price data.</div>
     </div>
   `;
 }

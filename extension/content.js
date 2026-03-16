@@ -269,11 +269,11 @@ function renderFullOverlay(container, data, info, query) {
         <div class="naya-actions">
           <button class="naya-btn naya-btn-primary" data-action="find-cheaper">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            Find Cheaper Listings
+            find cheaper listings
           </button>
           <button class="naya-btn naya-btn-secondary" data-action="save-wishlist">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 116.364 6.364L12 21.682l-7.682-7.318a4.5 4.5 0 010-6.364z"/></svg>
-            Save to Naya
+            save to naya
           </button>
         </div>
       </div>
@@ -293,11 +293,11 @@ function renderMinimalOverlay(container, info, query) {
         <div class="naya-actions">
           <button class="naya-btn naya-btn-primary" data-action="find-cheaper">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            Search on Naya
+            search on naya
           </button>
           <button class="naya-btn naya-btn-secondary" data-action="save-wishlist">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 116.364 6.364L12 21.682l-7.682-7.318a4.5 4.5 0 010-6.364z"/></svg>
-            Save to Naya
+            save to naya
           </button>
         </div>
       </div>
@@ -310,7 +310,7 @@ function renderMinimalOverlay(container, info, query) {
 
 function renderMinimized(container, info, query) {
   container.innerHTML = `
-    <button class="naya-fab" data-action="expand" title="Open Naya Price Check">
+    <button class="naya-fab" data-action="expand" title="Open naya Price Check">
       <span class="naya-fab-logo">n</span>
     </button>
   `;
