@@ -265,6 +265,10 @@ app.listen(port, () => {
   console.log(`Per-scraper timeout: ${SCRAPER_TIMEOUT_MS}ms`);
   console.log('Grailed: Algolia | Poshmark: Cheerio | eBay: Cheerio | Depop: Playwright');
 
+  const { getSupabase } = require('./lib/supabaseClient');
+  const sb = getSupabase();
+  console.log(`[supabase] ${sb ? 'connected' : 'NOT configured — set SUPABASE_URL + SUPABASE_SERVICE_KEY'}`);
+
   const { playwrightManager } = require('./lib/playwrightManager');
   playwrightManager.init()
     .catch((err) => {
