@@ -1,4 +1,4 @@
-/* ── Naya Extension — Shared Styles ── */
+/* ── naya extension — editorial style ── */
 
 #naya-overlay {
   position: fixed;
@@ -21,7 +21,7 @@
   width: 320px;
   background: #faf9f7;
   border-radius: 16px;
-  box-shadow: 0 12px 48px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
   overflow: hidden;
   animation: naya-slide-in 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -74,7 +74,7 @@
   font-size: 8px;
   text-transform: uppercase;
   letter-spacing: 0.15em;
-  color: rgba(255,255,255,0.35);
+  color: rgba(255,255,255,0.3);
   margin-top: 1px;
 }
 
@@ -85,10 +85,10 @@
 
 .naya-close-btn,
 .naya-minimize-btn {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.08);
   border: none;
   cursor: pointer;
-  color: rgba(255,255,255,0.5);
+  color: rgba(255,255,255,0.4);
   font-size: 14px;
   line-height: 1;
   padding: 4px 7px;
@@ -98,8 +98,8 @@
 
 .naya-close-btn:hover,
 .naya-minimize-btn:hover {
-  background: rgba(255,255,255,0.2);
-  color: rgba(255,255,255,0.9);
+  background: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.8);
 }
 
 /* ── Body ── */
@@ -112,11 +112,11 @@
   font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  color: rgba(0,0,0,0.3);
+  color: rgba(0,0,0,0.25);
   margin-bottom: 4px;
 }
 
-/* ── Verdict — big, bold, shareable ── */
+/* ── Verdict — muted, editorial ── */
 
 .naya-verdict {
   text-align: center;
@@ -126,57 +126,58 @@
 }
 
 .naya-verdict-emoji {
-  font-size: 32px;
+  font-size: 24px;
   line-height: 1;
   margin-bottom: 6px;
 }
 
 .naya-verdict-main {
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
+  font-size: 20px;
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
 }
 
 .naya-verdict-detail {
-  font-size: 11px;
-  font-weight: 500;
-  margin-top: 5px;
-  opacity: 0.7;
+  font-size: 10px;
+  font-weight: 400;
+  margin-top: 6px;
+  letter-spacing: 0.02em;
 }
 
 .naya-verdict-steal {
-  background: linear-gradient(135deg, #059669, #10b981);
+  background: #000;
   color: #fff;
-  box-shadow: 0 4px 20px rgba(5, 150, 105, 0.35);
 }
-.naya-verdict-steal .naya-verdict-detail { opacity: 0.85; }
+.naya-verdict-steal .naya-verdict-detail { color: rgba(255,255,255,0.45); }
 
 .naya-verdict-good {
-  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
-  border: 1.5px solid #6ee7b7;
-  color: #065f46;
+  background: #f0f0ee;
+  border: 1px solid rgba(0,0,0,0.08);
+  color: #1a1a1a;
 }
+.naya-verdict-good .naya-verdict-detail { color: rgba(0,0,0,0.35); }
 
 .naya-verdict-fair {
-  background: #f4f5f6;
-  border: 1.5px solid #e5e7eb;
-  color: #6b7280;
+  background: #f4f4f2;
+  border: 1px solid rgba(0,0,0,0.06);
+  color: rgba(0,0,0,0.45);
 }
-.naya-verdict-fair .naya-verdict-main { font-size: 18px; font-weight: 600; }
+.naya-verdict-fair .naya-verdict-main { font-size: 16px; }
+.naya-verdict-fair .naya-verdict-detail { color: rgba(0,0,0,0.25); }
 
 .naya-verdict-overpriced {
-  background: linear-gradient(135deg, #dc2626, #ef4444);
-  color: #fff;
-  box-shadow: 0 4px 20px rgba(220, 38, 38, 0.3);
+  background: #3d2020;
+  color: #e8c4c4;
 }
-.naya-verdict-overpriced .naya-verdict-detail { opacity: 0.85; }
+.naya-verdict-overpriced .naya-verdict-main { color: #f5d5d5; }
+.naya-verdict-overpriced .naya-verdict-detail { color: rgba(232, 196, 196, 0.55); }
 
 /* ── Prices ── */
 
 .naya-prices {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 14px;
 }
 
@@ -184,37 +185,37 @@
   flex: 1;
   padding: 12px;
   background: white;
-  border: 1px solid rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.05);
   border-radius: 12px;
 }
 
 .naya-big-price {
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 300;
   color: #000;
   margin-top: 3px;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
 }
 
 .naya-trend-sm {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 500;
   margin-top: 3px;
-  color: rgba(0,0,0,0.3);
+  color: rgba(0,0,0,0.25);
 }
 
-.naya-trend-sm.up { color: #f43f5e; }
-.naya-trend-sm.down { color: #10b981; }
+.naya-trend-sm.up { color: #8b4545; }
+.naya-trend-sm.down { color: #45694d; }
 
 .naya-source-tag {
   display: inline-block;
   margin-top: 4px;
-  font-size: 9px;
-  font-weight: 700;
+  font-size: 8px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(0,0,0,0.35);
-  background: rgba(0,0,0,0.05);
+  letter-spacing: 0.15em;
+  color: rgba(0,0,0,0.25);
+  background: rgba(0,0,0,0.04);
   padding: 3px 8px;
   border-radius: 5px;
 }
@@ -225,8 +226,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 11px;
-  color: rgba(0,0,0,0.35);
+  font-size: 10px;
+  color: rgba(0,0,0,0.3);
   margin-bottom: 14px;
   padding: 8px 12px;
   background: white;
@@ -239,7 +240,7 @@
   flex-shrink: 0;
 }
 
-/* ── Platform pills (duplicate detection) ── */
+/* ── Platform pills ── */
 
 .naya-section {
   margin-bottom: 14px;
@@ -254,14 +255,14 @@
   flex: 1;
   padding: 10px 8px;
   background: white;
-  border: 1px solid rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.05);
   border-radius: 10px;
   text-align: center;
   transition: border-color 0.15s;
 }
 
 .naya-plat-pill:hover {
-  border-color: rgba(0,0,0,0.15);
+  border-color: rgba(0,0,0,0.12);
 }
 
 .naya-plat-current {
@@ -271,22 +272,22 @@
 
 .naya-plat-name {
   font-size: 9px;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: capitalize;
-  color: rgba(0,0,0,0.45);
+  color: rgba(0,0,0,0.35);
 }
 
 .naya-plat-price {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 300;
   color: #000;
   margin-top: 2px;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 
 .naya-plat-count {
   font-size: 8px;
-  color: rgba(0,0,0,0.2);
+  color: rgba(0,0,0,0.15);
   margin-top: 1px;
 }
 
@@ -299,16 +300,16 @@
 .naya-cross-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .naya-cross-row {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 9px 12px;
   background: white;
-  border: 1px solid rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.05);
   border-radius: 10px;
   text-decoration: none;
   color: inherit;
@@ -317,45 +318,44 @@
 }
 
 .naya-cross-row:hover {
-  border-color: rgba(0,0,0,0.15);
+  border-color: rgba(0,0,0,0.12);
   background: rgba(0,0,0,0.01);
 }
 
 .naya-cross-cheaper {
-  border-color: #6ee7b7;
-  background: #f0fdf4;
+  border-color: rgba(0,0,0,0.1);
+  background: rgba(0,0,0,0.015);
 }
 
 .naya-cross-cheaper:hover {
-  border-color: #34d399;
-  background: #ecfdf5;
+  border-color: rgba(0,0,0,0.18);
 }
 
 .naya-cross-source {
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 600;
   text-transform: capitalize;
-  color: rgba(0,0,0,0.5);
+  color: rgba(0,0,0,0.35);
   min-width: 65px;
 }
 
 .naya-cross-price {
-  font-size: 16px;
-  font-weight: 400;
+  font-size: 15px;
+  font-weight: 300;
   color: #000;
   flex: 1;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 
 .naya-cross-save {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #059669;
-  background: #d1fae5;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: lowercase;
+  letter-spacing: 0.04em;
+  color: #000;
+  background: rgba(0,0,0,0.06);
   padding: 3px 8px;
-  border-radius: 6px;
+  border-radius: 5px;
 }
 
 /* ── Action buttons ── */
@@ -363,7 +363,7 @@
 .naya-actions {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   margin-top: 6px;
 }
 
@@ -373,14 +373,14 @@
   justify-content: center;
   gap: 8px;
   width: 100%;
-  padding: 12px;
+  padding: 11px;
   border: none;
   border-radius: 10px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.02em;
 }
 
 .naya-btn svg {
@@ -393,28 +393,27 @@
 }
 
 .naya-btn-primary:hover {
-  background: #222;
+  background: #1a1a1a;
 }
 
 .naya-btn-secondary {
   background: white;
   color: #000;
-  border: 1.5px solid rgba(0,0,0,0.12);
+  border: 1px solid rgba(0,0,0,0.1);
 }
 
 .naya-btn-secondary:hover {
-  border-color: rgba(0,0,0,0.25);
-  background: rgba(0,0,0,0.02);
+  border-color: rgba(0,0,0,0.2);
 }
 
 .naya-btn-saved {
-  background: #ecfdf5 !important;
-  color: #065f46 !important;
-  border-color: #6ee7b7 !important;
+  background: rgba(0,0,0,0.04) !important;
+  color: #000 !important;
+  border-color: rgba(0,0,0,0.15) !important;
 }
 
 .naya-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: default;
 }
 
@@ -426,15 +425,15 @@
   justify-content: center;
   gap: 12px;
   padding: 28px 18px;
-  font-size: 13px;
-  color: rgba(0,0,0,0.4);
+  font-size: 12px;
+  color: rgba(0,0,0,0.3);
 }
 
 .naya-spinner {
-  width: 18px;
-  height: 18px;
-  border: 2.5px solid rgba(0,0,0,0.08);
-  border-top-color: rgba(0,0,0,0.5);
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(0,0,0,0.06);
+  border-top-color: rgba(0,0,0,0.4);
   border-radius: 50%;
   animation: naya-spin 0.7s linear infinite;
 }
@@ -446,53 +445,53 @@
 .naya-empty-msg {
   text-align: center;
   padding: 12px 0 16px;
-  font-size: 13px;
-  color: rgba(0,0,0,0.35);
+  font-size: 12px;
+  color: rgba(0,0,0,0.3);
 }
 
 /* ── Floating Action Button (minimized state) ── */
 
 .naya-fab {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
+  width: 48px;
+  height: 48px;
+  border-radius: 13px;
   background: #000;
   border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 6px 24px rgba(0,0,0,0.25);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
   transition: all 0.2s;
   animation: naya-slide-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .naya-fab:hover {
-  transform: scale(1.06);
-  box-shadow: 0 8px 28px rgba(0,0,0,0.3);
+  transform: scale(1.05);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.25);
 }
 
 .naya-fab-logo {
   color: white;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 300;
   font-style: normal;
   letter-spacing: -0.03em;
 }
 
-/* ── Powered by footer ── */
+/* ── Footer ── */
 
 .naya-footer {
-  padding: 8px 18px 10px;
+  padding: 7px 18px 9px;
   text-align: center;
-  border-top: 1px solid rgba(0,0,0,0.04);
+  border-top: 1px solid rgba(0,0,0,0.03);
 }
 
 .naya-footer-text {
   font-size: 8px;
   text-transform: uppercase;
   letter-spacing: 0.2em;
-  color: rgba(0,0,0,0.15);
+  color: rgba(0,0,0,0.12);
 }
 
 /* ── Deal Scanner Badges (search results) ── */
@@ -502,38 +501,38 @@
   top: 8px;
   left: 8px;
   z-index: 10000;
-  padding: 5px 12px;
-  border-radius: 8px;
+  padding: 5px 10px;
+  border-radius: 7px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  font-size: 12px;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 600;
   line-height: 1.3;
   pointer-events: none;
   animation: naya-badge-pop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
 }
 
 @keyframes naya-badge-pop {
-  from { opacity: 0; transform: scale(0.7); }
+  from { opacity: 0; transform: scale(0.85); }
   to { opacity: 1; transform: scale(1); }
 }
 
 .naya-badge-good {
-  background: rgba(5, 150, 105, 0.95);
+  background: rgba(0, 0, 0, 0.85);
   color: white;
-  box-shadow: 0 3px 12px rgba(5, 150, 105, 0.35);
+  backdrop-filter: blur(4px);
 }
 
 .naya-badge-bad {
-  background: rgba(220, 38, 38, 0.92);
-  color: white;
-  box-shadow: 0 3px 12px rgba(220, 38, 38, 0.3);
+  background: rgba(61, 32, 32, 0.88);
+  color: #f0d0d0;
+  backdrop-filter: blur(4px);
 }
 
 .naya-badge-fire,
 .naya-badge-warn {
-  font-size: 14px;
+  font-size: 12px;
   line-height: 1;
 }
