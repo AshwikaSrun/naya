@@ -31,6 +31,16 @@ function init() {
     } else {
       renderMinimalOverlay(container, info, query);
     }
+
+    // Fetch cross-listings in background, append when ready
+    chrome.runtime.sendMessage(
+      { type: 'CROSS_LISTINGS', query, source: info.source, price: info.price },
+      (crossData) => {
+        if (crossData && crossData.listings && crossData.listings.length > 0) {
+          appendCrossListings(container, crossData, info);
+        }
+      }
+    );
   });
 }
 
@@ -100,6 +110,46 @@ function buildQuery(title) {
     .filter((w) => w.length > 1 && !stopWords.has(w))
     .slice(0, 5)
     .join(' ');
+}
+
+// ── Cross-Listing Detection ──
+
+function appendCrossListings(container, crossData, info) {
+  const body = container.querySelector('#naya-body');
+  if (!body) return;
+
+  const listings = crossData.listings;
+  const currentPrice = info.price;
+
+  const rows = listings.map((l) => {
+    const cheaper = currentPrice > 0 && l.price < currentPrice;
+    const savings = cheaper ? Math.round(currentPrice - l.price) : 0;
+    return `
+      <a href="${l.url}" target="_blank" rel="noopener" class="naya-cross-row ${cheaper ? 'naya-cross-cheaper' : ''}">
+        <div class="naya-cross-source">${l.source}</div>
+        <div class="naya-cross-price">$${Math.round(l.price)}</div>
+        ${cheaper ? `<div class="naya-cross-save">save $${savings}</div>` : ''}
+      </a>`;
+  }).join('');
+
+  const cheaperCount = crossData.cheaperCount || 0;
+  const heading = cheaperCount > 0
+    ? `found ${cheaperCount} cheaper listing${cheaperCount > 1 ? 's' : ''}`
+    : 'also listed on';
+
+  const section = document.createElement('div');
+  section.className = 'naya-cross-section';
+  section.innerHTML = `
+    <div class="naya-label">${heading}</div>
+    <div class="naya-cross-list">${rows}</div>
+  `;
+
+  const actions = body.querySelector('.naya-actions');
+  if (actions) {
+    body.insertBefore(section, actions);
+  } else {
+    body.appendChild(section);
+  }
 }
 
 // ── Rendering ──

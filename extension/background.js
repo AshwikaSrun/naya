@@ -29,6 +29,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
+  if (msg.type === 'CROSS_LISTINGS') {
+    handleCrossListings(msg.query, msg.source, msg.price).then(sendResponse);
+    return true;
+  }
+
   if (msg.type === 'TRACK_VIEW') {
     trackView(msg.item);
     return false;
@@ -74,6 +79,19 @@ async function removeFromWishlist(url) {
   const updated = wishlist.filter((w) => w.url !== url);
   await chrome.storage.local.set({ wishlist: updated });
   return { removed: true };
+}
+
+async function handleCrossListings(query, source, price) {
+  try {
+    const params = new URLSearchParams({ query });
+    if (source) params.set('source', source);
+    if (price) params.set('price', String(price));
+    const r = await fetch(`${NAYA_BASE}/api/cross-listings?${params}`);
+    if (!r.ok) return { listings: [] };
+    return await r.json();
+  } catch {
+    return { listings: [] };
+  }
 }
 
 function trackView(item) {

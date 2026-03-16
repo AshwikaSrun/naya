@@ -290,6 +290,74 @@
   margin-top: 1px;
 }
 
+/* ── Cross-Listing Detection ── */
+
+.naya-cross-section {
+  margin-bottom: 14px;
+}
+
+.naya-cross-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.naya-cross-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: white;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 10px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.15s;
+  cursor: pointer;
+}
+
+.naya-cross-row:hover {
+  border-color: rgba(0,0,0,0.15);
+  background: rgba(0,0,0,0.01);
+}
+
+.naya-cross-cheaper {
+  border-color: #6ee7b7;
+  background: #f0fdf4;
+}
+
+.naya-cross-cheaper:hover {
+  border-color: #34d399;
+  background: #ecfdf5;
+}
+
+.naya-cross-source {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: capitalize;
+  color: rgba(0,0,0,0.5);
+  min-width: 65px;
+}
+
+.naya-cross-price {
+  font-size: 16px;
+  font-weight: 400;
+  color: #000;
+  flex: 1;
+  letter-spacing: -0.01em;
+}
+
+.naya-cross-save {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #059669;
+  background: #d1fae5;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
 /* ── Action buttons ── */
 
 .naya-actions {
