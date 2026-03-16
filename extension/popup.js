@@ -1,4 +1,4 @@
-const NAYA_API = 'https://www.nayaeditorial.shop/api/insights/price-index';
+const NAYA_API = 'https://www.nayaeditorial.shop/api/price-check';
 
 document.addEventListener('DOMContentLoaded', () => {
   const tabs = document.querySelectorAll('.tab');

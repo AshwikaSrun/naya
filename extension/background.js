@@ -43,10 +43,12 @@ async function handlePriceCheck(query) {
   }
 
   try {
-    const r = await fetch(`${NAYA_BASE}/api/insights/price-index?query=${encodeURIComponent(query)}`);
+    const r = await fetch(`${NAYA_BASE}/api/price-check?query=${encodeURIComponent(query)}`);
     if (!r.ok) return null;
     const data = await r.json();
-    priceCache.set(cacheKey, { data, ts: Date.now() });
+    if (data && data.count > 0) {
+      priceCache.set(cacheKey, { data, ts: Date.now() });
+    }
     return data;
   } catch {
     return null;
