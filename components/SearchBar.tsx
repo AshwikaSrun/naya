@@ -3,12 +3,25 @@
 import { useState, FormEvent } from 'react';
 import Link from 'next/link';
 
+export interface SearchSuggestion {
+  label: string;
+  query: string;
+}
+
+const DEFAULT_SUGGESTIONS: SearchSuggestion[] = [
+  { label: 'vintage carhartt flat lay', query: 'vintage carhartt jacket' },
+  { label: 'y2k aesthetic', query: 'y2k zip hoodie' },
+  { label: 'baggy denim minimal', query: 'baggy levi 550' },
+  { label: 'nike vintage clean', query: 'vintage nike crewneck' },
+];
+
 interface SearchBarProps {
   onSearch: (query: string) => void;
   disabled?: boolean;
   value?: string;
   onValueChange?: (value: string) => void;
   showTabs?: boolean;
+  suggestions?: SearchSuggestion[];
 }
 
 export default function SearchBar({
@@ -17,6 +30,7 @@ export default function SearchBar({
   value,
   onValueChange,
   showTabs = false,
+  suggestions = DEFAULT_SUGGESTIONS,
 }: SearchBarProps) {
   const [internalValue, setInternalValue] = useState('');
   const input = value ?? internalValue;
@@ -56,7 +70,7 @@ export default function SearchBar({
               }
               setInternalValue(nextValue);
             }}
-            placeholder="search for vintage levi's, ralph lauren..."
+            placeholder="vintage carhartt flat lay, y2k aesthetic, baggy denim..."
             disabled={disabled}
             className="font-naya-sans w-full bg-transparent text-sm font-light tracking-[0.02em] text-white placeholder:text-white/35 focus:outline-none disabled:opacity-50"
           />
@@ -72,6 +86,22 @@ export default function SearchBar({
           </button>
         </div>
       </form>
+
+      {showTabs && suggestions.length > 0 && (
+        <div className="mt-4 flex flex-wrap justify-center gap-2">
+          {suggestions.map((s) => (
+            <button
+              key={s.query}
+              type="button"
+              onClick={() => onSearch(s.query)}
+              disabled={disabled}
+              className="rounded-full border border-white/20 bg-white/5 px-4 py-1.5 text-[10px] lowercase tracking-[0.1em] text-white/70 transition-colors hover:border-white/40 hover:bg-white/10 hover:text-white disabled:opacity-50"
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {showTabs && (
         <div className="font-naya-sans mt-5 flex items-center justify-center gap-4">

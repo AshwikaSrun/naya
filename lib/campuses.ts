@@ -1,3 +1,8 @@
+export interface TrendingItem {
+  label: string;  // aesthetic display (e.g. "vintage carhartt jacket flat lay")
+  query: string; // backend search query
+}
+
 export interface CampusConfig {
   slug: string;
   name: string;
@@ -5,7 +10,7 @@ export interface CampusConfig {
   color: string;        // primary school color (hex)
   colorSecondary: string; // secondary school color (hex)
   emoji: string;         // fun campus vibe emoji
-  defaultTrending: string[];
+  defaultTrending: TrendingItem[];
   merchQueries: { title: string; query: string }[];
   findCategories: { label: string; query: string }[];
 }
@@ -19,11 +24,11 @@ const CAMPUS_LIST: CampusConfig[] = [
     colorSecondary: '#000000',
     emoji: '🚂',
     defaultTrending: [
-      'vintage carhartt jacket',
-      'baggy levi 550',
-      'vintage purdue hoodie',
-      'vintage nike crewneck',
-      'y2k zip hoodie',
+      { label: 'vintage carhartt jacket flat lay', query: 'vintage carhartt jacket' },
+      { label: 'baggy levi 550 minimal', query: 'baggy levi 550' },
+      { label: 'vintage purdue hoodie aesthetic', query: 'vintage purdue hoodie' },
+      { label: 'vintage nike crewneck clean', query: 'vintage nike crewneck' },
+      { label: 'y2k zip hoodie', query: 'y2k zip hoodie' },
     ],
     merchQueries: [
       { title: 'Vintage Purdue Hoodie', query: 'vintage purdue hoodie' },
@@ -32,11 +37,11 @@ const CAMPUS_LIST: CampusConfig[] = [
       { title: 'Purdue Varsity Jacket', query: 'purdue varsity jacket' },
     ],
     findCategories: [
-      { label: 'carhartt', query: 'vintage carhartt' },
-      { label: 'nike vintage', query: 'vintage nike' },
-      { label: 'baggy denim', query: 'baggy levi jeans' },
+      { label: 'carhartt • flat lay', query: 'vintage carhartt' },
+      { label: 'nike vintage • clean', query: 'vintage nike' },
+      { label: 'baggy denim • minimal', query: 'baggy levi jeans' },
       { label: 'purdue merch', query: 'vintage purdue' },
-      { label: 'streetwear', query: 'vintage streetwear' },
+      { label: 'streetwear • aesthetic', query: 'vintage streetwear' },
     ],
   },
   {
@@ -47,11 +52,11 @@ const CAMPUS_LIST: CampusConfig[] = [
     colorSecondary: '#EEEDEB',
     emoji: '🏀',
     defaultTrending: [
-      'vintage indiana hoodie',
-      'vintage carhartt jacket',
-      'vintage nike crewneck',
-      'baggy levi 550',
-      'vintage hoosiers',
+      { label: 'vintage indiana hoodie aesthetic', query: 'vintage indiana hoodie' },
+      { label: 'vintage carhartt jacket flat lay', query: 'vintage carhartt jacket' },
+      { label: 'vintage nike crewneck clean', query: 'vintage nike crewneck' },
+      { label: 'baggy levi 550 minimal', query: 'baggy levi 550' },
+      { label: 'vintage hoosiers', query: 'vintage hoosiers' },
     ],
     merchQueries: [
       { title: 'Vintage Indiana Hoodie', query: 'vintage indiana hoodie' },
@@ -59,11 +64,11 @@ const CAMPUS_LIST: CampusConfig[] = [
       { title: 'Vintage Indiana Tee', query: 'vintage indiana university tee' },
     ],
     findCategories: [
-      { label: 'carhartt', query: 'vintage carhartt' },
-      { label: 'nike vintage', query: 'vintage nike' },
-      { label: 'baggy denim', query: 'baggy levi jeans' },
+      { label: 'carhartt • flat lay', query: 'vintage carhartt' },
+      { label: 'nike vintage • clean', query: 'vintage nike' },
+      { label: 'baggy denim • minimal', query: 'baggy levi jeans' },
       { label: 'indiana merch', query: 'vintage indiana' },
-      { label: 'streetwear', query: 'vintage streetwear' },
+      { label: 'streetwear • aesthetic', query: 'vintage streetwear' },
     ],
   },
   {
@@ -74,11 +79,11 @@ const CAMPUS_LIST: CampusConfig[] = [
     colorSecondary: '#00274C',
     emoji: '〽️',
     defaultTrending: [
-      'vintage michigan hoodie',
-      'vintage wolverines jacket',
-      'vintage carhartt detroit',
-      'vintage nike crewneck',
-      'baggy levi 501',
+      { label: 'vintage michigan hoodie aesthetic', query: 'vintage michigan hoodie' },
+      { label: 'vintage wolverines jacket flat lay', query: 'vintage wolverines jacket' },
+      { label: 'vintage carhartt detroit', query: 'vintage carhartt detroit' },
+      { label: 'vintage nike crewneck clean', query: 'vintage nike crewneck' },
+      { label: 'baggy levi 501 minimal', query: 'baggy levi 501' },
     ],
     merchQueries: [
       { title: 'Vintage Michigan Hoodie', query: 'vintage michigan hoodie' },
@@ -87,11 +92,11 @@ const CAMPUS_LIST: CampusConfig[] = [
       { title: 'Vintage Michigan Tee', query: 'vintage michigan tee' },
     ],
     findCategories: [
-      { label: 'carhartt', query: 'vintage carhartt' },
-      { label: 'nike vintage', query: 'vintage nike' },
+      { label: 'carhartt • flat lay', query: 'vintage carhartt' },
+      { label: 'nike vintage • clean', query: 'vintage nike' },
       { label: 'michigan merch', query: 'vintage michigan' },
-      { label: 'baggy denim', query: 'baggy levi jeans' },
-      { label: 'streetwear', query: 'vintage streetwear' },
+      { label: 'baggy denim • minimal', query: 'baggy levi jeans' },
+      { label: 'streetwear • aesthetic', query: 'vintage streetwear' },
     ],
   },
   {
@@ -102,11 +107,11 @@ const CAMPUS_LIST: CampusConfig[] = [
     colorSecondary: '#FFFFFF',
     emoji: '⚔️',
     defaultTrending: [
-      'vintage michigan state hoodie',
-      'vintage spartans crewneck',
-      'vintage carhartt jacket',
-      'vintage nike',
-      'baggy levi jeans',
+      { label: 'vintage michigan state hoodie aesthetic', query: 'vintage michigan state hoodie' },
+      { label: 'vintage spartans crewneck clean', query: 'vintage spartans crewneck' },
+      { label: 'vintage carhartt jacket flat lay', query: 'vintage carhartt jacket' },
+      { label: 'vintage nike', query: 'vintage nike' },
+      { label: 'baggy levi jeans minimal', query: 'baggy levi jeans' },
     ],
     merchQueries: [
       { title: 'Vintage Spartans Hoodie', query: 'vintage michigan state hoodie' },
@@ -114,11 +119,11 @@ const CAMPUS_LIST: CampusConfig[] = [
       { title: 'Vintage MSU Tee', query: 'vintage michigan state tee' },
     ],
     findCategories: [
-      { label: 'carhartt', query: 'vintage carhartt' },
-      { label: 'nike vintage', query: 'vintage nike' },
+      { label: 'carhartt • flat lay', query: 'vintage carhartt' },
+      { label: 'nike vintage • clean', query: 'vintage nike' },
       { label: 'msu merch', query: 'vintage michigan state' },
-      { label: 'baggy denim', query: 'baggy levi jeans' },
-      { label: 'streetwear', query: 'vintage streetwear' },
+      { label: 'baggy denim • minimal', query: 'baggy levi jeans' },
+      { label: 'streetwear • aesthetic', query: 'vintage streetwear' },
     ],
   },
   {
@@ -129,11 +134,11 @@ const CAMPUS_LIST: CampusConfig[] = [
     colorSecondary: '#13294B',
     emoji: '🔶',
     defaultTrending: [
-      'vintage illinois hoodie',
-      'vintage illini crewneck',
-      'vintage carhartt jacket',
-      'vintage nike',
-      'y2k zip hoodie',
+      { label: 'vintage illinois hoodie aesthetic', query: 'vintage illinois hoodie' },
+      { label: 'vintage illini crewneck clean', query: 'vintage illini crewneck' },
+      { label: 'vintage carhartt jacket flat lay', query: 'vintage carhartt jacket' },
+      { label: 'vintage nike', query: 'vintage nike' },
+      { label: 'y2k zip hoodie', query: 'y2k zip hoodie' },
     ],
     merchQueries: [
       { title: 'Vintage Illinois Hoodie', query: 'vintage illinois hoodie' },
@@ -141,11 +146,11 @@ const CAMPUS_LIST: CampusConfig[] = [
       { title: 'Vintage Illinois Tee', query: 'vintage illinois tee' },
     ],
     findCategories: [
-      { label: 'carhartt', query: 'vintage carhartt' },
-      { label: 'nike vintage', query: 'vintage nike' },
+      { label: 'carhartt • flat lay', query: 'vintage carhartt' },
+      { label: 'nike vintage • clean', query: 'vintage nike' },
       { label: 'illinois merch', query: 'vintage illinois' },
-      { label: 'baggy denim', query: 'baggy levi jeans' },
-      { label: 'streetwear', query: 'vintage streetwear' },
+      { label: 'baggy denim • minimal', query: 'baggy levi jeans' },
+      { label: 'streetwear • aesthetic', query: 'vintage streetwear' },
     ],
   },
   {
@@ -156,11 +161,11 @@ const CAMPUS_LIST: CampusConfig[] = [
     colorSecondary: '#FFFFFF',
     emoji: '🦡',
     defaultTrending: [
-      'vintage wisconsin hoodie',
-      'vintage badgers crewneck',
-      'vintage carhartt jacket',
-      'vintage nike',
-      'baggy levi 550',
+      { label: 'vintage wisconsin hoodie aesthetic', query: 'vintage wisconsin hoodie' },
+      { label: 'vintage badgers crewneck clean', query: 'vintage badgers crewneck' },
+      { label: 'vintage carhartt jacket flat lay', query: 'vintage carhartt jacket' },
+      { label: 'vintage nike', query: 'vintage nike' },
+      { label: 'baggy levi 550 minimal', query: 'baggy levi 550' },
     ],
     merchQueries: [
       { title: 'Vintage Wisconsin Hoodie', query: 'vintage wisconsin hoodie' },
@@ -168,11 +173,11 @@ const CAMPUS_LIST: CampusConfig[] = [
       { title: 'Vintage Wisconsin Tee', query: 'vintage wisconsin tee' },
     ],
     findCategories: [
-      { label: 'carhartt', query: 'vintage carhartt' },
-      { label: 'nike vintage', query: 'vintage nike' },
+      { label: 'carhartt • flat lay', query: 'vintage carhartt' },
+      { label: 'nike vintage • clean', query: 'vintage nike' },
       { label: 'wisconsin merch', query: 'vintage wisconsin' },
-      { label: 'baggy denim', query: 'baggy levi jeans' },
-      { label: 'streetwear', query: 'vintage streetwear' },
+      { label: 'baggy denim • minimal', query: 'baggy levi jeans' },
+      { label: 'streetwear • aesthetic', query: 'vintage streetwear' },
     ],
   },
   {
@@ -183,11 +188,11 @@ const CAMPUS_LIST: CampusConfig[] = [
     colorSecondary: '#666666',
     emoji: '🌰',
     defaultTrending: [
-      'vintage ohio state hoodie',
-      'vintage buckeyes crewneck',
-      'vintage carhartt jacket',
-      'vintage nike',
-      'baggy levi jeans',
+      { label: 'vintage ohio state hoodie aesthetic', query: 'vintage ohio state hoodie' },
+      { label: 'vintage buckeyes crewneck clean', query: 'vintage buckeyes crewneck' },
+      { label: 'vintage carhartt jacket flat lay', query: 'vintage carhartt jacket' },
+      { label: 'vintage nike', query: 'vintage nike' },
+      { label: 'baggy levi jeans minimal', query: 'baggy levi jeans' },
     ],
     merchQueries: [
       { title: 'Vintage Ohio State Hoodie', query: 'vintage ohio state hoodie' },
@@ -195,11 +200,11 @@ const CAMPUS_LIST: CampusConfig[] = [
       { title: 'Vintage Ohio State Jacket', query: 'vintage ohio state jacket' },
     ],
     findCategories: [
-      { label: 'carhartt', query: 'vintage carhartt' },
-      { label: 'nike vintage', query: 'vintage nike' },
+      { label: 'carhartt • flat lay', query: 'vintage carhartt' },
+      { label: 'nike vintage • clean', query: 'vintage nike' },
       { label: 'ohio state merch', query: 'vintage ohio state' },
-      { label: 'baggy denim', query: 'baggy levi jeans' },
-      { label: 'streetwear', query: 'vintage streetwear' },
+      { label: 'baggy denim • minimal', query: 'baggy levi jeans' },
+      { label: 'streetwear • aesthetic', query: 'vintage streetwear' },
     ],
   },
   {
@@ -210,11 +215,11 @@ const CAMPUS_LIST: CampusConfig[] = [
     colorSecondary: '#FFFFFF',
     emoji: '🦁',
     defaultTrending: [
-      'vintage penn state hoodie',
-      'vintage nittany lions crewneck',
-      'vintage carhartt jacket',
-      'vintage nike',
-      'y2k zip hoodie',
+      { label: 'vintage penn state hoodie aesthetic', query: 'vintage penn state hoodie' },
+      { label: 'vintage nittany lions crewneck clean', query: 'vintage nittany lions crewneck' },
+      { label: 'vintage carhartt jacket flat lay', query: 'vintage carhartt jacket' },
+      { label: 'vintage nike', query: 'vintage nike' },
+      { label: 'y2k zip hoodie', query: 'y2k zip hoodie' },
     ],
     merchQueries: [
       { title: 'Vintage Penn State Hoodie', query: 'vintage penn state hoodie' },
@@ -222,11 +227,11 @@ const CAMPUS_LIST: CampusConfig[] = [
       { title: 'Vintage Penn State Tee', query: 'vintage penn state tee' },
     ],
     findCategories: [
-      { label: 'carhartt', query: 'vintage carhartt' },
-      { label: 'nike vintage', query: 'vintage nike' },
+      { label: 'carhartt • flat lay', query: 'vintage carhartt' },
+      { label: 'nike vintage • clean', query: 'vintage nike' },
       { label: 'penn state merch', query: 'vintage penn state' },
-      { label: 'baggy denim', query: 'baggy levi jeans' },
-      { label: 'streetwear', query: 'vintage streetwear' },
+      { label: 'baggy denim • minimal', query: 'baggy levi jeans' },
+      { label: 'streetwear • aesthetic', query: 'vintage streetwear' },
     ],
   },
   {
@@ -237,11 +242,11 @@ const CAMPUS_LIST: CampusConfig[] = [
     colorSecondary: '#FFFFFF',
     emoji: '🤘',
     defaultTrending: [
-      'vintage texas hoodie',
-      'vintage longhorns crewneck',
-      'vintage carhartt jacket',
-      'vintage nike',
-      'vintage cowboy boots',
+      { label: 'vintage texas hoodie aesthetic', query: 'vintage texas hoodie' },
+      { label: 'vintage longhorns crewneck clean', query: 'vintage longhorns crewneck' },
+      { label: 'vintage carhartt jacket flat lay', query: 'vintage carhartt jacket' },
+      { label: 'vintage nike', query: 'vintage nike' },
+      { label: 'vintage cowboy boots', query: 'vintage cowboy boots' },
     ],
     merchQueries: [
       { title: 'Vintage Texas Hoodie', query: 'vintage texas hoodie' },
@@ -249,11 +254,11 @@ const CAMPUS_LIST: CampusConfig[] = [
       { title: 'Vintage Texas Tee', query: 'vintage texas longhorns tee' },
     ],
     findCategories: [
-      { label: 'carhartt', query: 'vintage carhartt' },
-      { label: 'nike vintage', query: 'vintage nike' },
+      { label: 'carhartt • flat lay', query: 'vintage carhartt' },
+      { label: 'nike vintage • clean', query: 'vintage nike' },
       { label: 'texas merch', query: 'vintage texas longhorns' },
-      { label: 'baggy denim', query: 'baggy levi jeans' },
-      { label: 'western', query: 'vintage western wear' },
+      { label: 'baggy denim • minimal', query: 'baggy levi jeans' },
+      { label: 'western • aesthetic', query: 'vintage western wear' },
     ],
   },
   {
@@ -264,11 +269,11 @@ const CAMPUS_LIST: CampusConfig[] = [
     colorSecondary: '#FFC627',
     emoji: '😈',
     defaultTrending: [
-      'vintage arizona state hoodie',
-      'vintage sun devils crewneck',
-      'vintage carhartt jacket',
-      'vintage nike',
-      'y2k zip hoodie',
+      { label: 'vintage arizona state hoodie aesthetic', query: 'vintage arizona state hoodie' },
+      { label: 'vintage sun devils crewneck clean', query: 'vintage sun devils crewneck' },
+      { label: 'vintage carhartt jacket flat lay', query: 'vintage carhartt jacket' },
+      { label: 'vintage nike', query: 'vintage nike' },
+      { label: 'y2k zip hoodie', query: 'y2k zip hoodie' },
     ],
     merchQueries: [
       { title: 'Vintage ASU Hoodie', query: 'vintage arizona state hoodie' },
@@ -276,11 +281,11 @@ const CAMPUS_LIST: CampusConfig[] = [
       { title: 'Vintage ASU Tee', query: 'vintage arizona state tee' },
     ],
     findCategories: [
-      { label: 'carhartt', query: 'vintage carhartt' },
-      { label: 'nike vintage', query: 'vintage nike' },
+      { label: 'carhartt • flat lay', query: 'vintage carhartt' },
+      { label: 'nike vintage • clean', query: 'vintage nike' },
       { label: 'asu merch', query: 'vintage arizona state' },
-      { label: 'baggy denim', query: 'baggy levi jeans' },
-      { label: 'streetwear', query: 'vintage streetwear' },
+      { label: 'baggy denim • minimal', query: 'baggy levi jeans' },
+      { label: 'streetwear • aesthetic', query: 'vintage streetwear' },
     ],
   },
 ];

@@ -16,11 +16,11 @@ interface FindItem {
 
 const FILTER_PRESETS = [
   { label: 'all', value: 'default' },
-  { label: 'carhartt', value: 'carhartt' },
-  { label: 'nike vintage', value: 'nike' },
+  { label: 'carhartt • flat lay', value: 'carhartt' },
+  { label: 'nike vintage • clean', value: 'nike' },
   { label: 'y2k', value: 'y2k' },
-  { label: 'denim', value: 'denim' },
-  { label: 'streetwear', value: 'streetwear' },
+  { label: 'denim • minimal', value: 'denim' },
+  { label: 'streetwear • aesthetic', value: 'streetwear' },
 ];
 
 function timeAgo(timestamp: number): string {

@@ -187,7 +187,7 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
 
         {!s.loading && s.results && (
           <div className="mx-auto max-w-7xl px-6 pt-6">
-            <ResultsGrid results={s.results} filters={s.filters} />
+            <ResultsGrid results={s.results} filters={s.filters} onSearch={s.handleSearch} relatedSearches={campus.defaultTrending} />
           </div>
         )}
 
@@ -272,7 +272,7 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
             the entire resale market in one search
           </p>
           <div className="mt-8">
-            <SearchBar onSearch={s.handleSearch} disabled={s.loading} value={s.searchInput} onValueChange={s.setSearchInput} showTabs />
+            <SearchBar onSearch={s.handleSearch} disabled={s.loading} value={s.searchInput} onValueChange={s.setSearchInput} showTabs suggestions={campus.defaultTrending.slice(0, 4)} />
           </div>
         </div>
       </section>
@@ -291,9 +291,9 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
             <h2 className="font-naya-serif mt-3 text-2xl font-light text-text-primary md:text-4xl">trending at {campus.name.toLowerCase()}.</h2>
             <div className="mt-8 space-y-1">
               {s.trendingSearches.map((tq, i) => (
-                <button key={tq} type="button" onClick={() => s.handleSearch(tq)} className="group flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left transition-all hover:bg-black/[0.03]">
+                <button key={tq.query} type="button" onClick={() => s.handleSearch(tq.query)} className="group flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left transition-all hover:bg-black/[0.03]">
                   <span className="font-naya-serif w-8 text-2xl font-extralight md:text-3xl" style={{ color: campus.color + (i === 0 ? '' : i === 1 ? 'aa' : '55') }}>{i + 1}</span>
-                  <span className="font-naya-serif text-lg font-light text-text-primary transition-colors group-hover:text-black md:text-xl">{tq}</span>
+                  <span className="font-naya-serif text-lg font-light text-text-primary transition-colors group-hover:text-black md:text-xl">{tq.label}</span>
                   <svg className="ml-auto h-4 w-4 shrink-0 text-black/10 transition-all group-hover:translate-x-1 group-hover:text-black/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" /></svg>
                 </button>
               ))}

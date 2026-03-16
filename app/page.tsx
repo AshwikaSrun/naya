@@ -23,11 +23,11 @@ const NAV_LINKS = [
 ];
 
 const DEFAULT_TRENDING = [
-  'vintage carhartt jacket',
-  'baggy levi 550',
-  'y2k zip hoodie',
-  'vintage nike crewneck',
-  'vintage purdue hoodie',
+  { label: 'vintage carhartt jacket flat lay', query: 'vintage carhartt jacket' },
+  { label: 'baggy levi 550 minimal', query: 'baggy levi 550' },
+  { label: 'y2k zip hoodie', query: 'y2k zip hoodie' },
+  { label: 'vintage nike crewneck clean', query: 'vintage nike crewneck' },
+  { label: 'vintage purdue hoodie aesthetic', query: 'vintage purdue hoodie' },
 ];
 
 type PreviewProduct = {
@@ -267,7 +267,7 @@ export default function Home() {
 
         {!s.loading && s.results && (
           <div className="mx-auto max-w-7xl px-6 pt-6">
-            <ResultsGrid results={s.results} filters={s.filters} />
+            <ResultsGrid results={s.results} filters={s.filters} onSearch={s.handleSearch} relatedSearches={DEFAULT_TRENDING} />
           </div>
         )}
 
@@ -342,9 +342,9 @@ export default function Home() {
             <h2 className="font-naya-serif mt-3 text-2xl font-light text-text-primary md:text-4xl">trending at purdue.</h2>
             <div className="mt-8 space-y-1">
               {s.trendingSearches.map((tq, i) => (
-                <button key={tq} type="button" onClick={() => s.handleSearch(tq)} className="group flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left transition-all hover:bg-black/[0.03]">
+                <button key={tq.query} type="button" onClick={() => s.handleSearch(tq.query)} className="group flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left transition-all hover:bg-black/[0.03]">
                   <span className="font-naya-serif w-8 text-2xl font-extralight text-black/15 md:text-3xl">{i + 1}</span>
-                  <span className="font-naya-serif text-lg font-light text-text-primary transition-colors group-hover:text-black md:text-xl">{tq}</span>
+                  <span className="font-naya-serif text-lg font-light text-text-primary transition-colors group-hover:text-black md:text-xl">{tq.label}</span>
                   <svg className="ml-auto h-4 w-4 shrink-0 text-black/10 transition-all group-hover:translate-x-1 group-hover:text-black/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" /></svg>
                 </button>
               ))}

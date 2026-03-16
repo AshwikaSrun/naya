@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { TrendingItem } from '@/lib/campuses';
 
 export interface Product {
   title: string;
@@ -35,7 +36,7 @@ const initialPlatformStatus: PlatformStatus = {
   ebay: 'idle', grailed: 'idle', depop: 'idle', poshmark: 'idle',
 };
 
-export function useNayaSearch(defaultTrending: string[], campusSlug?: string) {
+export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: string) {
   const [query, setQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [results, setResults] = useState<SearchResults | null>(null);
@@ -63,7 +64,7 @@ export function useNayaSearch(defaultTrending: string[], campusSlug?: string) {
   const [cartOpen, setCartOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [shareCopied, setShareCopied] = useState(false);
-  const [trendingSearches, setTrendingSearches] = useState<string[]>([]);
+  const [trendingSearches, setTrendingSearches] = useState<TrendingItem[]>([]);
 
   const trendingKey = campusSlug ? `naya-trending-${campusSlug}` : 'naya-trending';
 
@@ -93,7 +94,7 @@ export function useNayaSearch(defaultTrending: string[], campusSlug?: string) {
       const sorted = Object.entries(counts)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5)
-        .map(([q]) => q);
+        .map(([q]) => ({ label: q, query: q }));
       setTrendingSearches(sorted.length > 0 ? sorted : defaultTrending);
     } catch {
       setTrendingSearches(defaultTrending);

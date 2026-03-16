@@ -26,6 +26,19 @@ interface SearchResults {
   };
 }
 
+export interface RelatedSearch {
+  label: string;
+  query: string;
+}
+
+const DEFAULT_RELATED: RelatedSearch[] = [
+  { label: 'vintage carhartt jacket flat lay', query: 'vintage carhartt jacket' },
+  { label: 'vintage nike crewneck clean', query: 'vintage nike crewneck' },
+  { label: 'baggy levi 550 minimal', query: 'baggy levi 550' },
+  { label: 'y2k zip hoodie', query: 'y2k zip hoodie' },
+  { label: 'vintage streetwear aesthetic', query: 'vintage streetwear' },
+];
+
 interface ResultsGridProps {
   results: SearchResults;
   filters: {
@@ -34,6 +47,8 @@ interface ResultsGridProps {
     size: string;
     condition: string;
   };
+  onSearch?: (query: string) => void;
+  relatedSearches?: RelatedSearch[];
 }
 
 type SourceFilter = 'all' | 'ebay' | 'grailed' | 'depop' | 'poshmark';
@@ -57,7 +72,7 @@ function interleave(arrays: Product[][]): Product[] {
   return result;
 }
 
-export default function ResultsGrid({ results, filters }: ResultsGridProps) {
+export default function ResultsGrid({ results, filters, onSearch, relatedSearches = DEFAULT_RELATED }: ResultsGridProps) {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [page, setPage] = useState(1);
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
@@ -186,15 +201,34 @@ export default function ResultsGrid({ results, filters }: ResultsGridProps) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="columns-2 gap-4 sm:columns-3 lg:columns-5 [&>div]:break-inside-avoid [&>div]:mb-4">
           {pageProducts.map((product, index) => (
-            <ProductCard
-              key={`${product.source}-${product.url}-${index}`}
-              product={product}
-              onSelect={setSelectedProduct}
-            />
+            <div key={`${product.source}-${product.url}-${index}`}>
+              <ProductCard
+                product={product}
+                onSelect={setSelectedProduct}
+              />
+            </div>
           ))}
         </div>
+
+        {onSearch && relatedSearches.length > 0 && (
+          <div className="mt-12 border-t border-black/5 pt-8">
+            <p className="mb-4 text-[10px] uppercase tracking-[0.2em] text-black/40">related searches</p>
+            <div className="flex flex-wrap gap-2">
+              {relatedSearches.map((r) => (
+                <button
+                  key={r.query}
+                  type="button"
+                  onClick={() => onSearch(r.query)}
+                  className="rounded-full border border-black/10 bg-white px-4 py-2 text-[11px] lowercase tracking-[0.08em] text-black/60 transition-colors hover:border-black/20 hover:text-black"
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <ProductDetailPanel
