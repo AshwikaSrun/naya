@@ -29,6 +29,11 @@ function getCached(cache, key, ttl) {
 }
 
 function setCache(cache, key, data) {
+  // Don't cache empty search results
+  if (data && data.results) {
+    const totalItems = Object.values(data.results).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
+    if (totalItems === 0) return;
+  }
   cache.set(key, { data, ts: Date.now() });
   if (cache.size > 200) {
     const oldest = cache.keys().next().value;

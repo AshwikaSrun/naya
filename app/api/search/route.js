@@ -17,6 +17,10 @@ function getApiCached(key) {
 }
 
 function setApiCache(key, data) {
+  if (data && data.results) {
+    const totalItems = Object.values(data.results).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
+    if (totalItems === 0) return;
+  }
   apiCache.set(key, { data, ts: Date.now() });
   if (apiCache.size > 100) {
     const oldest = apiCache.keys().next().value;
