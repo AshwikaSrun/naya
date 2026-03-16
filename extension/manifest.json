@@ -2,14 +2,18 @@
   "manifest_version": 3,
   "name": "Naya — Resale Price Intelligence",
   "version": "1.0.0",
-  "description": "See resale price data and cross-platform comparisons while you browse eBay, Grailed, Depop, and Poshmark.",
+  "description": "Instant deal scores, cross-platform price checks, and wishlist saves while you browse eBay, Grailed, Depop, and Poshmark.",
   "permissions": ["activeTab", "storage"],
   "host_permissions": [
     "https://www.ebay.com/*",
     "https://www.grailed.com/*",
     "https://www.depop.com/*",
-    "https://poshmark.com/*"
+    "https://poshmark.com/*",
+    "https://www.nayaeditorial.shop/*"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
       "matches": [
@@ -19,6 +23,18 @@
         "https://poshmark.com/listing/*"
       ],
       "js": ["content.js"],
+      "css": ["overlay.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.ebay.com/sch/*",
+        "https://www.grailed.com/shop/*",
+        "https://www.grailed.com/designers/*",
+        "https://www.depop.com/search/*",
+        "https://poshmark.com/search*"
+      ],
+      "js": ["scanner.js"],
       "css": ["overlay.css"],
       "run_at": "document_idle"
     }

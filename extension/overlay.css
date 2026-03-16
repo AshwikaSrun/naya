@@ -1,7 +1,9 @@
+/* ── Naya Extension — Shared Styles ── */
+
 #naya-overlay {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
+  top: 16px;
+  right: 16px;
   z-index: 2147483647;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   line-height: 1.4;
@@ -13,181 +15,386 @@
   padding: 0;
 }
 
+/* ── Card ── */
+
 .naya-card {
-  width: 300px;
+  width: 290px;
   background: #faf9f7;
   border: 1px solid rgba(0,0,0,0.08);
-  border-radius: 16px;
+  border-radius: 14px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
   overflow: hidden;
-  transition: all 0.3s ease;
+  animation: naya-slide-in 0.3s ease;
 }
 
-.naya-card.naya-collapsed {
-  width: auto;
-  cursor: pointer;
+@keyframes naya-slide-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
+
+/* ── Header ── */
 
 .naya-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid rgba(0,0,0,0.05);
+  padding: 10px 14px;
   background: white;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 
 .naya-logo {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 300;
+  font-style: italic;
   letter-spacing: -0.02em;
   color: #000;
-  font-style: italic;
 }
 
-.naya-close {
+.naya-header-actions {
+  display: flex;
+  gap: 2px;
+}
+
+.naya-close-btn,
+.naya-minimize-btn {
   background: none;
   border: none;
   cursor: pointer;
-  color: rgba(0,0,0,0.3);
-  font-size: 18px;
+  color: rgba(0,0,0,0.25);
+  font-size: 16px;
   line-height: 1;
   padding: 2px 6px;
-  border-radius: 6px;
-  transition: all 0.2s;
+  border-radius: 4px;
+  transition: all 0.15s;
 }
 
-.naya-close:hover {
+.naya-close-btn:hover,
+.naya-minimize-btn:hover {
   background: rgba(0,0,0,0.05);
-  color: rgba(0,0,0,0.6);
+  color: rgba(0,0,0,0.5);
 }
+
+/* ── Body ── */
 
 .naya-body {
-  padding: 16px;
+  padding: 14px;
 }
 
-.naya-section-label {
+.naya-label {
   font-size: 9px;
   text-transform: uppercase;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.18em;
   color: rgba(0,0,0,0.3);
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
-.naya-price-row {
+/* ── Deal Score ── */
+
+.naya-deal {
   display: flex;
-  align-items: baseline;
-  gap: 10px;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.naya-deal-good {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+}
+
+.naya-deal-bad {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.naya-deal-fair {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.naya-deal-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.naya-deal-text {
+  flex: 1;
+}
+
+/* ── Prices ── */
+
+.naya-prices {
+  display: flex;
+  gap: 12px;
   margin-bottom: 12px;
 }
 
-.naya-median {
-  font-size: 28px;
-  font-weight: 300;
-  color: #000;
-}
-
-.naya-trend {
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.naya-trend.up { color: #f43f5e; }
-.naya-trend.down { color: #10b981; }
-.naya-trend.flat { color: rgba(0,0,0,0.3); }
-
-.naya-range {
-  font-size: 12px;
-  color: rgba(0,0,0,0.35);
-}
-
-.naya-platforms {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.naya-platform-pill {
+.naya-price-col {
   flex: 1;
-  padding: 8px;
+  padding: 10px;
   background: white;
-  border: 1px solid rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.05);
   border-radius: 10px;
-  text-align: center;
 }
 
-.naya-platform-name {
-  font-size: 10px;
-  color: rgba(0,0,0,0.4);
-  text-transform: capitalize;
-  font-weight: 500;
-}
-
-.naya-platform-price {
-  font-size: 15px;
+.naya-big-price {
+  font-size: 24px;
   font-weight: 300;
   color: #000;
   margin-top: 2px;
 }
 
-.naya-platform-count {
-  font-size: 9px;
-  color: rgba(0,0,0,0.2);
-}
-
-.naya-cta {
-  display: block;
-  width: 100%;
-  margin-top: 14px;
-  padding: 10px;
-  background: #000;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  font-size: 11px;
+.naya-trend-sm {
+  font-size: 10px;
   font-weight: 500;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  text-align: center;
-  text-decoration: none;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.naya-cta:hover {
-  opacity: 0.85;
-}
-
-.naya-loading {
-  text-align: center;
-  padding: 24px 16px;
-  color: rgba(0,0,0,0.4);
-  font-size: 12px;
-}
-
-.naya-empty {
-  text-align: center;
-  padding: 20px 16px;
+  margin-top: 2px;
   color: rgba(0,0,0,0.3);
-  font-size: 12px;
 }
 
-.naya-badge-btn {
+.naya-trend-sm.up { color: #f43f5e; }
+.naya-trend-sm.down { color: #10b981; }
+
+.naya-source-tag {
+  display: inline-block;
+  margin-top: 3px;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(0,0,0,0.3);
+  background: rgba(0,0,0,0.04);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* ── Range ── */
+
+.naya-range-bar {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px;
-  background: white;
-  border: 1px solid rgba(0,0,0,0.08);
-  border-radius: 50px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 13px;
-  color: #000;
+  font-size: 11px;
+  color: rgba(0,0,0,0.35);
+  margin-bottom: 12px;
 }
 
-.naya-badge-btn:hover {
-  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-  transform: translateY(-1px);
+.naya-range-bar .naya-label {
+  margin-bottom: 0;
+}
+
+/* ── Platform pills (duplicate detection) ── */
+
+.naya-section {
+  margin-bottom: 12px;
+}
+
+.naya-plats {
+  display: flex;
+  gap: 6px;
+}
+
+.naya-plat-pill {
+  flex: 1;
+  padding: 8px 6px;
+  background: white;
+  border: 1px solid rgba(0,0,0,0.05);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.naya-plat-current {
+  border-color: rgba(0,0,0,0.15);
+  background: rgba(0,0,0,0.02);
+}
+
+.naya-plat-name {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: capitalize;
+  color: rgba(0,0,0,0.4);
+}
+
+.naya-plat-price {
+  font-size: 14px;
+  font-weight: 300;
+  color: #000;
+  margin-top: 1px;
+}
+
+.naya-plat-count {
+  font-size: 8px;
+  color: rgba(0,0,0,0.2);
+}
+
+/* ── Action buttons ── */
+
+.naya-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.naya-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.02em;
+}
+
+.naya-btn svg {
+  flex-shrink: 0;
+}
+
+.naya-btn-primary {
+  background: #000;
+  color: #fff;
+}
+
+.naya-btn-primary:hover {
+  opacity: 0.85;
+}
+
+.naya-btn-secondary {
+  background: white;
+  color: #000;
+  border: 1px solid rgba(0,0,0,0.1);
+}
+
+.naya-btn-secondary:hover {
+  border-color: rgba(0,0,0,0.2);
+  background: rgba(0,0,0,0.02);
+}
+
+.naya-btn-saved {
+  background: #ecfdf5 !important;
+  color: #065f46 !important;
+  border-color: #a7f3d0 !important;
+}
+
+.naya-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ── Loading ── */
+
+.naya-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px 14px;
+  font-size: 12px;
+  color: rgba(0,0,0,0.4);
+}
+
+.naya-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(0,0,0,0.08);
+  border-top-color: rgba(0,0,0,0.4);
+  border-radius: 50%;
+  animation: naya-spin 0.7s linear infinite;
+}
+
+@keyframes naya-spin {
+  to { transform: rotate(360deg); }
+}
+
+.naya-empty-msg {
+  text-align: center;
+  padding: 8px 0 12px;
+  font-size: 12px;
+  color: rgba(0,0,0,0.3);
+}
+
+/* ── Floating Action Button (minimized state) ── */
+
+.naya-fab {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #000;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  transition: all 0.2s;
+  animation: naya-slide-in 0.2s ease;
+}
+
+.naya-fab:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+}
+
+.naya-fab-logo {
+  color: white;
+  font-size: 18px;
+  font-weight: 300;
+  font-style: italic;
+}
+
+/* ── Deal Scanner Badges (search results) ── */
+
+.naya-deal-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 10000;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
+  pointer-events: none;
+  animation: naya-badge-pop 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+@keyframes naya-badge-pop {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.naya-badge-good {
+  background: rgba(5, 150, 105, 0.95);
+  color: white;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+}
+
+.naya-badge-bad {
+  background: rgba(220, 38, 38, 0.9);
+  color: white;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25);
+}
+
+.naya-badge-fire,
+.naya-badge-warn {
+  font-size: 12px;
+  line-height: 1;
 }
