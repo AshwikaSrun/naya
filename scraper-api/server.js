@@ -9,6 +9,7 @@ const { scrapeGrailed } = require('./lib/grailedScraper');
 const { scrapeGoogleShopping, lookupRetailPrices } = require('./lib/googleShoppingScraper');
 const { filterByRelevance } = require('./lib/relevance');
 const { runPipeline, runGlobalPipeline } = require('./lib/dataPipeline');
+const { ingestSearchResults } = require('./lib/dataIngestion');
 
 const app = express();
 app.use(cors());
@@ -210,6 +211,10 @@ app.get('/search', async (req, res) => {
     };
 
     setCache(searchCache, cacheKey, responseBody);
+
+    // Fire-and-forget: persist data to Supabase for analytics
+    const campusSlug = req.query.campus || null;
+    ingestSearchResults(query, finalResults, campusSlug).catch(() => {});
 
     return res.json(responseBody);
   } catch (error) {

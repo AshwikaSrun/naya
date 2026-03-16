@@ -18,6 +18,7 @@ const NAV_LINKS = [
   { href: '/deals', label: 'deals' },
   { href: '/featured', label: 'featured' },
   { href: '/college', label: 'campus' },
+  { href: '/insights', label: 'insights' },
   { href: '/app', label: 'concierge' },
   { href: '/profile', label: 'profile' },
 ];

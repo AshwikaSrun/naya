@@ -8,6 +8,7 @@
     "postinstall": "npx playwright install --with-deps"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.99.2",
     "axios": "^1.13.2",
     "cheerio": "^1.1.2",
     "cors": "^2.8.5",

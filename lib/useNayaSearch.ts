@@ -107,27 +107,48 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
     });
   }, []);
 
-  // Load trending
+  // Load trending — try API first, fall back to localStorage
   const loadTrending = useCallback(() => {
     if (typeof window === 'undefined') return;
-    try {
-      const raw = JSON.parse(window.localStorage.getItem(trendingKey) || '[]');
-      const cutoff = Date.now() - 24 * 60 * 60 * 1000;
-      const recent = raw.filter((e: { timestamp: number }) => e.timestamp > cutoff);
-      const counts: Record<string, number> = {};
-      for (const entry of recent) {
-        const q = (entry.query as string).toLowerCase().trim();
-        counts[q] = (counts[q] || 0) + 1;
+
+    const apiUrl = campusSlug
+      ? `/api/insights/trending?campus=${encodeURIComponent(campusSlug)}&limit=5`
+      : '/api/insights/trending?limit=5';
+
+    fetch(apiUrl)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.trending && d.trending.length > 0) {
+          setTrendingSearches(d.trending.map((t: { query: string; label?: string }) => ({
+            label: t.label || t.query,
+            query: t.query,
+          })));
+          return;
+        }
+        loadTrendingFromLocal();
+      })
+      .catch(() => loadTrendingFromLocal());
+
+    function loadTrendingFromLocal() {
+      try {
+        const raw = JSON.parse(window.localStorage.getItem(trendingKey) || '[]');
+        const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+        const recent = raw.filter((e: { timestamp: number }) => e.timestamp > cutoff);
+        const counts: Record<string, number> = {};
+        for (const entry of recent) {
+          const q = (entry.query as string).toLowerCase().trim();
+          counts[q] = (counts[q] || 0) + 1;
+        }
+        const sorted = Object.entries(counts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+          .map(([q]) => ({ label: q, query: q }));
+        setTrendingSearches(sorted.length > 0 ? sorted : defaultTrending);
+      } catch {
+        setTrendingSearches(defaultTrending);
       }
-      const sorted = Object.entries(counts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([q]) => ({ label: q, query: q }));
-      setTrendingSearches(sorted.length > 0 ? sorted : defaultTrending);
-    } catch {
-      setTrendingSearches(defaultTrending);
     }
-  }, [trendingKey, defaultTrending]);
+  }, [trendingKey, defaultTrending, campusSlug]);
 
   useEffect(() => { loadTrending(); }, [loadTrending]);
 

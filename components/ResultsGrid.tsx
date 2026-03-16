@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import ProductCard from './ProductCard';
 import ProductDetailPanel from './ProductDetailPanel';
+import PriceIndexBadge from './PriceIndexBadge';
 
 interface Product {
   title: string;
@@ -175,6 +176,8 @@ export default function ResultsGrid({ results, filters, onSearch, relatedSearche
           minDiscount={minDiscount}
           setMinDiscount={(d) => { setMinDiscount(d); setPage(1); }}
         />
+
+        <PriceIndexBadge query={results.query} />
 
         <div className="flex flex-wrap items-center justify-between gap-4">
           <span className="text-sm text-black/60">
