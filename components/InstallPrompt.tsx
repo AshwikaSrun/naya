@@ -129,50 +129,104 @@ export default function InstallPrompt() {
     );
   }
 
-  // Android / Desktop: native install prompt
-  if (!deferredPrompt) return null;
-
-  return (
-    <div className="fixed inset-x-0 bottom-0 z-[100] safe-bottom">
-      <div className="mx-4 mb-4 overflow-hidden rounded-2xl bg-white shadow-vibrant">
-        <div className="flex items-center gap-4 p-5">
-          <img src="/icon-192.png" alt="naya" className="h-12 w-12 rounded-xl" />
-          <div className="flex-1">
-            <p className="font-naya-serif text-base font-light text-text-primary">
-              get the naya app
-            </p>
-            <p className="mt-0.5 text-xs text-text-muted">
-              add to your home screen for the full experience
-            </p>
+  // Mobile: native install prompt
+  if (deferredPrompt) {
+    return (
+      <div className="fixed inset-x-0 bottom-0 z-[100] safe-bottom">
+        <div className="mx-4 mb-4 overflow-hidden rounded-2xl bg-white shadow-vibrant">
+          <div className="flex items-center gap-4 p-5">
+            <img src="/icon-192.png" alt="naya" className="h-12 w-12 rounded-xl" />
+            <div className="flex-1">
+              <p className="font-naya-serif text-base font-light text-text-primary">
+                get the naya app
+              </p>
+              <p className="mt-0.5 text-xs text-text-muted">
+                add to your home screen for the full experience
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleDismiss}
+              className="rounded-full p-1.5 text-black/30 transition-colors hover:bg-black/5 hover:text-black/60"
+              aria-label="Dismiss"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={handleDismiss}
-            className="rounded-full p-1.5 text-black/30 transition-colors hover:bg-black/5 hover:text-black/60"
-            aria-label="Dismiss"
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        <div className="flex border-t border-black/5">
-          <button
-            type="button"
-            onClick={handleDismiss}
-            className="flex-1 py-3 text-[11px] font-medium lowercase tracking-[0.08em] text-black/40 transition-colors hover:bg-black/[0.02] hover:text-black/60"
-          >
-            not now
-          </button>
-          <button
-            type="button"
-            onClick={handleInstall}
-            className="flex-1 border-l border-black/5 py-3 text-[11px] font-medium lowercase tracking-[0.08em] text-text-primary transition-colors hover:bg-black/[0.02]"
-          >
-            install
-          </button>
+          <div className="flex border-t border-black/5">
+            <button
+              type="button"
+              onClick={handleDismiss}
+              className="flex-1 py-3 text-[11px] font-medium lowercase tracking-[0.08em] text-black/40 transition-colors hover:bg-black/[0.02] hover:text-black/60"
+            >
+              not now
+            </button>
+            <button
+              type="button"
+              onClick={handleInstall}
+              className="flex-1 border-l border-black/5 py-3 text-[11px] font-medium lowercase tracking-[0.08em] text-text-primary transition-colors hover:bg-black/[0.02]"
+            >
+              install
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  // Desktop: extension prompt (no deferred prompt available)
+  if (!isIOS && typeof window !== 'undefined' && !/android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent)) {
+    return (
+      <div className="fixed inset-x-0 bottom-0 z-[100] safe-bottom">
+        <div className="mx-4 mb-4 overflow-hidden rounded-2xl bg-white shadow-vibrant">
+          <div className="flex items-center gap-4 p-5">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-black/10 bg-white">
+              <svg className="h-5 w-5 text-black/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14.5 2H6a2 2 0 00-2 2v6.5a.5.5 0 00.5.5h1a2.5 2.5 0 010 5h-1a.5.5 0 00-.5.5V22a2 2 0 002 2h5.5a.5.5 0 00.5-.5v-1a2.5 2.5 0 015 0v1a.5.5 0 00.5.5H22a2 2 0 002-2v-5.5a.5.5 0 00-.5-.5h-1a2.5 2.5 0 010-5h1a.5.5 0 00.5-.5V4a2 2 0 00-2-2h-3.5a.5.5 0 00-.5.5v1a2.5 2.5 0 01-5 0v-1a.5.5 0 00-.5-.5z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <p className="font-naya-serif text-base font-light text-text-primary">
+                get the naya extension
+              </p>
+              <p className="mt-0.5 text-xs text-text-muted">
+                deal scores and price checks on every listing
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleDismiss}
+              className="rounded-full p-1.5 text-black/30 transition-colors hover:bg-black/5 hover:text-black/60"
+              aria-label="Dismiss"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div className="flex border-t border-black/5">
+            <button
+              type="button"
+              onClick={handleDismiss}
+              className="flex-1 py-3 text-[11px] font-medium lowercase tracking-[0.08em] text-black/40 transition-colors hover:bg-black/[0.02] hover:text-black/60"
+            >
+              not now
+            </button>
+            <a
+              href="https://github.com/AshwikaSrun/naya/tree/main/extension"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 border-l border-black/5 py-3 text-center text-[11px] font-medium lowercase tracking-[0.08em] text-text-primary transition-colors hover:bg-black/[0.02]"
+            >
+              get extension
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 }
