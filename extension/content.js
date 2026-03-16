@@ -138,27 +138,38 @@ function renderFullOverlay(container, data, info, query) {
   const listingPrice = info.price;
   const marketPrice = data.medianPrice;
 
-  // Deal score
+  // Deal score — big, bold, screenshot-worthy
   let dealHtml = '';
   if (listingPrice > 0 && marketPrice > 0) {
     const diff = marketPrice - listingPrice;
     const pct = Math.round((diff / marketPrice) * 100);
-    if (pct > 0) {
+    const absDiff = Math.abs(Math.round(diff));
+    if (pct >= 15) {
       dealHtml = `
-        <div class="naya-deal naya-deal-good">
-          <span class="naya-deal-icon">&#128293;</span>
-          <span class="naya-deal-text">${pct}% below market</span>
+        <div class="naya-verdict naya-verdict-steal">
+          <div class="naya-verdict-emoji">&#128293;</div>
+          <div class="naya-verdict-main">${pct}% below market</div>
+          <div class="naya-verdict-detail">you save $${absDiff} vs. the $${Math.round(marketPrice)} average</div>
         </div>`;
-    } else if (pct < -5) {
+    } else if (pct > 0) {
       dealHtml = `
-        <div class="naya-deal naya-deal-bad">
-          <span class="naya-deal-icon">&#9888;&#65039;</span>
-          <span class="naya-deal-text">Overpriced by $${Math.abs(Math.round(diff))}</span>
+        <div class="naya-verdict naya-verdict-good">
+          <div class="naya-verdict-emoji">&#9989;</div>
+          <div class="naya-verdict-main">${pct}% below market</div>
+          <div class="naya-verdict-detail">$${absDiff} under the $${Math.round(marketPrice)} average</div>
+        </div>`;
+    } else if (pct > -5) {
+      dealHtml = `
+        <div class="naya-verdict naya-verdict-fair">
+          <div class="naya-verdict-main">fair price</div>
+          <div class="naya-verdict-detail">right at the $${Math.round(marketPrice)} market average</div>
         </div>`;
     } else {
       dealHtml = `
-        <div class="naya-deal naya-deal-fair">
-          <span class="naya-deal-text">Fair price — at market value</span>
+        <div class="naya-verdict naya-verdict-overpriced">
+          <div class="naya-verdict-emoji">&#9888;&#65039;</div>
+          <div class="naya-verdict-main">overpriced by $${absDiff}</div>
+          <div class="naya-verdict-detail">market average is $${Math.round(marketPrice)} — this listing is ${Math.abs(pct)}% above</div>
         </div>`;
     }
   }

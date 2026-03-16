@@ -116,46 +116,61 @@
   margin-bottom: 4px;
 }
 
-/* ── Deal Score ── */
+/* ── Verdict — big, bold, shareable ── */
 
-.naya-deal {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
-  border-radius: 12px;
+.naya-verdict {
+  text-align: center;
+  padding: 18px 16px 14px;
+  border-radius: 14px;
   margin-bottom: 16px;
-  font-size: 14px;
-  font-weight: 700;
 }
 
-.naya-deal-good {
+.naya-verdict-emoji {
+  font-size: 32px;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.naya-verdict-main {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.naya-verdict-detail {
+  font-size: 11px;
+  font-weight: 500;
+  margin-top: 5px;
+  opacity: 0.7;
+}
+
+.naya-verdict-steal {
+  background: linear-gradient(135deg, #059669, #10b981);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(5, 150, 105, 0.35);
+}
+.naya-verdict-steal .naya-verdict-detail { opacity: 0.85; }
+
+.naya-verdict-good {
   background: linear-gradient(135deg, #ecfdf5, #d1fae5);
-  border: 1px solid #6ee7b7;
+  border: 1.5px solid #6ee7b7;
   color: #065f46;
 }
 
-.naya-deal-bad {
-  background: linear-gradient(135deg, #fef2f2, #fee2e2);
-  border: 1px solid #fca5a5;
-  color: #991b1b;
-}
-
-.naya-deal-fair {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+.naya-verdict-fair {
+  background: #f4f5f6;
+  border: 1.5px solid #e5e7eb;
   color: #6b7280;
-  font-weight: 500;
 }
+.naya-verdict-fair .naya-verdict-main { font-size: 18px; font-weight: 600; }
 
-.naya-deal-icon {
-  font-size: 20px;
-  line-height: 1;
+.naya-verdict-overpriced {
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(220, 38, 38, 0.3);
 }
-
-.naya-deal-text {
-  flex: 1;
-}
+.naya-verdict-overpriced .naya-verdict-detail { opacity: 0.85; }
 
 /* ── Prices ── */
 

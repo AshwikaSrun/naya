@@ -49,11 +49,12 @@ async function scanListings() {
 
       const diff = marketPrice - card.price;
       const pct = Math.round((diff / marketPrice) * 100);
+      const absDiff = Math.abs(Math.round(diff));
 
       if (pct >= 20) {
-        injectBadge(card.element, pct, 'good');
+        injectBadge(card.element, pct, absDiff, 'good');
       } else if (pct <= -15) {
-        injectBadge(card.element, Math.abs(pct), 'bad');
+        injectBadge(card.element, Math.abs(pct), absDiff, 'bad');
       }
     }
   });
@@ -114,11 +115,10 @@ function parsePrice(raw) {
 
 // ── Badge injection ──
 
-function injectBadge(element, pct, type) {
+function injectBadge(element, pct, dollarDiff, type) {
   const existing = element.querySelector(`.${BADGE_CLASS}`);
   if (existing) return;
 
-  // Make container relative if not already
   const pos = window.getComputedStyle(element).position;
   if (pos === 'static') element.style.position = 'relative';
 
@@ -126,9 +126,9 @@ function injectBadge(element, pct, type) {
   badge.className = `${BADGE_CLASS} naya-badge-${type}`;
 
   if (type === 'good') {
-    badge.innerHTML = `<span class="naya-badge-fire">&#128293;</span> ${pct}% below market`;
+    badge.innerHTML = `<span class="naya-badge-fire">&#128293;</span> ${pct}% below · save $${dollarDiff}`;
   } else {
-    badge.innerHTML = `<span class="naya-badge-warn">&#9888;&#65039;</span> ${pct}% above market`;
+    badge.innerHTML = `<span class="naya-badge-warn">&#9888;&#65039;</span> $${dollarDiff} overpriced`;
   }
 
   element.appendChild(badge);
