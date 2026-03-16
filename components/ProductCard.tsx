@@ -67,13 +67,13 @@ export default function ProductCard({ product, onSelect }: ProductCardProps) {
 
   return (
     <div
-      className="group relative cursor-pointer overflow-hidden rounded-2xl bg-white"
+      className="group cursor-pointer"
       onClick={() => {
         handleRecentlyViewed();
         onSelect?.(product);
       }}
     >
-      <div className="relative aspect-[3/4] w-full overflow-hidden bg-neutral-100">
+      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl bg-neutral-100">
         <Image
           src={imageSrc}
           alt={product.title}
@@ -86,7 +86,7 @@ export default function ProductCard({ product, onSelect }: ProductCardProps) {
           }}
         />
 
-        {/* Heart button */}
+        {/* Heart — only visible on hover */}
         <button
           type="button"
           onClick={(e) => {
@@ -94,7 +94,9 @@ export default function ProductCard({ product, onSelect }: ProductCardProps) {
             updateWishlist(!isWishlisted);
           }}
           aria-label={isWishlisted ? 'Remove from wishlist' : 'Save'}
-          className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-black/60 shadow-sm transition-all hover:bg-white"
+          className={`absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-black/60 shadow-sm transition-all hover:bg-white ${
+            isWishlisted ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          }`}
         >
           <svg
             className="h-4 w-4"
@@ -111,58 +113,30 @@ export default function ProductCard({ product, onSelect }: ProductCardProps) {
           </svg>
         </button>
 
-        {/* Cart button */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (!inCart) {
-              addToCart(product);
-              setInCart(true);
-            }
-          }}
-          aria-label={inCart ? 'In cart' : 'Add to cart'}
-          className={`absolute right-3 top-12 z-10 flex h-8 w-8 items-center justify-center rounded-full shadow-sm transition-all ${
-            inCart
-              ? 'bg-black text-white'
-              : 'bg-white/90 text-black/60 hover:bg-white'
-          }`}
-        >
-          <svg className="h-4 w-4" fill={inCart ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24" strokeWidth={inCart ? 0 : 2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-          </svg>
-        </button>
-
         {/* Discount badge */}
         {product.discountPercent && product.discountPercent > 0 && (
-          <div className={`absolute left-3 top-3 z-10 rounded-md px-2 py-1 text-[11px] font-bold text-white shadow-sm ${
-            product.discountPercent >= 60 ? 'bg-red-500' : 'bg-emerald-600'
+          <div className={`absolute left-3 top-3 z-10 rounded-md px-2 py-0.5 text-[10px] font-semibold text-white ${
+            product.discountPercent >= 50 ? 'bg-red-500' : 'bg-black/70'
           }`}>
-            {product.discountPercent >= 60
-              ? `STEAL · ${product.discountPercent}% off`
-              : product.discountPercent >= 30
-                ? `${product.discountPercent}% OFF`
-                : `-${product.discountPercent}%`}
+            {product.discountPercent}% off
           </div>
         )}
+      </div>
 
-        {/* Source badge */}
-        <div className="absolute bottom-3 left-3 z-10 rounded-md bg-white/90 px-2 py-1 text-[11px] font-medium text-black shadow-sm">
-          {product.source}
-        </div>
-
-        {/* Price badge */}
-        <div className="absolute bottom-3 right-3 z-10 rounded-md bg-white/90 px-2.5 py-1.5 shadow-sm">
-          <span className="text-[13px] font-bold text-black">
+      {/* Info below image — Pinterest style */}
+      <div className="px-1 pt-2 pb-1">
+        <p className="text-[11px] font-medium capitalize text-black/40">{product.source}</p>
+        <p className="mt-0.5 line-clamp-2 text-[13px] leading-snug text-black/80">
+          {product.title}
+        </p>
+        <div className="mt-1 flex items-center gap-2">
+          <span className="text-[14px] font-semibold text-black">
             ${product.price.toFixed(2)}
           </span>
           {product.originalPrice && product.originalPrice > product.price && (
-            <div className="flex items-center gap-1">
-              <span className="text-[9px] text-black/40">Retail</span>
-              <span className="text-[9px] text-black/40 line-through">
-                ${product.originalPrice.toFixed(0)}
-              </span>
-            </div>
+            <span className="text-[11px] text-black/35 line-through">
+              ${product.originalPrice.toFixed(0)}
+            </span>
           )}
         </div>
       </div>

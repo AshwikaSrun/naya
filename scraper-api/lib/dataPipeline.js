@@ -86,6 +86,17 @@ const REJECT_TITLE_PATTERNS = [
   /\bparts\s+only\b/i,
 ];
 
+const BAD_IMAGE_PATTERNS = [
+  /placeholder/i,
+  /no-image/i,
+  /default.*\.(gif|png)/i,
+  /1x1\./i,
+  /pixel\./i,
+  /spacer/i,
+  /blank\./i,
+  /ebaystatic\.com\/images\/e\//i,
+];
+
 function validateItem(item) {
   if (!item) return false;
   if (!item.title || item.title.length < 5) return false;
@@ -95,6 +106,10 @@ function validateItem(item) {
   if (!item.image) return false;
   if (item.image.startsWith('data:')) return false;
   if (item.image.length < 10) return false;
+
+  for (const pat of BAD_IMAGE_PATTERNS) {
+    if (pat.test(item.image)) return false;
+  }
 
   for (const pat of REJECT_TITLE_PATTERNS) {
     if (pat.test(item.title)) return false;
@@ -199,11 +214,27 @@ function rankResults(items, query) {
 
       const hasDiscount = item.discountPercent && item.discountPercent > 15 ? 0.05 : 0;
 
+      // Grailed/Depop sellers tend to take better flat-lay photos
+      const platformBoost =
+        item.source === 'grailed' ? 0.10 :
+        item.source === 'depop' ? 0.08 :
+        item.source === 'poshmark' ? 0.05 : 0;
+
+      // High-res image URL bonus
+      const hiRes = item.image && (
+        item.image.includes('s-l1600') ||
+        item.image.includes('/P1.') ||
+        item.image.includes('_hq1') ||
+        item.image.includes('1600x')
+      ) ? 0.05 : 0;
+
       const score =
-        relevance * 0.50 +
-        hasImage * 0.20 +
+        relevance * 0.40 +
+        hasImage * 0.15 +
         priceScore * 0.10 +
         titleScore * 0.10 +
+        platformBoost +
+        hiRes +
         isJunk +
         hasDiscount +
         0.05; // base

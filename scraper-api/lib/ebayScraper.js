@@ -45,10 +45,12 @@ async function scrapeEbay(query, limit = 10) {
         $(elem).find('span.s-item__price--original, .s-item__discount .STRIKETHROUGH').text().trim() ||
         '';
       
-      // Get image (prefer higher resolution if available)
       let image = $(elem).find('img').first().attr('src') || '';
       if (image) {
-        image = image.replace(/s-l\d+/i, 's-l500');
+        image = image.replace(/s-l\d+/i, 's-l1600');
+      }
+      if (!image || image.includes('ebaystatic.com/images/e') || image.includes('/null')) {
+        return;
       }
       
       // Get URL
