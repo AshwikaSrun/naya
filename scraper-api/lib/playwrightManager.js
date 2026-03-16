@@ -130,6 +130,6 @@ class PlaywrightManager {
   }
 }
 
-const playwrightManager = new PlaywrightManager(2);
+const playwrightManager = new PlaywrightManager(1);
 
 module.exports = { playwrightManager };

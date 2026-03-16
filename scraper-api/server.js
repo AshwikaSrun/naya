@@ -258,5 +258,11 @@ app.listen(port, () => {
   console.log(`Scraper API listening on ${port}`);
   console.log(`Platforms: ${allPlatforms.join(', ')}`);
   console.log(`Per-scraper timeout: ${SCRAPER_TIMEOUT_MS}ms`);
-  console.log('Grailed: Algolia API | Poshmark: Cheerio | eBay: Cheerio | Depop: API+fallback');
+  console.log('Grailed: Algolia | Poshmark: Cheerio | eBay: Cheerio | Depop: Playwright');
+
+  const { playwrightManager } = require('./lib/playwrightManager');
+  playwrightManager.init()
+    .catch((err) => {
+      console.error('[warmup] Playwright init failed:', err.message);
+    });
 });
