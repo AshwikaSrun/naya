@@ -37,6 +37,9 @@ const DEAL_CATEGORIES = [
   { label: 'Vintage tees', query: 'vintage graphic tee' },
   { label: 'Jordans', query: 'Jordan sneakers' },
   { label: 'Carhartt', query: 'Carhartt' },
+  { label: 'Vintage denim', query: 'vintage denim' },
+  { label: 'Outerwear', query: 'vintage outerwear' },
+  { label: 'Accessories', query: 'vintage accessories' },
 ];
 
 const MIN_DISCOUNT = 30;
@@ -130,23 +133,25 @@ export default function DealsPage() {
             naya
           </Link>
           <nav className="font-naya-sans hidden items-center gap-3 text-[10px] lowercase tracking-[0.15em] text-black/60 md:flex">
-            <Link href="/editorial" className="px-3 py-1.5 transition-colors hover:text-black">editorial</Link>
-            <Link href="/brands" className="px-3 py-1.5 transition-colors hover:text-black">brands</Link>
             <Link href="/deals" className="px-3 py-1.5 text-black font-medium">deals</Link>
+            <Link href="/college" className="px-3 py-1.5 transition-colors hover:text-black">campus</Link>
+            <Link href="/insights" className="px-3 py-1.5 transition-colors hover:text-black">insights</Link>
+            <Link href="/app" className="px-3 py-1.5 transition-colors hover:text-black">concierge</Link>
+            <Link href="/profile" className="px-3 py-1.5 transition-colors hover:text-black">profile</Link>
           </nav>
         </div>
       </header>
 
       {/* Hero */}
-      <section className="border-b border-black/5 bg-gradient-to-b from-emerald-50/60 to-white px-6 py-12 text-center">
-        <p className="font-naya-sans text-[10px] uppercase tracking-[0.2em] text-emerald-700/60">
+      <section className="border-b border-black/5 px-6 py-12 text-center">
+        <p className="font-naya-sans text-[10px] uppercase tracking-[0.2em] text-black/30">
           deals
         </p>
         <h1 className="font-naya-serif mt-3 text-3xl font-light text-black md:text-5xl">
           biggest discounts right now.
         </h1>
-        <p className="mt-3 text-sm font-light text-black/50">
-          {MIN_DISCOUNT}%+ off, curated to aesthetic picks only
+        <p className="font-naya-sans mt-3 text-sm font-light text-black/40">
+          {MIN_DISCOUNT}%+ off across ebay, grailed, depop & poshmark
         </p>
       </section>
 
@@ -158,10 +163,10 @@ export default function DealsPage() {
               key={cat.label}
               type="button"
               onClick={() => setActiveCategory(cat)}
-              className={`rounded-full border px-4 py-2 text-[11px] tracking-wider transition-all ${
+              className={`font-naya-sans rounded-full border px-4 py-2 text-[11px] lowercase tracking-[0.06em] transition-all ${
                 activeCategory.label === cat.label
-                  ? 'border-emerald-600 bg-emerald-600 text-white'
-                  : 'border-black/15 bg-white text-black/60 hover:border-emerald-600/40 hover:text-emerald-700'
+                  ? 'border-black bg-black text-white'
+                  : 'border-black/10 bg-white text-black/50 hover:border-black/25 hover:text-black'
               }`}
             >
               {cat.label}

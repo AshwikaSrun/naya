@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import ProductCard from '@/components/ProductCard';
 
 interface Product {
@@ -46,27 +47,39 @@ export default function ProfilePage() {
   }, [prefs]);
 
   return (
-    <div className="min-h-screen bg-night-bg">
+    <div className="min-h-screen bg-white">
       <div className="mx-auto max-w-6xl px-6 py-12 md:px-10 md:py-16">
+        {/* Header */}
+        <div className="mb-10 flex items-center justify-between">
+          <Link href="/" className="font-naya-serif text-2xl font-light lowercase tracking-[0.12em] text-black">naya</Link>
+          <nav className="font-naya-sans hidden items-center gap-3 text-[10px] lowercase tracking-[0.15em] text-black/60 md:flex">
+            <Link href="/deals" className="px-3 py-1.5 transition-colors hover:text-black">deals</Link>
+            <Link href="/college" className="px-3 py-1.5 transition-colors hover:text-black">campus</Link>
+            <Link href="/insights" className="px-3 py-1.5 transition-colors hover:text-black">insights</Link>
+            <Link href="/app" className="px-3 py-1.5 transition-colors hover:text-black">concierge</Link>
+            <Link href="/profile" className="px-3 py-1.5 text-black font-medium">profile</Link>
+          </nav>
+        </div>
+
         <header className="mb-12 text-center">
-          <p className="mb-4 text-xs uppercase tracking-[0.3em] text-text-muted">
+          <p className="font-naya-sans mb-4 text-[10px] uppercase tracking-[0.2em] text-black/30">
             profile
           </p>
-          <h1 className="mb-3 text-4xl font-semibold uppercase tracking-[0.18em] text-text-primary md:text-5xl">
-            NAYA EDITS
+          <h1 className="font-naya-serif mb-3 text-3xl font-light text-black md:text-5xl">
+            your naya.
           </h1>
-          <p className="text-[11px] uppercase tracking-[0.24em] text-text-secondary">
-            saved + personalized
+          <p className="font-naya-sans text-sm text-black/40">
+            saved items and preferences
           </p>
         </header>
 
-        <section className="mb-12 grid gap-6 border border-black/10 bg-white p-8 md:grid-cols-4">
+        <section className="mb-12 grid gap-6 rounded-2xl border border-black/8 bg-[#faf9f7] p-8 md:grid-cols-4">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.2em] text-text-muted">Size</p>
+            <p className="font-naya-sans text-[9px] uppercase tracking-[0.18em] text-black/25">size</p>
             <select
               value={prefs.size}
               onChange={(event) => setPrefs((prev) => ({ ...prev, size: event.target.value }))}
-              className="mt-2 w-full border-b border-black/20 bg-transparent py-2 text-[11px] uppercase tracking-[0.2em] text-text-primary focus:border-black focus:outline-none"
+              className="font-naya-sans mt-2 w-full border-b border-black/10 bg-transparent py-2 text-[12px] lowercase text-black focus:border-black focus:outline-none"
             >
               <option value="">any</option>
               <option value="xs">xs</option>
@@ -77,11 +90,11 @@ export default function ProfilePage() {
             </select>
           </div>
           <div>
-            <p className="text-[11px] uppercase tracking-[0.2em] text-text-muted">Budget</p>
+            <p className="font-naya-sans text-[9px] uppercase tracking-[0.18em] text-black/25">budget</p>
             <select
               value={prefs.budget}
               onChange={(event) => setPrefs((prev) => ({ ...prev, budget: event.target.value }))}
-              className="mt-2 w-full border-b border-black/20 bg-transparent py-2 text-[11px] uppercase tracking-[0.2em] text-text-primary focus:border-black focus:outline-none"
+              className="font-naya-sans mt-2 w-full border-b border-black/10 bg-transparent py-2 text-[12px] lowercase text-black focus:border-black focus:outline-none"
             >
               <option value="$25">$25</option>
               <option value="$40">$40</option>
@@ -90,11 +103,11 @@ export default function ProfilePage() {
             </select>
           </div>
           <div>
-            <p className="text-[11px] uppercase tracking-[0.2em] text-text-muted">Style</p>
+            <p className="font-naya-sans text-[9px] uppercase tracking-[0.18em] text-black/25">style</p>
             <select
               value={prefs.style}
               onChange={(event) => setPrefs((prev) => ({ ...prev, style: event.target.value }))}
-              className="mt-2 w-full border-b border-black/20 bg-transparent py-2 text-[11px] uppercase tracking-[0.2em] text-text-primary focus:border-black focus:outline-none"
+              className="font-naya-sans mt-2 w-full border-b border-black/10 bg-transparent py-2 text-[12px] lowercase text-black focus:border-black focus:outline-none"
             >
               <option value="casual">casual</option>
               <option value="minimal">minimal</option>
@@ -103,28 +116,28 @@ export default function ProfilePage() {
             </select>
           </div>
           <div>
-            <p className="text-[11px] uppercase tracking-[0.2em] text-text-muted">Alerts</p>
+            <p className="font-naya-sans text-[9px] uppercase tracking-[0.18em] text-black/25">alerts</p>
             <input
               type="email"
               value={prefs.alertEmail}
               onChange={(event) =>
                 setPrefs((prev) => ({ ...prev, alertEmail: event.target.value }))
               }
-              placeholder="email"
-              className="mt-2 w-full border-b border-black/20 bg-transparent py-2 text-[11px] uppercase tracking-[0.2em] text-text-primary focus:border-black focus:outline-none"
+              placeholder="your email"
+              className="font-naya-sans mt-2 w-full border-b border-black/10 bg-transparent py-2 text-[12px] lowercase text-black placeholder:text-black/25 focus:border-black focus:outline-none"
             />
           </div>
         </section>
 
         <div className="mb-6 text-center">
-          <p className="text-xs uppercase tracking-[0.25em] text-text-muted">
+          <p className="font-naya-sans text-[10px] uppercase tracking-[0.2em] text-black/25">
             saved items
           </p>
         </div>
 
         {wishlist.length === 0 ? (
-          <div className="text-center text-xs uppercase tracking-[0.2em] text-text-muted">
-            no saved items yet
+          <div className="font-naya-sans text-center text-sm text-black/30">
+            no saved items yet — heart items while searching to save them here.
           </div>
         ) : (
           <div className="columns-2 gap-5 sm:columns-3 lg:columns-4">

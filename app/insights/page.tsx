@@ -110,18 +110,16 @@ export default function InsightsPage() {
       {/* Header */}
       <header className="border-b border-black/5 bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
-          <Link href="/" className="font-naya-serif text-xl font-light tracking-tight text-black">
+          <Link href="/" className="font-naya-serif text-2xl font-light lowercase tracking-[0.12em] text-black">
             naya
           </Link>
-          <h1 className="font-naya-sans text-[11px] uppercase tracking-[0.25em] text-black/40">
-            market insights
-          </h1>
-          <Link
-            href="/"
-            className="font-naya-sans text-[11px] uppercase tracking-[0.15em] text-black/40 transition-colors hover:text-black"
-          >
-            back to search
-          </Link>
+          <nav className="font-naya-sans hidden items-center gap-3 text-[10px] lowercase tracking-[0.15em] text-black/60 md:flex">
+            <Link href="/deals" className="px-3 py-1.5 transition-colors hover:text-black">deals</Link>
+            <Link href="/college" className="px-3 py-1.5 transition-colors hover:text-black">campus</Link>
+            <Link href="/insights" className="px-3 py-1.5 text-black font-medium">insights</Link>
+            <Link href="/app" className="px-3 py-1.5 transition-colors hover:text-black">concierge</Link>
+            <Link href="/profile" className="px-3 py-1.5 transition-colors hover:text-black">profile</Link>
+          </nav>
         </div>
       </header>
 

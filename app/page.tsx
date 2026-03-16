@@ -13,10 +13,7 @@ import CampusProductGrid from '@/components/CampusProductGrid';
 import { ALL_CAMPUSES } from '@/lib/campuses';
 
 const NAV_LINKS = [
-  { href: '/editorial', label: 'editorial' },
-  { href: '/brands', label: 'brands' },
   { href: '/deals', label: 'deals' },
-  { href: '/featured', label: 'featured' },
   { href: '/college', label: 'campus' },
   { href: '/insights', label: 'insights' },
   { href: '/app', label: 'concierge' },
@@ -535,6 +532,8 @@ export default function Home() {
             <span className="text-[10px] text-text-muted">&copy; 2026</span>
           </div>
           <div className="flex flex-wrap gap-6 text-[10px] lowercase tracking-[0.12em] text-text-muted">
+            <Link href="/editorial" className="transition-colors hover:text-text-primary">editorial</Link>
+            <Link href="/brands" className="transition-colors hover:text-text-primary">brands</Link>
             <Link href="/privacy" className="transition-colors hover:text-text-primary">privacy</Link>
             <Link href="/terms" className="transition-colors hover:text-text-primary">terms</Link>
             <a href="mailto:hello@naya.app" className="transition-colors hover:text-text-primary">contact</a>
