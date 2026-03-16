@@ -301,18 +301,16 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
 
             {(() => {
               const fallback = getFallbackForCampus(campus.name);
-              const pickedForYou = previewProducts && previewProducts.length > 0
-                ? previewProducts.slice(0, 6)
-                : fallback.slice(0, 6);
+              const hasReal = previewProducts && previewProducts.length > 0;
               return (
                 <>
                   <p className="font-naya-sans mt-12 text-[10px] lowercase tracking-[0.2em] text-text-muted">picked for you</p>
                   <div className="mt-4">
-                    {previewProducts && previewProducts.length > 0 ? (
-                      <CampusProductGrid products={pickedForYou} columns={6} />
+                    {hasReal ? (
+                      <CampusProductGrid products={previewProducts!.slice(0, 6)} columns={6} />
                     ) : (
                       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-                        {pickedForYou.map((item, i) => (
+                        {fallback.slice(0, 6).map((item, i) => (
                           <SearchPromptCard key={i} {...item} onSearch={s.handleSearch} />
                         ))}
                       </div>
@@ -348,16 +346,15 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
           {(() => {
             const fallback = getFallbackForCampus(campus.name);
             const hasReal = previewProducts && previewProducts.length > 6;
-            const vintageFinds = hasReal ? previewProducts!.slice(6, 12) : fallback.slice(6, 12);
             return (
               <>
                 <p className="font-naya-sans mt-12 text-[10px] lowercase tracking-[0.2em] text-text-muted">vintage {campus.name.toLowerCase()} finds</p>
                 <div className="mt-4">
                   {hasReal ? (
-                    <CampusProductGrid products={vintageFinds} columns={6} />
+                    <CampusProductGrid products={previewProducts!.slice(6, 12)} columns={6} />
                   ) : (
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-                      {vintageFinds.map((item, i) => (
+                      {fallback.slice(6, 12).map((item, i) => (
                         <SearchPromptCard key={i} {...item} onSearch={s.handleSearch} />
                       ))}
                     </div>
@@ -395,16 +392,15 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
           {(() => {
             const fallback = getFallbackForCampus(campus.name);
             const hasReal = previewProducts && previewProducts.length > 12;
-            const popularPicks = hasReal ? previewProducts!.slice(12, 18) : fallback.slice(12, 18);
             return (
               <>
                 <p className="font-naya-sans mt-12 text-[10px] lowercase tracking-[0.2em] text-text-muted">popular picks</p>
                 <div className="mt-4">
                   {hasReal ? (
-                    <CampusProductGrid products={popularPicks} columns={6} />
+                    <CampusProductGrid products={previewProducts!.slice(12, 18)} columns={6} />
                   ) : (
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-                      {popularPicks.map((item, i) => (
+                      {fallback.slice(12, 18).map((item, i) => (
                         <SearchPromptCard key={i} {...item} onSearch={s.handleSearch} />
                       ))}
                     </div>
