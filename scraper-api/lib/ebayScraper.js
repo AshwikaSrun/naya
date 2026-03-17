@@ -2,7 +2,7 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const { chromium } = require('playwright');
 
-const LAUNCH_ARGS = ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--no-zygote', '--single-process'];
+const LAUNCH_ARGS = ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--disable-blink-features=AutomationControlled'];
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
 function parseEbayHtml(html, limit) {
@@ -105,7 +105,8 @@ async function scrapeEbayPlaywright(query, limit) {
       // Continue anyway
     }
 
-    await page.waitForTimeout(300);
+    // Use setTimeout instead of deprecated page.waitForTimeout (removed in Playwright 1.57+)
+    await new Promise((r) => setTimeout(r, 300));
     const html = await page.content();
     await browser.close();
 

@@ -8,8 +8,6 @@ const LAUNCH_ARGS = [
   '--disable-setuid-sandbox',
   '--disable-dev-shm-usage',
   '--disable-gpu',
-  '--no-zygote',
-  '--single-process',
   '--disable-blink-features=AutomationControlled',
 ];
 
@@ -221,9 +219,10 @@ function parseDepopHtml(html, limit) {
   return results;
 }
 
-/** Playwright fallback — when Cheerio is blocked or returns empty */
+/** Playwright fallback — visit homepage first to get Cloudflare cookies, then
+ *  intercept the internal search API response for structured data. */
 async function scrapeDepopPlaywright(query, limit) {
-  const url = `https://www.depop.com/search?q=${encodeURIComponent(query)}`;
+  const searchUrl = `https://www.depop.com/search?q=${encodeURIComponent(query)}`;
 
   for (let attempt = 1; attempt <= 2; attempt++) {
     let browser = null;
@@ -234,21 +233,39 @@ async function scrapeDepopPlaywright(query, limit) {
         userAgent: USER_AGENT,
         viewport: { width: 1920, height: 1080 },
         locale: 'en-US',
+        extraHTTPHeaders: { 'Accept-Language': 'en-US,en;q=0.9' },
       });
 
       const page = await context.newPage();
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 12000 });
+
+      // Visit homepage first to acquire Cloudflare cookies
+      await page.goto('https://www.depop.com/', { waitUntil: 'domcontentloaded', timeout: 15000 });
       await new Promise((r) => setTimeout(r, 1500));
-      const html = await page.content().catch(() => '');
+
+      // Intercept the search API response
+      let apiProducts = null;
+      page.on('response', async (resp) => {
+        const url = resp.url();
+        if (url.includes('/api/v3/search/products') && resp.status() === 200) {
+          try {
+            const json = await resp.json();
+            if (json.products && json.products.length > (apiProducts?.length || 0)) apiProducts = json.products;
+          } catch {}
+        }
+      });
+
+      await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+      await new Promise((r) => setTimeout(r, 4000));
+
       await browser.close();
       browser = null;
 
-      if (html.includes('Pardon Our Interruption') || !html.includes('/products/')) {
-        return [];
+      // Prefer structured API data
+      if (apiProducts && apiProducts.length > 0) {
+        return apiProducts.slice(0, limit).map(parseDepopApiProduct).filter(Boolean);
       }
 
-      const results = parseDepopHtml(html, limit);
-      return results;
+      return [];
     } catch (err) {
       if (browser) await browser.close().catch(() => {});
       const isClosed = /closed|disconnected|target.*closed/i.test(err.message);
@@ -264,6 +281,45 @@ async function scrapeDepopPlaywright(query, limit) {
   return [];
 }
 
+function parseDepopApiProduct(product) {
+  if (!product) return null;
+  const slug = product.slug || '';
+  // Strip the seller prefix (first segment) and hash suffix (last segment) from the slug
+  const slugParts = slug.split('-');
+  const cleanSlug = slugParts.length > 2 ? slugParts.slice(1, -1).join(' ') : slugParts.join(' ');
+  const brandPrefix = product.brand_name && product.brand_name !== 'Other' ? product.brand_name + ' ' : '';
+  const title = (brandPrefix + cleanSlug).replace(/\b\w/g, (l) => l.toUpperCase()).slice(0, 120) || 'Depop Item';
+
+  const pricing = product.pricing || {};
+  const priceAmount = pricing.original_price?.price_breakdown?.price?.amount
+    || pricing.original_price?.total_price
+    || null;
+  const price = priceAmount != null ? parseFloat(priceAmount) : null;
+
+  let originalPrice = null;
+  if (pricing.is_reduced && pricing.full_price) {
+    const fullAmount = pricing.full_price?.price_breakdown?.price?.amount
+      || pricing.full_price?.total_price
+      || null;
+    originalPrice = fullAmount != null ? parseFloat(fullAmount) : null;
+  }
+
+  const preview = product.preview || {};
+  const image = preview['640'] || preview['480'] || preview['320'] || preview['210'] || preview['150'] || '';
+
+  const url = slug ? `https://www.depop.com/products/${slug}/` : '';
+
+  if (!price || price <= 0 || !image || !url) return null;
+
+  const item = { title, price, image, url, source: 'depop', _platformSearched: true };
+  if (originalPrice && originalPrice > price) {
+    item.originalPrice = originalPrice;
+    item.discountPercent = Math.round(((originalPrice - price) / originalPrice) * 100);
+  }
+  if (product.brand_name) item.brand = product.brand_name;
+  return item;
+}
+
 async function scrapeDepop(query, limit = 10) {
   if (!query) return [];
 
@@ -273,10 +329,9 @@ async function scrapeDepop(query, limit = 10) {
     return cheerioResults;
   }
 
-  await new Promise((r) => setTimeout(r, 2000));
   const playwrightResults = await scrapeDepopPlaywright(query, limit);
   if (playwrightResults.length > 0) {
-    console.log(`[Depop] Playwright fallback returned ${playwrightResults.length} items`);
+    console.log(`[Depop] Playwright returned ${playwrightResults.length} items`);
     return playwrightResults;
   }
 

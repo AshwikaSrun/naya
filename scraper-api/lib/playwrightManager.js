@@ -5,8 +5,7 @@ const LAUNCH_ARGS = [
   '--disable-setuid-sandbox',
   '--disable-dev-shm-usage',
   '--disable-gpu',
-  '--no-zygote',
-  '--single-process',
+  '--disable-blink-features=AutomationControlled',
 ];
 
 class PlaywrightManager {

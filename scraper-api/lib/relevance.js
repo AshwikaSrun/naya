@@ -120,7 +120,13 @@ function filterByRelevance(results, query, threshold = 0.4) {
     _relevanceScore: scoreRelevance(item.title, query),
   }));
 
-  return scored.filter((item) => item._relevanceScore >= threshold);
+  return scored.filter((item) => {
+    // Results from platform-side search (e.g. Depop API) are already relevant;
+    // their titles are often truncated slugs missing query keywords, so skip
+    // our keyword-based relevance filter for them.
+    if (item._platformSearched) return true;
+    return item._relevanceScore >= threshold;
+  });
 }
 
 module.exports = { scoreRelevance, filterByRelevance, getQueryTokens };

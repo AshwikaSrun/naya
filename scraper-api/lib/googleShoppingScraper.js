@@ -1,6 +1,6 @@
 const { chromium } = require('playwright');
 
-const LAUNCH_ARGS = ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--no-zygote', '--single-process'];
+const LAUNCH_ARGS = ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--disable-blink-features=AutomationControlled'];
 
 function buildFocusedQuery(query) {
   const q = query.trim();

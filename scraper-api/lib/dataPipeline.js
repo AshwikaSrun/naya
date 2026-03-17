@@ -242,7 +242,7 @@ function rankResults(items, query) {
       return { ...item, _qualityScore: score };
     })
     .sort((a, b) => b._qualityScore - a._qualityScore)
-    .map(({ _qualityScore, _relevanceScore, ...item }) => item);
+    .map(({ _qualityScore, _relevanceScore, _platformSearched, ...item }) => item);
 }
 
 // ── Full pipeline ────────────────────────────────────────────────────
