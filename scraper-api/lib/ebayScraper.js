@@ -1,102 +1,142 @@
-// eBay scraper
 const axios = require('axios');
 const cheerio = require('cheerio');
+const { chromium } = require('playwright');
 
-async function scrapeEbay(query, limit = 10) {
+const LAUNCH_ARGS = ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--no-zygote', '--single-process'];
+const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+
+function parseEbayHtml(html, limit) {
+  const $ = cheerio.load(html);
+  const results = [];
+
+  $('ul.srp-results li.s-card').each((i, elem) => {
+    if (results.length >= limit) return false;
+
+    const link = $(elem).find('a[href*="/itm/"]').first();
+    const title = $(elem).find('.s-card__title').text().trim() ||
+                  link.attr('aria-label') ||
+                  link.attr('title') ||
+                  link.text().trim();
+    const cleanTitle = title ? title.replace(/\s*Opens in a new window.*$/i, '').trim() : '';
+    const priceText = $(elem).find('.s-card__price').text().trim();
+    const wasText =
+      $(elem).find('.s-card__tagline .STRIKETHROUGH, .s-card__tagline s, .s-card__tagline del').text().trim() ||
+      $(elem).find('span.s-item__price--original, .s-item__discount .STRIKETHROUGH').text().trim() ||
+      '';
+
+    let image = $(elem).find('img').first().attr('src') || '';
+    if (image) image = image.replace(/s-l\d+/i, 's-l500');
+    if (!image || image.includes('/null')) return;
+
+    const url = link.attr('href') || '';
+    if (!cleanTitle || !priceText || !url) return;
+
+    const priceMatch = priceText.match(/[\d,]+\.?\d*/);
+    const price = priceMatch ? parseFloat(priceMatch[0].replace(/,/g, '')) : null;
+    let originalPrice = null;
+    if (wasText) {
+      const wasMatch = wasText.match(/[\d,]+\.?\d*/);
+      originalPrice = wasMatch ? parseFloat(wasMatch[0].replace(/,/g, '')) : null;
+    }
+    let discountPercent = null;
+    if (originalPrice && price && originalPrice > price) {
+      discountPercent = Math.round(((originalPrice - price) / originalPrice) * 100);
+    }
+
+    if (price && cleanTitle && url) {
+      const item = { title: cleanTitle, price, image: image || '', url, source: 'ebay' };
+      if (originalPrice && originalPrice > price) item.originalPrice = originalPrice;
+      if (discountPercent) item.discountPercent = discountPercent;
+      results.push(item);
+    }
+  });
+
+  return results;
+}
+
+async function scrapeEbayCheerio(query, limit) {
   try {
-    if (!query) return [];
-    
-    const itemsPerPage = Math.min(limit, 200);
-    const searchUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}&_ipg=${itemsPerPage}`;
-    
-    // Fetch the page
+    const searchUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}&_ipg=${Math.min(limit, 200)}`;
     const response = await axios.get(searchUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-      }
+        'User-Agent': USER_AGENT,
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Cache-Control': 'no-cache',
+        'Sec-Ch-Ua': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': '"Windows"',
+        'Upgrade-Insecure-Requests': '1',
+      },
+      timeout: 12000,
     });
 
-    const $ = cheerio.load(response.data);
-    const results = [];
+    const html = response.data;
+    if (html.includes('Pardon Our Interruption') || !html.includes('srp-results')) {
+      return [];
+    }
 
-    // Parse eBay search results - items are in ul.srp-results li.s-card
-    $('ul.srp-results li.s-card').each((i, elem) => {
-      // Stop after limit results
-      if (results.length >= limit) {
-        return false; // Break the loop
-      }
-
-      // Get title from .s-card__title or link's aria-label
-      const link = $(elem).find('a[href*="/itm/"]').first();
-      const title = $(elem).find('.s-card__title').text().trim() || 
-                    link.attr('aria-label') || 
-                    link.attr('title') || 
-                    link.text().trim();
-      
-      // Clean up title (remove "Opens in a new window" etc.)
-      const cleanTitle = title ? title.replace(/\s*Opens in a new window.*$/i, '').trim() : '';
-      
-      // Get price from .s-card__price
-      const priceText = $(elem).find('.s-card__price').text().trim();
-
-      // Extract original/"Was" price from strikethrough or tagline elements
-      const wasText =
-        $(elem).find('.s-card__tagline .STRIKETHROUGH, .s-card__tagline s, .s-card__tagline del').text().trim() ||
-        $(elem).find('span.s-item__price--original, .s-item__discount .STRIKETHROUGH').text().trim() ||
-        '';
-      
-      let image = $(elem).find('img').first().attr('src') || '';
-      if (image) {
-        image = image.replace(/s-l\d+/i, 's-l1600');
-      }
-      if (!image || image.includes('ebaystatic.com/images/e') || image.includes('/null')) {
-        return;
-      }
-      
-      // Get URL
-      const url = link.attr('href') || '';
-
-      // Skip if essential data is missing
-      if (!cleanTitle || !priceText || !url) {
-        return;
-      }
-
-      // Extract price as number - remove currency symbols and commas
-      const priceMatch = priceText.match(/[\d,]+\.?\d*/);
-      const price = priceMatch ? parseFloat(priceMatch[0].replace(/,/g, '')) : null;
-
-      // Extract original price
-      let originalPrice = null;
-      if (wasText) {
-        const wasMatch = wasText.match(/[\d,]+\.?\d*/);
-        originalPrice = wasMatch ? parseFloat(wasMatch[0].replace(/,/g, '')) : null;
-      }
-
-      // Calculate discount
-      let discountPercent = null;
-      if (originalPrice && price && originalPrice > price) {
-        discountPercent = Math.round(((originalPrice - price) / originalPrice) * 100);
-      }
-
-      if (price && cleanTitle && url) {
-        const item = {
-          title: cleanTitle,
-          price,
-          image: image || '',
-          url,
-          source: 'ebay'
-        };
-        if (originalPrice && originalPrice > price) item.originalPrice = originalPrice;
-        if (discountPercent) item.discountPercent = discountPercent;
-        results.push(item);
-      }
-    });
-
-    return results;
-  } catch (error) {
-    console.error('eBay scraping error:', error);
+    return parseEbayHtml(html, limit);
+  } catch (err) {
+    console.error('[eBay] Cheerio error:', err.message);
     return [];
   }
+}
+
+async function scrapeEbayPlaywright(query, limit) {
+  let browser = null;
+  try {
+    const searchUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}&_ipg=${Math.min(limit, 200)}`;
+    browser = await chromium.launch({ headless: true, args: LAUNCH_ARGS, timeout: 15000 });
+
+    const context = await browser.newContext({
+      userAgent: USER_AGENT,
+      viewport: { width: 1920, height: 1080 },
+      locale: 'en-US',
+    });
+
+    const page = await context.newPage();
+    await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
+
+    try {
+      await page.waitForSelector('ul.srp-results li.s-card', { timeout: 8000 });
+    } catch {
+      // Continue anyway
+    }
+
+    await page.waitForTimeout(300);
+    const html = await page.content();
+    await browser.close();
+
+    if (html.includes('Pardon Our Interruption') || !html.includes('srp-results')) {
+      return [];
+    }
+
+    return parseEbayHtml(html, limit);
+  } catch (err) {
+    console.error('[eBay] Playwright error:', err.message);
+    if (browser) await browser.close().catch(() => {});
+    return [];
+  }
+}
+
+async function scrapeEbay(query, limit = 10) {
+  if (!query) return [];
+
+  const cheerioResults = await scrapeEbayCheerio(query, limit);
+  if (cheerioResults.length > 0) {
+    console.log(`[eBay] Cheerio returned ${cheerioResults.length} items`);
+    return cheerioResults;
+  }
+
+  const playwrightResults = await scrapeEbayPlaywright(query, limit);
+  if (playwrightResults.length > 0) {
+    console.log(`[eBay] Playwright fallback returned ${playwrightResults.length} items`);
+    return playwrightResults;
+  }
+
+  return [];
 }
 
 module.exports = { scrapeEbay };
