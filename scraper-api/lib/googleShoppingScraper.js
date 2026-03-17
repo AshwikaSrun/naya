@@ -1,4 +1,6 @@
-const { playwrightManager } = require('./playwrightManager');
+const { chromium } = require('playwright');
+
+const LAUNCH_ARGS = ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--no-zygote', '--single-process'];
 
 function buildFocusedQuery(query) {
   const q = query.trim();
@@ -22,7 +24,7 @@ async function scrapeGoogleShopping(query, limit = 10) {
     const focusedQuery = buildFocusedQuery(query);
     const url = `https://www.google.com/search?tbm=shop&hl=en&gl=us&q=${encodeURIComponent(focusedQuery)}`;
 
-    browser = await playwrightManager.createBrowser();
+    browser = await chromium.launch({ headless: true, args: LAUNCH_ARGS, timeout: 15000 });
 
     const context = await browser.newContext({
       userAgent:
@@ -117,11 +119,11 @@ async function scrapeGoogleShopping(query, limit = 10) {
       return items;
     }, limit);
 
-    await playwrightManager.closeBrowser(browser);
+    await browser.close();
     return results;
   } catch (err) {
     console.error('Google Shopping scrape error:', err.message);
-    await playwrightManager.closeBrowser(browser);
+    await browser.close();
     return [];
   }
 }
@@ -137,7 +139,7 @@ async function lookupRetailPrices(query, limit = 10) {
 
     const url = `https://www.google.com/search?tbm=shop&hl=en&gl=us&q=${encodeURIComponent(query.trim())}`;
 
-    browser = await playwrightManager.createBrowser();
+    browser = await chromium.launch({ headless: true, args: LAUNCH_ARGS, timeout: 15000 });
 
     const context = await browser.newContext({
       userAgent:
@@ -197,7 +199,7 @@ async function lookupRetailPrices(query, limit = 10) {
       return items;
     }, limit);
 
-    await playwrightManager.closeBrowser(browser);
+    await browser.close();
 
     // Calculate median retail price
     const sortedPrices = prices.map((p) => p.retailPrice).sort((a, b) => a - b);
@@ -213,7 +215,7 @@ async function lookupRetailPrices(query, limit = 10) {
     return { prices, medianRetailPrice };
   } catch (err) {
     console.error('Retail price lookup error:', err.message);
-    if (browser) await playwrightManager.closeBrowser(browser);
+    if (browser) await browser.close().catch(() => {});
     return { prices: [], medianRetailPrice: null };
   }
 }

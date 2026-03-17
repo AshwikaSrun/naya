@@ -268,10 +268,4 @@ app.listen(port, () => {
   const { getSupabase } = require('./lib/supabaseClient');
   const sb = getSupabase();
   console.log(`[supabase] ${sb ? 'connected' : 'NOT configured — set SUPABASE_URL + SUPABASE_SERVICE_KEY'}`);
-
-  const { playwrightManager } = require('./lib/playwrightManager');
-  playwrightManager.init()
-    .catch((err) => {
-      console.error('[warmup] Playwright init failed:', err.message);
-    });
 });
