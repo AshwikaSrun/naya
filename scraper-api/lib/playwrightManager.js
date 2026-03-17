@@ -1,12 +1,6 @@
 const { chromium } = require('playwright');
 
-const LAUNCH_ARGS = [
-  '--no-sandbox',
-  '--disable-setuid-sandbox',
-  '--disable-dev-shm-usage',
-  '--disable-gpu',
-  '--disable-blink-features=AutomationControlled',
-];
+const { LAUNCH_ARGS } = require('./launchArgs');
 
 class PlaywrightManager {
   constructor(maxConcurrent = 3) {

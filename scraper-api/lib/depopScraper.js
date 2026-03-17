@@ -3,13 +3,7 @@ const cheerio = require('cheerio');
 const { chromium } = require('playwright');
 
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
-const LAUNCH_ARGS = [
-  '--no-sandbox',
-  '--disable-setuid-sandbox',
-  '--disable-dev-shm-usage',
-  '--disable-gpu',
-  '--disable-blink-features=AutomationControlled',
-];
+const { LAUNCH_ARGS } = require('./launchArgs');
 
 /** Try Cheerio + __NEXT_DATA__ first — fast, no browser, often works */
 async function scrapeDepopCheerio(query, limit) {
