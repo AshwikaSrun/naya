@@ -48,8 +48,12 @@ const allPlatforms = [
   'grailed',
   'depop',
   'poshmark',
-  'boiler_vintage',
 ];
+
+// Campus-specific platforms — only included when the matching campus param is sent
+const campusPlatforms = {
+  purdue: ['boiler_vintage'],
+};
 
 // Etsy and Google Shopping are disabled — they block headless browsers from
 // cloud IPs. Re-enable once API keys or a residential proxy are set up.
@@ -103,7 +107,12 @@ app.get('/search', async (req, res) => {
 
     const validLimit = Math.min(Math.max(limit, 1), 50);
 
-    let platforms = allPlatforms;
+    // Build the effective platform list, including any campus-specific ones
+    const campusParam = (req.query.campus || '').toLowerCase();
+    const extraPlatforms = campusPlatforms[campusParam] || [];
+    const allAvailable = [...allPlatforms, ...extraPlatforms];
+
+    let platforms = allAvailable;
     if (platformParam !== 'all' && platformParam !== 'both') {
       platforms = platformParam
         .split(',')
@@ -112,13 +121,13 @@ app.get('/search', async (req, res) => {
     }
 
     const invalidPlatforms = platforms.filter(
-      (value) => !allPlatforms.includes(value)
+      (value) => !allAvailable.includes(value) && !Object.values(campusPlatforms).flat().includes(value)
     );
     if (invalidPlatforms.length > 0) {
       return res.status(400).json({
         error:
           'Invalid platform parameter. Use "all" or a comma-separated list of: ' +
-          allPlatforms.join(', '),
+          allAvailable.join(', '),
       });
     }
 
@@ -153,8 +162,8 @@ app.get('/search', async (req, res) => {
           .catch((err) => { console.error(`[search] retail lookup failed: ${err.message}`); })
       : Promise.resolve();
 
-    const entries = allPlatforms
-      .filter((p) => selectedPlatforms.has(p))
+    const entries = allAvailable
+      .filter((p) => selectedPlatforms.has(p) && scraperMap[p])
       .map((name) => {
         const wrappedScraper = withTimeout(scraperMap[name], name, SCRAPER_TIMEOUT_MS);
         return wrappedScraper(query, validLimit).then((data) => {
@@ -171,7 +180,7 @@ app.get('/search', async (req, res) => {
 
     await Promise.all([...entries, retailWithTimeout]);
 
-    for (const p of allPlatforms) {
+    for (const p of allAvailable) {
       if (!results[p]) results[p] = [];
       results[p] = filterByRelevance(results[p], query);
     }
@@ -181,7 +190,7 @@ app.get('/search', async (req, res) => {
 
     const median = retailData.medianRetailPrice;
     if (median && median > 0) {
-      for (const p of allPlatforms) {
+      for (const p of allAvailable) {
         finalResults[p] = (finalResults[p] || []).map((item) => {
           if (!item.originalPrice && median > item.price) {
             return {

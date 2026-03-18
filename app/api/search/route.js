@@ -41,7 +41,9 @@ export async function GET(request) {
     );
   }
 
-  const cacheKey = `${query.toLowerCase().trim()}|${platformParam}|${limit}`;
+  const campusParam = searchParams.get('campus') || '';
+
+  const cacheKey = `${query.toLowerCase().trim()}|${platformParam}|${limit}|${campusParam}`;
   const cached = getApiCached(cacheKey);
   if (cached) {
     return Response.json(cached, {
@@ -57,6 +59,7 @@ export async function GET(request) {
     limit: limit.toString(),
     platform: platformParam,
   });
+  if (campusParam) proxyParams.set('campus', campusParam);
   const targetUrl = `${backendUrl}/search?${proxyParams}`;
 
   try {

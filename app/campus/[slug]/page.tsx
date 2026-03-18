@@ -47,7 +47,7 @@ type PreviewProduct = {
   discountPercent?: number;
   image: string;
   url: string;
-  source: 'ebay' | 'grailed' | 'depop' | 'poshmark';
+  source: 'ebay' | 'grailed' | 'depop' | 'poshmark' | 'boiler_vintage';
 };
 
 function CampusLanding({ campus }: { campus: CampusConfig }) {
@@ -412,6 +412,11 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
         </div>
       </section>
 
+      {/* ── Boiler Vintage Spotlight (Purdue only) ── */}
+      {campus.slug === 'purdue' && (
+        <BoilerVintageSpotlight onSearch={s.handleSearch} />
+      )}
+
       {/* ── Brand Spotlight ── */}
       <section className="bg-[#111] px-6 py-24 md:px-10">
         <div className="mx-auto max-w-5xl">
@@ -599,5 +604,106 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
       {/* ── Cart panel ── */}
       <CartPanel open={s.cartOpen} onClose={() => s.setCartOpen(false)} />
     </div>
+  );
+}
+
+/* ── Boiler Vintage Feature Spotlight ── */
+
+function BoilerVintageSpotlight({ onSearch }: { onSearch: (q: string) => void }) {
+  const [items, setItems] = useState<{ title: string; price: number; image: string; url: string; brand?: string }[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/search?q=purdue&platform=boiler_vintage&limit=8&campus=purdue')
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        setItems((data.results?.boiler_vintage || []).slice(0, 6));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  const queries = [
+    { label: 'crewnecks', query: 'purdue crewneck' },
+    { label: 'hoodies', query: 'purdue hoodie' },
+    { label: 'jackets', query: 'purdue jacket' },
+    { label: 'tees', query: 'purdue tee' },
+  ];
+
+  return (
+    <section className="bg-white px-6 py-20 md:px-10">
+      <div className="mx-auto max-w-5xl">
+        <div className="flex items-center gap-2">
+          <p className="font-naya-sans text-[10px] lowercase tracking-[0.2em] text-text-muted">campus exclusive</p>
+          <span className="h-1 w-1 rounded-full bg-[#CEB888]" />
+        </div>
+        <h2 className="font-naya-serif mt-3 text-3xl font-light text-text-primary md:text-5xl">
+          boiler vintage.
+        </h2>
+        <p className="font-naya-sans mt-3 max-w-lg text-sm font-light leading-relaxed text-text-muted">
+          authentic vintage purdue gear sourced from collectors — only on naya.
+        </p>
+
+        {/* Category chips */}
+        <div className="mt-8 flex flex-wrap gap-2">
+          {queries.map((cat, i) => (
+            <button
+              key={cat.query}
+              type="button"
+              onClick={() => onSearch(cat.query)}
+              className="rounded-full border px-5 py-2.5 text-sm font-light transition-all hover:shadow-sm"
+              style={
+                i === 0
+                  ? { borderColor: '#CEB88840', color: '#CEB888', background: '#CEB88808' }
+                  : { borderColor: 'rgba(0,0,0,0.1)', color: 'inherit' }
+              }
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Product grid */}
+        {items.length > 0 && (
+          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {items.map((item) => (
+              <a
+                key={item.url}
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group overflow-hidden rounded-xl bg-neutral-50 transition-all hover:shadow-soft"
+              >
+                <div className="relative aspect-square w-full overflow-hidden">
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="p-3">
+                  <p className="text-[10px] uppercase tracking-[0.15em] text-[#CEB888]">boiler vintage</p>
+                  <p className="mt-1 line-clamp-2 text-xs font-medium text-text-primary">{item.title}</p>
+                  <p className="mt-1 text-sm font-semibold text-text-secondary">${item.price.toFixed(2)}</p>
+                </div>
+              </a>
+            ))}
+          </div>
+        )}
+
+        {/* CTA */}
+        <div className="mt-8 text-center">
+          <button
+            type="button"
+            onClick={() => onSearch('vintage purdue')}
+            className="rounded-full border border-[#CEB888]/30 px-6 py-3 text-[11px] lowercase tracking-[0.12em] text-[#CEB888] transition-all hover:border-[#CEB888]/60 hover:bg-[#CEB888]/5"
+          >
+            shop all boiler vintage
+          </button>
+        </div>
+      </div>
+    </section>
   );
 }

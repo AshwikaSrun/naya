@@ -13,7 +13,7 @@ interface Product {
   discountPercent?: number;
   image: string;
   url: string;
-  source: 'ebay' | 'grailed' | 'depop' | 'poshmark';
+  source: 'ebay' | 'grailed' | 'depop' | 'poshmark' | 'boiler_vintage';
 }
 
 interface SearchResults {
@@ -53,7 +53,7 @@ interface ResultsGridProps {
   relatedSearches?: RelatedSearch[];
 }
 
-type SourceFilter = 'all' | 'ebay' | 'grailed' | 'depop' | 'poshmark';
+type SourceFilter = 'all' | 'ebay' | 'grailed' | 'depop' | 'poshmark' | 'boiler_vintage';
 
 const PLATFORM_LABELS: Record<SourceFilter, string> = {
   all: 'all',
@@ -61,6 +61,7 @@ const PLATFORM_LABELS: Record<SourceFilter, string> = {
   grailed: 'grailed',
   depop: 'depop',
   poshmark: 'poshmark',
+  boiler_vintage: 'boiler vintage',
 };
 
 function interleave(arrays: Product[][]): Product[] {
@@ -82,11 +83,14 @@ export default function ResultsGrid({ results, filters, onSearch, relatedSearche
   const [minDiscount, setMinDiscount] = useState<number>(0);
   const perPage = 15;
 
+  const hasBoilerVintage = !!(results.results as Record<string, Product[]>).boiler_vintage?.length;
+
   const platformArrays = useMemo(() => ({
     ebay: (results.results.ebay || []).map((p) => ({ ...p, source: 'ebay' as const })),
     grailed: (results.results.grailed || []).map((p) => ({ ...p, source: 'grailed' as const })),
     depop: (results.results.depop || []).map((p) => ({ ...p, source: 'depop' as const })),
     poshmark: (results.results.poshmark || []).map((p) => ({ ...p, source: 'poshmark' as const })),
+    boiler_vintage: ((results.results as Record<string, Product[]>).boiler_vintage || []).map((p) => ({ ...p, source: 'boiler_vintage' as const })),
   }), [results]);
 
   const platformCounts = useMemo(() => ({
@@ -95,18 +99,21 @@ export default function ResultsGrid({ results, filters, onSearch, relatedSearche
     grailed: platformArrays.grailed.length,
     depop: platformArrays.depop.length,
     poshmark: platformArrays.poshmark.length,
+    boiler_vintage: platformArrays.boiler_vintage.length,
   }), [platformArrays]);
 
   const filteredProducts = useMemo(() => {
     let products: Product[];
 
     if (sourceFilter === 'all') {
-      products = interleave([
+      const arrays = [
         platformArrays.ebay,
         platformArrays.grailed,
         platformArrays.depop,
         platformArrays.poshmark,
-      ]);
+      ];
+      if (platformArrays.boiler_vintage.length > 0) arrays.push(platformArrays.boiler_vintage);
+      products = interleave(arrays);
     } else {
       products = platformArrays[sourceFilter];
     }
@@ -273,7 +280,7 @@ function FilterBar({
   minDiscount: number;
   setMinDiscount: (d: number) => void;
 }) {
-  const platforms: SourceFilter[] = ['all', 'ebay', 'grailed', 'depop', 'poshmark'];
+  const platforms: SourceFilter[] = ['all', 'ebay', 'grailed', 'depop', 'poshmark', ...(counts.boiler_vintage > 0 ? ['boiler_vintage' as SourceFilter] : [])];
 
   return (
     <div className="space-y-3">

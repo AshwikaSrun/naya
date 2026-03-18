@@ -10,7 +10,7 @@ export interface Product {
   discountPercent?: number;
   image: string;
   url: string;
-  source: 'ebay' | 'grailed' | 'depop' | 'poshmark';
+  source: 'ebay' | 'grailed' | 'depop' | 'poshmark' | 'boiler_vintage';
 }
 
 export interface SearchResults {
@@ -22,11 +22,16 @@ export interface SearchResults {
     grailed: Product[];
     depop: Product[];
     poshmark: Product[];
+    boiler_vintage?: Product[];
   };
 }
 
 const ACTIVE_PLATFORMS = ['ebay', 'grailed', 'depop', 'poshmark'] as const;
 type Platform = (typeof ACTIVE_PLATFORMS)[number];
+
+const CAMPUS_PLATFORMS: Record<string, readonly string[]> = {
+  purdue: ['boiler_vintage'],
+};
 
 export const SEARCH_LIMIT = 50;
 const FAST_LIMIT = 25;
@@ -232,6 +237,7 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
       try {
         setPlatformStatus({ ...initialPlatformStatus, [targetPlatform]: 'loading' });
         const params = new URLSearchParams({ q: searchQuery, limit: limit.toString(), platform: targetPlatform });
+        if (campusSlug) params.set('campus', campusSlug);
         const response = await fetch(`/api/search?${params}`, {
           signal: abort.signal,
         });
@@ -252,6 +258,11 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
       return;
     }
 
+    // Build effective platform list (include campus-specific platforms)
+    const extraPlatforms = (campusSlug ? CAMPUS_PLATFORMS[campusSlug] || [] : []) as string[];
+    const effectivePlatforms = [...ACTIVE_PLATFORMS, ...extraPlatforms];
+    const totalPlatformCount = effectivePlatforms.length;
+
     // Phase 1: Fast fetch (25 per platform) — gets results on screen quickly
     const emptyResults: SearchResults = {
       query: searchQuery,
@@ -260,13 +271,16 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
       results: { ebay: [], grailed: [], depop: [], poshmark: [] },
     };
     setResults(emptyResults);
-    setPlatformStatus({ ebay: 'loading', grailed: 'loading', depop: 'loading', poshmark: 'loading' });
+    const initialStatus: Record<string, 'loading' | 'done' | 'error'> = {};
+    for (const p of effectivePlatforms) initialStatus[p] = 'loading';
+    setPlatformStatus(initialStatus as typeof platformStatus);
 
     let doneCount = 0;
     let anySuccess = false;
 
-    const fetchPlatform = async (p: Platform, fetchLimit: number, signal: AbortSignal) => {
+    const fetchPlatform = async (p: string, fetchLimit: number, signal: AbortSignal) => {
       const params = new URLSearchParams({ q: searchQuery, limit: fetchLimit.toString(), platform: p });
+      if (campusSlug) params.set('campus', campusSlug);
       const response = await Promise.race([
         fetch(`/api/search?${params}`, { signal }),
         new Promise<never>((_, reject) =>
@@ -278,7 +292,7 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
       return (data.results?.[p] || []) as Product[];
     };
 
-    const fastFetch = async (p: Platform) => {
+    const fastFetch = async (p: string) => {
       try {
         const platformItems = await fetchPlatform(p, FAST_LIMIT, abort.signal);
         setResults((prev) => {
@@ -295,7 +309,7 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
         }
       } finally {
         doneCount++;
-        if (doneCount === ACTIVE_PLATFORMS.length && !abort.signal.aborted) {
+        if (doneCount === totalPlatformCount && !abort.signal.aborted) {
           setLoading(false);
           if (!anySuccess) setError('oops, something went wrong. try again?');
           else backfillResults(searchQuery, cacheKey, abort);
@@ -303,7 +317,7 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
       }
     };
 
-    ACTIVE_PLATFORMS.forEach((p) => fastFetch(p));
+    effectivePlatforms.forEach((p) => fastFetch(p));
     trackSearch(searchQuery);
   };
 
