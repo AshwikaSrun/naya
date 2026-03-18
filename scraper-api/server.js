@@ -7,6 +7,7 @@ const { scrapePoshmark } = require('./lib/poshmarkScraper');
 const { scrapeEtsy } = require('./lib/etsyScraper');
 const { scrapeGrailed } = require('./lib/grailedScraper');
 const { scrapeGoogleShopping, lookupRetailPrices } = require('./lib/googleShoppingScraper');
+const { scrapeBoilerVintage } = require('./lib/boilerVintageScraper');
 const { filterByRelevance } = require('./lib/relevance');
 const { runPipeline, runGlobalPipeline } = require('./lib/dataPipeline');
 const { ingestSearchResults } = require('./lib/dataIngestion');
@@ -47,6 +48,7 @@ const allPlatforms = [
   'grailed',
   'depop',
   'poshmark',
+  'boiler_vintage',
 ];
 
 // Etsy and Google Shopping are disabled — they block headless browsers from
@@ -60,6 +62,7 @@ const scraperMap = {
   poshmark: scrapePoshmark,
   etsy: scrapeEtsy,
   google_shopping: scrapeGoogleShopping,
+  boiler_vintage: scrapeBoilerVintage,
 };
 
 function withTimeout(fn, name, timeoutMs) {
