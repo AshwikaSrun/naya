@@ -11,6 +11,7 @@ import GetNayaBanner from '@/components/GetNayaBanner';
 import NewFindsSection from '@/components/NewFindsSection';
 import CampusProductGrid from '@/components/CampusProductGrid';
 import { ALL_CAMPUSES } from '@/lib/campuses';
+import { getDepopImageUrl } from '@/lib/depopImage';
 
 const NAV_LINKS = [
   { href: '/deals', label: 'deals' },
@@ -501,7 +502,7 @@ export default function Home() {
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {s.recentlyViewed.map((item) => {
-                  const displayImage = item.source === 'depop' ? item.image.replace(/\/P\d+(\.\w+)$/i, '/P1$1') : item.image;
+                  const displayImage = item.source === 'depop' ? getDepopImageUrl(item.image, 400) : item.image;
                   return (
                     <Link key={`${item.source}-${item.url}`} href={`/product/${buildSlug(item.title) || 'item'}?${new URLSearchParams({ title: item.title, price: item.price.toFixed(2), image: item.image, url: item.url, source: item.source }).toString()}`} className="group overflow-hidden rounded-2xl bg-white transition-all hover:shadow-soft">
                       <div className="relative aspect-[3/4] w-full overflow-hidden bg-neutral-100">
@@ -536,7 +537,7 @@ export default function Home() {
             <Link href="/brands" className="transition-colors hover:text-text-primary">brands</Link>
             <Link href="/privacy" className="transition-colors hover:text-text-primary">privacy</Link>
             <Link href="/terms" className="transition-colors hover:text-text-primary">terms</Link>
-            <a href="mailto:hello@naya.app" className="transition-colors hover:text-text-primary">contact</a>
+            <a href="mailto:nayaeditorialshop@gmail.com" className="transition-colors hover:text-text-primary">contact</a>
           </div>
         </div>
       </footer>

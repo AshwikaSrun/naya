@@ -27,7 +27,8 @@ export default function TermsPage() {
           </p>
           <p>
             Prices and availability may change. Always verify details on the original
-            listing before purchasing.
+            listing before purchasing. When you click through to an external marketplace,
+            you leave naya and are subject to that site&apos;s terms and policies.
           </p>
           <p>
             By using naya, you agree not to misuse the service, attempt to disrupt
@@ -35,8 +36,8 @@ export default function TermsPage() {
           </p>
           <p>
             Questions? Email{" "}
-            <a className="border-b border-black/20 text-text-primary" href="mailto:hello@naya.app">
-              hello@naya.app
+            <a className="border-b border-black/20 text-text-primary" href="mailto:nayaeditorialshop@gmail.com">
+              nayaeditorialshop@gmail.com
             </a>
             .
           </p>

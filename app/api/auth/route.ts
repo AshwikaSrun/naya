@@ -1,9 +1,18 @@
 import { NextResponse } from 'next/server';
+import { getSupabase } from '@/lib/supabase';
 
 const PURDUE_EMAIL_SUFFIX = '@purdue.edu';
 
 function isPurdueEmail(value: string): boolean {
   return value.toLowerCase().endsWith(PURDUE_EMAIL_SUFFIX) && value.includes('@');
+}
+
+async function logAuthEvent(identifier: string, source: string) {
+  const supabase = getSupabase();
+  if (!supabase) return;
+  await supabase.from('auth_events').insert({ identifier, source }).then(({ error }) => {
+    if (error) console.error('[AUTH] log failed:', error);
+  });
 }
 
 export async function POST(request: Request) {
@@ -17,6 +26,7 @@ export async function POST(request: Request) {
 
     // Purdue students: @purdue.edu emails get free access
     if (isPurdueEmail(code)) {
+      await logAuthEvent(code, 'purdue');
       const response = NextResponse.json({ success: true });
       response.cookies.set('naya-token', `purdue:${code}`, {
         httpOnly: true,
@@ -37,6 +47,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid invite code.' }, { status: 401 });
     }
 
+    await logAuthEvent(code, 'invite_code');
     const response = NextResponse.json({ success: true });
     response.cookies.set('naya-token', code, {
       httpOnly: true,

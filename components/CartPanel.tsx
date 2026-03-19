@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { getDepopImageUrl } from '@/lib/depopImage';
 
 interface Product {
   title: string;
@@ -119,7 +120,7 @@ export default function CartPanel({ open, onClose }: CartPanelProps) {
                 <div key={item.url} className="flex gap-4 px-6 py-4">
                   <div className="relative h-24 w-20 shrink-0 overflow-hidden rounded-lg bg-neutral-100">
                     <Image
-                      src={item.image}
+                      src={item.source === 'depop' ? getDepopImageUrl(item.image, 400) : item.image}
                       alt={item.title}
                       fill
                       className="object-cover"

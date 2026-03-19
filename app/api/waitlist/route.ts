@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getSupabase } from '@/lib/supabase';
 
 export async function POST(request: Request) {
   try {
@@ -10,6 +11,12 @@ export async function POST(request: Request) {
     }
 
     console.log(`[WAITLIST] New signup: ${email} at ${new Date().toISOString()}`);
+
+    const supabase = getSupabase();
+    if (supabase) {
+      const { error } = await supabase.from('waitlist_signups').insert({ email });
+      if (error) console.error('[WAITLIST] Supabase insert failed:', error);
+    }
 
     const sheetWebhook = process.env.GOOGLE_SHEET_WEBHOOK?.trim();
     if (sheetWebhook) {

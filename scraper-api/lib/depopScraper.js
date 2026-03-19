@@ -359,7 +359,7 @@ function parseDepopApiProduct(product) {
   }
 
   const preview = product.preview || {};
-  const image = preview['640'] || preview['480'] || preview['320'] || preview['210'] || preview['150'] || '';
+  const image = preview['1280'] || preview['800'] || preview['640'] || preview['480'] || preview['320'] || preview['210'] || preview['150'] || '';
 
   const url = slug ? `https://www.depop.com/products/${slug}/` : '';
 

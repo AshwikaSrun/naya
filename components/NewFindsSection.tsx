@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { getDepopImageUrl } from '@/lib/depopImage';
 
 interface FindItem {
   title: string;
@@ -148,7 +149,7 @@ export default function NewFindsSection({ campus, onSearch }: Props) {
         <div className="mt-10 space-y-3">
           {items.slice(0, 8).map((item) => {
             const displayImage = item.source === 'depop'
-              ? item.image.replace(/\/P\d+(\.\w+)$/i, '/P1$1')
+              ? getDepopImageUrl(item.image, 400)
               : item.image;
 
             return (

@@ -16,6 +16,16 @@ function RedirectContent() {
   const [countdown, setCountdown] = useState(3);
   const [redirected, setRedirected] = useState(false);
 
+  // Log click-through for analytics
+  useEffect(() => {
+    if (!url) return;
+    fetch('/api/click-through', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, source: source || 'unknown', title: title || undefined, price: price || undefined }),
+    }).catch(() => {});
+  }, [url, source, title, price]);
+
   useEffect(() => {
     if (!url) return;
 
@@ -64,6 +74,13 @@ function RedirectContent() {
           <Link href="/" className="font-naya-serif text-2xl font-light tracking-tight text-black">
             naya
           </Link>
+        </div>
+
+        {/* Disclaimer */}
+        <div className="mb-6 rounded-xl border border-black/5 bg-black/[0.02] px-4 py-3">
+          <p className="text-center text-[11px] leading-relaxed text-black/50">
+            You are leaving naya and going to an external marketplace. naya does not hold inventory, process payments, or ship products — your purchase will be completed on the external site.
+          </p>
         </div>
 
         {/* Product preview card */}

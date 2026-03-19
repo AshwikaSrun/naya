@@ -13,11 +13,20 @@ declare global {
   }
 }
 
+function logInstall(platform: string = 'pwa') {
+  fetch('/api/analytics/install', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ platform }),
+  }).catch(() => {});
+}
+
 export function triggerInstall() {
   const prompt = window.__nayaInstallPrompt;
   if (prompt) {
     prompt.prompt();
-    prompt.userChoice.then(() => {
+    prompt.userChoice.then(({ outcome }) => {
+      if (outcome === 'accepted') logInstall('pwa');
       window.__nayaInstallPrompt = null;
       window.dispatchEvent(new Event('naya-install-used'));
     });
@@ -63,12 +72,7 @@ export default function InstallPrompt() {
     const dismissed = localStorage.getItem('naya-install-dismissed');
     const standalone = isStandaloneMode();
     if (!dismissed && !standalone) {
-      const timer = setTimeout(() => setShowBanner(true), 3000);
-      return () => {
-        clearTimeout(timer);
-        window.removeEventListener('beforeinstallprompt', handler);
-        window.removeEventListener('naya-install-used', onUsed);
-      };
+      setShowBanner(true);
     }
 
     return () => {
@@ -82,6 +86,7 @@ export default function InstallPrompt() {
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') {
+      logInstall('pwa');
       setShowBanner(false);
     }
     setDeferredPrompt(null);

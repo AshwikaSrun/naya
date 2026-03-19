@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { addToCart, isInCart } from './CartPanel';
+import { getDepopImageUrl } from '@/lib/depopImage';
 
 interface Product {
   title: string;
@@ -20,9 +21,8 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, onSelect }: ProductCardProps) {
-  const isDepop = product.source === 'depop';
-  const preferredImage = isDepop
-    ? product.image.replace(/\/P\d+(\.\w+)$/i, '/P1$1')
+  const preferredImage = product.source === 'depop'
+    ? getDepopImageUrl(product.image, 600)
     : product.image;
   const [imageSrc, setImageSrc] = useState(preferredImage);
   const [isWishlisted, setIsWishlisted] = useState(false);

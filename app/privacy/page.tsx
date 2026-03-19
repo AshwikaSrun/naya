@@ -27,16 +27,26 @@ export default function PrivacyPage() {
           </p>
           <p>
             We may collect usage analytics (such as pages visited and searches performed)
-            and basic device information. We do not sell personal information.
+            and basic device information. When you click through to an external marketplace
+            (eBay, Grailed, Depop, Poshmark), we log the destination URL, platform, and
+            timestamp for analytics. We do not sell personal information.
           </p>
           <p>
-            If you join a waitlist or contact us, we store the information you provide
+            We use cookies for authentication and preferences. Search queries and related
+            data may be stored to improve search quality and product experience.
+          </p>
+          <p>
+            If you submit feedback or join a waitlist, we store the information you provide
             to respond and improve the product.
           </p>
           <p>
+            We retain analytics data for up to 24 months, after which it is deleted or
+            anonymized.
+          </p>
+          <p>
             Questions? Email us at{" "}
-            <a className="border-b border-black/20 text-text-primary" href="mailto:hello@naya.app">
-              hello@naya.app
+            <a className="border-b border-black/20 text-text-primary" href="mailto:nayaeditorialshop@gmail.com">
+              nayaeditorialshop@gmail.com
             </a>
             .
           </p>

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { addToCart, isInCart } from './CartPanel';
 import { addToCompare, isInCompare, removeFromCompare } from '@/lib/compare';
+import { getDepopImageUrl } from '@/lib/depopImage';
 import { addPriceAlert, getPriceAlerts } from '@/lib/priceAlerts';
 import { recordProductView } from '@/lib/impact';
 import { deriveCompleteTheLookQuery } from '@/lib/completeTheLook';
@@ -162,24 +163,25 @@ export default function ProductDetailPanel({ product, onClose }: ProductDetailPa
   if (!product) return null;
 
   const meta = extractMeta(product.title);
+  const displayImage = product.source === 'depop' ? getDepopImageUrl(product.image, 900) : product.image;
 
   return (
     <div className="fixed inset-0 z-[100] flex">
-      <div className="flex-1 bg-black/40" onClick={onClose}></div>
-      <div className="relative flex h-full w-full max-w-xl flex-col overflow-y-auto bg-[#f7f5f2]">
+      <div className="min-w-0 flex-1 bg-black/30 backdrop-blur-[2px]" onClick={onClose} aria-hidden />
+      <div className="relative flex h-full w-full max-w-[400px] shrink-0 flex-col overflow-y-auto border-l border-black/5 bg-[#faf9f7] shadow-[-8px_0_24px_-8px_rgba(0,0,0,0.1)]">
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white transition-opacity hover:opacity-80"
+          className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white/95 transition-opacity hover:bg-black/70"
         >
           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
 
-        <div className="relative aspect-[3/4] w-full shrink-0 bg-neutral-200">
+        <div className="relative aspect-[4/5] w-full shrink-0 bg-neutral-100">
           <Image
-            src={product.image}
+            src={displayImage}
             alt={product.title}
             fill
             className="object-cover"
@@ -188,15 +190,15 @@ export default function ProductDetailPanel({ product, onClose }: ProductDetailPa
           />
         </div>
 
-        <div className="flex-1 px-6 py-6">
-          <h2 className="font-naya-serif line-clamp-3 text-2xl font-light text-black">
+        <div className="flex-1 px-5 py-5">
+          <h2 className="font-naya-serif line-clamp-2 text-xl font-light text-black">
             {product.title}
           </h2>
-          <p className="mt-1 text-xs uppercase tracking-[0.2em] text-black/50">
+          <p className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-black/45">
             {product.source}
           </p>
 
-          <div className="mt-4 flex flex-wrap items-center gap-3">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             <span className="text-3xl font-bold text-black">
               ${product.price.toFixed(2)}
             </span>
@@ -256,39 +258,27 @@ export default function ProductDetailPanel({ product, onClose }: ProductDetailPa
             </div>
           )}
 
-          <div className="mt-6 grid grid-cols-2 gap-3">
-            <div className="rounded-xl bg-white p-4">
-              <div className="flex items-center gap-2 text-xs text-black/50">
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
-                BRAND
-              </div>
-              <p className="mt-1 text-sm font-semibold text-black">{product.source}</p>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <div className="rounded-lg border border-black/5 bg-white/80 px-3 py-2.5">
+              <p className="text-[9px] uppercase tracking-[0.15em] text-black/40">Size</p>
+              <p className="mt-0.5 text-xs font-medium text-black">{meta.size}</p>
             </div>
-            <div className="rounded-xl bg-white p-4">
-              <div className="flex items-center gap-2 text-xs text-black/50">
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
-                SIZE
-              </div>
-              <p className="mt-1 text-sm font-semibold text-black">{meta.size}</p>
+            <div className="rounded-lg border border-black/5 bg-white/80 px-3 py-2.5">
+              <p className="text-[9px] uppercase tracking-[0.15em] text-black/40">Color</p>
+              <p className="mt-0.5 text-xs font-medium text-black">{meta.color}</p>
             </div>
-            <div className="rounded-xl bg-white p-4">
-              <div className="flex items-center gap-2 text-xs text-black/50">
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
-                MATERIAL
-              </div>
-              <p className="mt-1 text-sm font-semibold text-black">{meta.material}</p>
+            <div className="rounded-lg border border-black/5 bg-white/80 px-3 py-2.5">
+              <p className="text-[9px] uppercase tracking-[0.15em] text-black/40">Material</p>
+              <p className="mt-0.5 text-xs font-medium text-black">{meta.material}</p>
             </div>
-            <div className="rounded-xl bg-white p-4">
-              <div className="flex items-center gap-2 text-xs text-black/50">
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>
-                COLOR
-              </div>
-              <p className="mt-1 text-sm font-semibold text-black">{meta.color}</p>
+            <div className="rounded-lg border border-black/5 bg-white/80 px-3 py-2.5">
+              <p className="text-[9px] uppercase tracking-[0.15em] text-black/40">Condition</p>
+              <p className="mt-0.5 text-xs font-medium text-black">{meta.condition.replace('Pre-owned - ', '')}</p>
             </div>
           </div>
 
           {/* ── Try It On Section ── */}
-          <div className="mt-8 rounded-2xl border border-black/10 bg-white p-5">
+          <div className="mt-6 rounded-xl border border-black/8 bg-white p-4">
             <div className="mb-4 flex items-center justify-between">
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-black/60">
                 Virtual Try-On
@@ -332,7 +322,7 @@ export default function ProductDetailPanel({ product, onClose }: ProductDetailPa
                   <div>
                     <p className="mb-2 text-[10px] uppercase tracking-[0.2em] text-black/45">Garment</p>
                     <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-neutral-100">
-                      <Image src={product.image} alt={product.title} fill className="object-cover" sizes="20vw" unoptimized />
+                      <Image src={displayImage} alt={product.title} fill className="object-cover" sizes="20vw" unoptimized />
                     </div>
                   </div>
                 </div>
