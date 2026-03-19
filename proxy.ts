@@ -25,7 +25,7 @@ function hasAccessToken(request: NextRequest): boolean {
   return !!request.cookies.get('naya-token')?.value;
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (!LAUNCH_GATE) return NextResponse.next();

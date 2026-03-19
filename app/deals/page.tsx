@@ -13,7 +13,7 @@ interface Product {
   discountPercent?: number;
   image: string;
   url: string;
-  source: 'ebay' | 'grailed' | 'depop' | 'poshmark';
+  source: 'ebay' | 'grailed' | 'depop' | 'poshmark' | 'boiler_vintage';
 }
 
 interface SearchResults {

@@ -72,7 +72,7 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
         const raw = (data.items || []) as (PreviewProduct & { source?: string })[];
         const mapped = raw.map((p) => ({
           ...p,
-          source: (['ebay', 'grailed', 'depop', 'poshmark'].includes(p.source || '') ? p.source : 'ebay') as PreviewProduct['source'],
+          source: (['ebay', 'grailed', 'depop', 'poshmark', 'boiler_vintage'].includes(p.source || '') ? p.source : 'ebay') as PreviewProduct['source'],
         }));
         setPreviewProducts(mapped);
       })

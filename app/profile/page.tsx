@@ -9,7 +9,7 @@ interface Product {
   price: number;
   image: string;
   url: string;
-  source: 'ebay' | 'grailed' | 'depop' | 'poshmark';
+  source: 'ebay' | 'grailed' | 'depop' | 'poshmark' | 'boiler_vintage';
 }
 
 export default function ProfilePage() {

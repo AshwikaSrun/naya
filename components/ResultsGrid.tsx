@@ -106,7 +106,7 @@ export default function ResultsGrid({ results, filters, onSearch, relatedSearche
     let products: Product[];
 
     if (sourceFilter === 'all') {
-      const arrays = [
+      const arrays: Product[][] = [
         platformArrays.ebay,
         platformArrays.grailed,
         platformArrays.depop,
