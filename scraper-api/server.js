@@ -16,6 +16,7 @@ const app = express();
 app.use(cors());
 
 const SCRAPER_TIMEOUT_MS = 25000;
+const PLAYWRIGHT_SCRAPER_TIMEOUT_MS = 38000; // eBay + Depop need more time for browser
 
 // ── In-memory cache ──
 const SEARCH_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -162,23 +163,40 @@ app.get('/search', async (req, res) => {
           .catch((err) => { console.error(`[search] retail lookup failed: ${err.message}`); })
       : Promise.resolve();
 
-    const entries = allAvailable
-      .filter((p) => selectedPlatforms.has(p) && scraperMap[p])
-      .map((name) => {
-        const wrappedScraper = withTimeout(scraperMap[name], name, SCRAPER_TIMEOUT_MS);
-        return wrappedScraper(query, validLimit).then((data) => {
-          results[name] = data;
-          timings[name] = { count: data.length };
-        });
-      });
+    const playwrightPlatforms = new Set(['ebay', 'depop']);
+    const selected = allAvailable.filter((p) => selectedPlatforms.has(p) && scraperMap[p]);
+    const httpPlatforms = selected.filter((p) => !playwrightPlatforms.has(p));
+    const pwPlatforms = selected.filter((p) => playwrightPlatforms.has(p));
 
-    // Don't block on retail lookup — use a race with a 5s grace period
+    const runScraper = (name) => {
+      const timeoutMs = playwrightPlatforms.has(name) ? PLAYWRIGHT_SCRAPER_TIMEOUT_MS : SCRAPER_TIMEOUT_MS;
+      const wrappedScraper = withTimeout(scraperMap[name], name, timeoutMs);
+      return wrappedScraper(query, validLimit).then((data) => {
+        results[name] = data;
+        timings[name] = { count: data.length };
+      });
+    };
+
+    // Run HTTP scrapers (grailed, poshmark, boiler_vintage) in parallel
+    const httpPromises = httpPlatforms.map(runScraper);
+
+    // Run Playwright scrapers (ebay, depop) sequentially to avoid memory pressure
+    const runPlaywrightSequentially = async () => {
+      for (const name of pwPlatforms) {
+        await runScraper(name);
+      }
+    };
+
     const retailWithTimeout = Promise.race([
       retailLookupPromise,
       new Promise((resolve) => setTimeout(resolve, 5000)),
     ]);
 
-    await Promise.all([...entries, retailWithTimeout]);
+    await Promise.all([
+      ...httpPromises,
+      runPlaywrightSequentially(),
+      retailWithTimeout,
+    ]);
 
     for (const p of allAvailable) {
       if (!results[p]) results[p] = [];
@@ -274,7 +292,7 @@ const port = process.env.PORT || 3005;
 app.listen(port, () => {
   console.log(`Scraper API listening on ${port}`);
   console.log(`Platforms: ${allPlatforms.join(', ')}`);
-  console.log(`Per-scraper timeout: ${SCRAPER_TIMEOUT_MS}ms`);
+  console.log(`Per-scraper timeout: ${SCRAPER_TIMEOUT_MS}ms (Playwright: ${PLAYWRIGHT_SCRAPER_TIMEOUT_MS}ms)`);
   console.log('Grailed: Algolia | Poshmark: Cheerio | eBay: Cheerio | Depop: Playwright');
 
   const { getSupabase } = require('./lib/supabaseClient');

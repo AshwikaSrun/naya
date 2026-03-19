@@ -213,15 +213,49 @@ function parseDepopHtml(html, limit) {
   return results;
 }
 
+/** Extract products from rendered DOM when API interception fails */
+async function extractDepopFromDOM(page, limit) {
+  try {
+    const raw = await page.evaluate((max) => {
+      const results = [];
+      const links = document.querySelectorAll('a[href*="/products/"]');
+      for (const a of links) {
+        if (results.length >= max) break;
+        const href = a.getAttribute('href') || '';
+        const fullUrl = href.startsWith('http') ? href : `https://www.depop.com${href}`;
+        const card = a.closest('li') || a.closest('article') || a.closest('[data-testid]') || a.parentElement;
+        if (!card) continue;
+        const img = a.querySelector('img') || card.querySelector('img');
+        const image = img ? (img.src || img.getAttribute('data-src') || img.currentSrc || '') : '';
+        const text = card.innerText || '';
+        const priceMatch = text.match(/[\$£€]\s?([\d,.]+)/);
+        const price = priceMatch ? parseFloat(priceMatch[1].replace(/[^\d.]/g, '')) : null;
+        let title = img?.alt || '';
+        if (!title) {
+          const m = href.match(/\/products\/([^/?#]+)/);
+          if (m) title = m[1].replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+        }
+        if (price && price > 0 && image && fullUrl && title) {
+          results.push({ title: title.slice(0, 120), price, image, url: fullUrl });
+        }
+      }
+      return results;
+    }, limit);
+    return raw.map((p) => ({ ...p, source: 'depop' }));
+  } catch {
+    return [];
+  }
+}
+
 /** Playwright fallback — visit homepage first to get Cloudflare cookies, then
  *  intercept the internal search API response for structured data. */
 async function scrapeDepopPlaywright(query, limit) {
   const searchUrl = `https://www.depop.com/search?q=${encodeURIComponent(query)}`;
 
-  for (let attempt = 1; attempt <= 2; attempt++) {
+  for (let attempt = 1; attempt <= 3; attempt++) {
     let browser = null;
     try {
-      browser = await chromium.launch({ headless: true, args: LAUNCH_ARGS, timeout: 15000 });
+      browser = await chromium.launch({ headless: true, args: LAUNCH_ARGS, timeout: 20000 });
 
       const context = await browser.newContext({
         userAgent: USER_AGENT,
@@ -232,40 +266,66 @@ async function scrapeDepopPlaywright(query, limit) {
 
       const page = await context.newPage();
 
-      // Visit homepage first to acquire Cloudflare cookies
-      await page.goto('https://www.depop.com/', { waitUntil: 'domcontentloaded', timeout: 15000 });
-      await new Promise((r) => setTimeout(r, 1500));
+      // Mask automation signals
+      await page.addInitScript(() => {
+        Object.defineProperty(navigator, 'webdriver', { get: () => false });
+      });
 
-      // Intercept the search API response
+      // Visit homepage first to acquire Cloudflare cookies
+      await page.goto('https://www.depop.com/', { waitUntil: 'domcontentloaded', timeout: 20000 });
+      await new Promise((r) => setTimeout(r, 2500));
+
+      // Intercept the search API response — only use responses that contain our query
+      // (homepage returns trending with empty what=, we want the actual search)
+      const querySlug = query.toLowerCase().replace(/\s+/g, '+');
       let apiProducts = null;
       page.on('response', async (resp) => {
         const url = resp.url();
         if (url.includes('/api/v3/search/products') && resp.status() === 200) {
           try {
             const json = await resp.json();
-            if (json.products && json.products.length > (apiProducts?.length || 0)) apiProducts = json.products;
+            const products = json.products || [];
+            const isSearchResponse = url.includes('what=') && !url.includes('what=&') && url.includes(querySlug);
+            if (isSearchResponse && products.length > 0) {
+              apiProducts = products;
+            } else if (products.length > (apiProducts?.length || 0) && url.includes('what=') && !url.includes('what=&')) {
+              apiProducts = products;
+            }
           } catch {}
         }
       });
 
-      await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
-      await new Promise((r) => setTimeout(r, 4000));
+      await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
+      try {
+        await page.waitForSelector('a[href*="/products/"]', { timeout: 10000 });
+      } catch {
+        // Continue — DOM extraction may still find something
+      }
+      await new Promise((r) => setTimeout(r, 3000));
+
+      // Prefer structured API data; fallback to DOM extraction, then HTML parsing
+      let items = [];
+      if (apiProducts && apiProducts.length > 0) {
+        items = apiProducts.slice(0, limit).map(parseDepopApiProduct).filter(Boolean);
+      }
+      if (items.length === 0) {
+        items = await extractDepopFromDOM(page, limit);
+      }
+      if (items.length === 0) {
+        const html = await page.content();
+        items = parseDepopHtml(html, limit);
+      }
 
       await browser.close();
       browser = null;
 
-      // Prefer structured API data
-      if (apiProducts && apiProducts.length > 0) {
-        return apiProducts.slice(0, limit).map(parseDepopApiProduct).filter(Boolean);
-      }
-
-      return [];
+      return items;
     } catch (err) {
       if (browser) await browser.close().catch(() => {});
-      const isClosed = /closed|disconnected|target.*closed/i.test(err.message);
-      if (isClosed && attempt < 2) {
+      const isRetryable = /closed|disconnected|target.*closed|crashed|timeout/i.test(err.message);
+      if (isRetryable && attempt < 3) {
         console.warn(`[Depop] Playwright attempt ${attempt} failed (${err.message}), retrying...`);
-        await new Promise((r) => setTimeout(r, 1500));
+        await new Promise((r) => setTimeout(r, 2500));
         continue;
       }
       console.error('[Depop] Playwright scrape error:', err.message);

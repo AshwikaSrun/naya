@@ -85,41 +85,59 @@ async function scrapeEbayCheerio(query, limit) {
 }
 
 async function scrapeEbayPlaywright(query, limit) {
-  let browser = null;
-  try {
-    const searchUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}&_ipg=${Math.min(limit, 200)}`;
-    browser = await chromium.launch({ headless: true, args: LAUNCH_ARGS, timeout: 15000 });
+  const searchUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}&_ipg=${Math.min(limit, 200)}`;
 
-    const context = await browser.newContext({
-      userAgent: USER_AGENT,
-      viewport: { width: 1920, height: 1080 },
-      locale: 'en-US',
-    });
-
-    const page = await context.newPage();
-    await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
-
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    let browser = null;
     try {
-      await page.waitForSelector('ul.srp-results li.s-card', { timeout: 8000 });
-    } catch {
-      // Continue anyway
-    }
+      browser = await chromium.launch({ headless: true, args: LAUNCH_ARGS, timeout: 20000 });
 
-    // Use setTimeout instead of deprecated page.waitForTimeout (removed in Playwright 1.57+)
-    await new Promise((r) => setTimeout(r, 300));
-    const html = await page.content();
-    await browser.close();
+      const context = await browser.newContext({
+        userAgent: USER_AGENT,
+        viewport: { width: 1920, height: 1080 },
+        locale: 'en-US',
+        javaScriptEnabled: true,
+      });
 
-    if (html.includes('Pardon Our Interruption') || !html.includes('srp-results')) {
+      const page = await context.newPage();
+
+      // Mask automation signals that trigger bot detection
+      await page.addInitScript(() => {
+        Object.defineProperty(navigator, 'webdriver', { get: () => false });
+      });
+
+      await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
+
+      try {
+        await page.waitForSelector('ul.srp-results li.s-card', { timeout: 10000 });
+      } catch {
+        // Continue anyway — page might still have content
+      }
+
+      await new Promise((r) => setTimeout(r, 500));
+      const html = await page.content();
+      await browser.close();
+      browser = null;
+
+      if (html.includes('Pardon Our Interruption') || !html.includes('srp-results')) {
+        return [];
+      }
+
+      const items = parseEbayHtml(html, limit);
+      if (items.length > 0) return items;
+    } catch (err) {
+      if (browser) await browser.close().catch(() => {});
+      const isRetryable = /crashed|closed|disconnected|timeout|target/i.test(err.message);
+      if (isRetryable && attempt < 2) {
+        console.warn(`[eBay] Playwright attempt ${attempt} failed (${err.message}), retrying...`);
+        await new Promise((r) => setTimeout(r, 2000));
+        continue;
+      }
+      console.error('[eBay] Playwright error:', err.message);
       return [];
     }
-
-    return parseEbayHtml(html, limit);
-  } catch (err) {
-    console.error('[eBay] Playwright error:', err.message);
-    if (browser) await browser.close().catch(() => {});
-    return [];
   }
+  return [];
 }
 
 async function scrapeEbay(query, limit = 10) {
