@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/react";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import InstallPrompt from "@/components/InstallPrompt";
+import NotifyBanner from "@/components/NotifyBanner";
 import FeedbackWidget from "@/components/FeedbackWidget";
 import "./globals.css";
 
@@ -14,9 +15,9 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.nayaeditorial.shop"),
-  title: "naya — second-hand shopping, simplified",
+  title: "naya — purdue vintage & deals",
   description:
-    "Search second-hand listings in one place. Built for college students who want better style, better prices, and less waste.",
+    "Vintage Purdue gear, campus deals, and second-hand finds from eBay, Grailed, Depop, Poshmark & Boiler Vintage — all in one search.",
   manifest: "/manifest.json",
   icons: {
     icon: [
@@ -32,17 +33,17 @@ export const metadata: Metadata = {
     title: "naya",
   },
   openGraph: {
-    title: "naya — second-hand shopping, simplified",
+    title: "naya — purdue vintage & deals",
     description:
-      "Search second-hand listings in one place. Built for college students who want better style, better prices, and less waste.",
+      "Vintage Purdue gear, campus deals, and second-hand finds from eBay, Grailed, Depop, Poshmark & Boiler Vintage — all in one search.",
     images: ["/brands/naya-og.png"],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "naya — second-hand shopping, simplified",
+    title: "naya — purdue vintage & deals",
     description:
-      "Search second-hand listings in one place. Built for college students who want better style, better prices, and less waste.",
+      "Vintage Purdue gear, campus deals, and second-hand finds from eBay, Grailed, Depop, Poshmark & Boiler Vintage — all in one search.",
     images: ["/brands/naya-og.png"],
   },
 };
@@ -66,6 +67,7 @@ export default function RootLayout({
         {children}
         <ServiceWorkerRegistration />
         <InstallPrompt />
+        <NotifyBanner />
         <FeedbackWidget />
         <Analytics />
       </body>

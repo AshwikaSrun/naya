@@ -1,0 +1,158 @@
+'use client';
+
+import { useCallback, useEffect, useState } from 'react';
+import { isIOSDevice, isStandaloneMode } from '@/components/InstallPrompt';
+
+function urlBase64ToUint8Array(base64String: string): BufferSource {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+export default function NotifyBanner() {
+  const [show, setShow] = useState(false);
+  const [subscribed, setSubscribed] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const checkSubscription = useCallback(async () => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) setSubscribed(true);
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (process.env.NODE_ENV !== 'production') return;
+
+    const dismissed = localStorage.getItem('naya-notify-dismissed');
+    if (dismissed) return;
+
+    const hasNotif = 'Notification' in window;
+    if (!hasNotif) return;
+
+    if (Notification.permission === 'granted') {
+      checkSubscription().then(() => {
+        setShow(true);
+      });
+      return;
+    }
+
+    if (Notification.permission === 'denied') return;
+
+    const timer = setTimeout(() => setShow(true), 8000);
+    return () => clearTimeout(timer);
+  }, [checkSubscription]);
+
+  const handleEnable = async () => {
+    setLoading(true);
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') {
+        setShow(false);
+        return;
+      }
+
+      const reg = await navigator.serviceWorker.ready;
+      const keyRes = await fetch('/api/push/vapid-public-key');
+      if (!keyRes.ok) { setShow(false); return; }
+      const { publicKey } = (await keyRes.json()) as { publicKey?: string };
+      if (!publicKey) { setShow(false); return; }
+
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey),
+      });
+
+      const json = sub.toJSON();
+      await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription: json, alertType: 'purdue_deals' }),
+      });
+
+      setSubscribed(true);
+      setTimeout(() => setShow(false), 2500);
+    } catch {
+      setShow(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDismiss = () => {
+    setShow(false);
+    localStorage.setItem('naya-notify-dismissed', '1');
+  };
+
+  if (!show) return null;
+
+  if (subscribed) {
+    return (
+      <div className="fixed inset-x-0 bottom-0 z-[100] safe-bottom">
+        <div className="mx-4 mb-4 rounded-2xl bg-black px-5 py-4 text-center shadow-vibrant">
+          <p className="font-naya-sans text-sm text-white/90">you&apos;re getting deal alerts</p>
+        </div>
+      </div>
+    );
+  }
+
+  const ios = isIOSDevice();
+  const standalone = isStandaloneMode();
+
+  if (ios && !standalone) return null;
+
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-[100] safe-bottom">
+      <div className="mx-4 mb-4 overflow-hidden rounded-2xl bg-white shadow-vibrant">
+        <div className="flex items-center gap-4 p-5">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#CEB888]/15 text-base" aria-hidden>
+            ✦
+          </div>
+          <div className="flex-1">
+            <p className="font-naya-serif text-base font-light text-text-primary">
+              get purdue deal alerts
+            </p>
+            <p className="mt-0.5 text-xs text-text-muted">
+              daily finds, campus style drops, vintage steals
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleDismiss}
+            className="rounded-full p-1.5 text-black/30 transition-colors hover:bg-black/5 hover:text-black/60"
+            aria-label="Dismiss"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="flex border-t border-black/5">
+          <button
+            type="button"
+            onClick={handleDismiss}
+            className="flex-1 py-3 text-[11px] font-medium lowercase tracking-[0.08em] text-black/40 transition-colors hover:bg-black/[0.02] hover:text-black/60"
+          >
+            not now
+          </button>
+          <button
+            type="button"
+            onClick={handleEnable}
+            disabled={loading}
+            className="flex-1 border-l border-black/5 py-3 text-[11px] font-medium lowercase tracking-[0.08em] text-text-primary transition-colors hover:bg-black/[0.02] disabled:opacity-40"
+          >
+            {loading ? 'one sec…' : 'notify me'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

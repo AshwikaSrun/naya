@@ -1,8 +1,8 @@
 {
-  "name": "naya — second-hand shopping, simplified",
+  "name": "naya — purdue vintage & deals",
   "short_name": "naya",
-  "description": "Search second-hand listings in one place. Built for college students who want better style, better prices, and less waste.",
-  "start_url": "/",
+  "description": "Vintage Purdue gear, campus deals, and second-hand finds from eBay, Grailed, Depop, Poshmark & Boiler Vintage — all in one search.",
+  "start_url": "/campus/purdue",
   "display": "standalone",
   "orientation": "portrait",
   "theme_color": "#faf9f7",
@@ -45,20 +45,20 @@
     {
       "name": "Search",
       "short_name": "Search",
-      "url": "/",
+      "url": "/campus/purdue",
       "description": "Search across all marketplaces"
-    },
-    {
-      "name": "Concierge",
-      "short_name": "AI",
-      "url": "/app",
-      "description": "Chat with the AI concierge"
     },
     {
       "name": "Deals",
       "short_name": "Deals",
       "url": "/deals",
       "description": "Browse curated deals"
+    },
+    {
+      "name": "Concierge",
+      "short_name": "AI",
+      "url": "/app",
+      "description": "Chat with the AI concierge"
     }
   ]
 }

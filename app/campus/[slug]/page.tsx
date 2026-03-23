@@ -211,7 +211,7 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
         {/* Nav */}
         <div className="absolute inset-x-0 top-0 z-20">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 md:px-10">
-            <Link href="/" className="font-naya-serif text-3xl font-light lowercase tracking-[0.15em] text-white md:text-4xl">
+            <Link href="/campus/purdue" className="font-naya-serif text-3xl font-light lowercase tracking-[0.15em] text-white md:text-4xl">
               naya
             </Link>
             <div className="flex items-center gap-4">
