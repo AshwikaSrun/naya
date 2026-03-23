@@ -18,19 +18,45 @@ export default function NotifyBanner() {
   const [show, setShow] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [installBannerActive, setInstallBannerActive] = useState(false);
+  const [postInstall, setPostInstall] = useState(false);
 
   const checkSubscription = useCallback(async () => {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
     try {
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
-      if (sub) setSubscribed(true);
+      if (sub) { setSubscribed(true); return true; }
     } catch { /* ignore */ }
+    return false;
   }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (process.env.NODE_ENV !== 'production') return;
+
+    const onBannerChange = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { id: string; active: boolean };
+      if (detail.id === 'install') setInstallBannerActive(detail.active);
+    };
+    window.addEventListener('naya-bottom-banner', onBannerChange);
+
+    const onInstalled = () => {
+      setPostInstall(true);
+      localStorage.removeItem('naya-notify-dismissed');
+      setShow(true);
+    };
+    window.addEventListener('naya-app-installed', onInstalled);
+
+    return () => {
+      window.removeEventListener('naya-bottom-banner', onBannerChange);
+      window.removeEventListener('naya-app-installed', onInstalled);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (postInstall) return;
+    if (installBannerActive) return;
 
     const dismissed = localStorage.getItem('naya-notify-dismissed');
     if (dismissed) return;
@@ -39,8 +65,8 @@ export default function NotifyBanner() {
     if (!hasNotif) return;
 
     if (Notification.permission === 'granted') {
-      checkSubscription().then(() => {
-        setShow(true);
+      checkSubscription().then((alreadySubbed) => {
+        if (!alreadySubbed) setShow(true);
       });
       return;
     }
@@ -49,7 +75,12 @@ export default function NotifyBanner() {
 
     const timer = setTimeout(() => setShow(true), 8000);
     return () => clearTimeout(timer);
-  }, [checkSubscription]);
+  }, [checkSubscription, installBannerActive, postInstall]);
+
+  useEffect(() => {
+    const active = show && !installBannerActive;
+    window.dispatchEvent(new CustomEvent('naya-bottom-banner', { detail: { id: 'notify', active } }));
+  }, [show, installBannerActive]);
 
   const handleEnable = async () => {
     setLoading(true);
@@ -92,11 +123,11 @@ export default function NotifyBanner() {
     localStorage.setItem('naya-notify-dismissed', '1');
   };
 
-  if (!show) return null;
+  if (!show || installBannerActive) return null;
 
   if (subscribed) {
     return (
-      <div className="fixed inset-x-0 bottom-0 z-[100] safe-bottom">
+      <div className="fixed inset-x-0 bottom-0 z-[90] safe-bottom">
         <div className="mx-4 mb-4 rounded-2xl bg-black px-5 py-4 text-center shadow-vibrant">
           <p className="font-naya-sans text-sm text-white/90">you&apos;re getting deal alerts</p>
         </div>
@@ -110,7 +141,7 @@ export default function NotifyBanner() {
   if (ios && !standalone) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-[100] safe-bottom">
+    <div className="fixed inset-x-0 bottom-0 z-[90] safe-bottom">
       <div className="mx-4 mb-4 overflow-hidden rounded-2xl bg-white shadow-vibrant">
         <div className="flex items-center gap-4 p-5">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#CEB888]/15 text-base" aria-hidden>
@@ -118,10 +149,12 @@ export default function NotifyBanner() {
           </div>
           <div className="flex-1">
             <p className="font-naya-serif text-base font-light text-text-primary">
-              get purdue deal alerts
+              {postInstall ? 'one more thing — get deal alerts' : 'get purdue deal alerts'}
             </p>
             <p className="mt-0.5 text-xs text-text-muted">
-              daily finds, campus style drops, vintage steals
+              {postInstall
+                ? "we'll notify you when we find something great"
+                : 'daily finds, campus style drops, vintage steals'}
             </p>
           </div>
           <button

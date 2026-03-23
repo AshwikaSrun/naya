@@ -81,6 +81,12 @@ export default function InstallPrompt() {
     };
   }, []);
 
+  const visible = !isStandalone && showBanner;
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('naya-bottom-banner', { detail: { id: 'install', active: visible } }));
+  }, [visible]);
+
   const handleInstall = useCallback(async () => {
     if (!deferredPrompt) return;
     await deferredPrompt.prompt();
@@ -88,6 +94,7 @@ export default function InstallPrompt() {
     if (outcome === 'accepted') {
       logInstall('pwa');
       setShowBanner(false);
+      window.dispatchEvent(new Event('naya-app-installed'));
     }
     setDeferredPrompt(null);
   }, [deferredPrompt]);
@@ -97,7 +104,7 @@ export default function InstallPrompt() {
     localStorage.setItem('naya-install-dismissed', '1');
   }, []);
 
-  if (isStandalone || !showBanner) return null;
+  if (!visible) return null;
 
   // iOS: show manual instructions
   if (isIOS && !deferredPrompt) {

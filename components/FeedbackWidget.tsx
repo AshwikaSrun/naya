@@ -17,11 +17,20 @@ export default function FeedbackWidget() {
   const [category, setCategory] = useState('');
   const [message, setMessage] = useState('');
   const [email, setEmail] = useState('');
+  const [bannerActive, setBannerActive] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const stored = window.localStorage.getItem('naya-user-email');
     if (stored) setEmail(stored);
+
+    const onBanner = (e: Event) => {
+      const { active } = (e as CustomEvent).detail as { id: string; active: boolean };
+      if (active) setBannerActive(true);
+      else setTimeout(() => setBannerActive(false), 350);
+    };
+    window.addEventListener('naya-bottom-banner', onBanner);
+    return () => window.removeEventListener('naya-bottom-banner', onBanner);
   }, []);
 
   const reset = () => {
@@ -60,7 +69,7 @@ export default function FeedbackWidget() {
       <button
         type="button"
         onClick={() => setPhase(phase === 'closed' ? 'form' : 'closed')}
-        className="fixed bottom-6 left-6 z-[100] flex items-center gap-2 rounded-full border border-black/10 bg-white px-4 py-2.5 shadow-lg transition-all hover:shadow-xl hover:border-black/20"
+        className={`fixed left-6 z-[80] flex items-center gap-2 rounded-full border border-black/10 bg-white px-4 py-2.5 shadow-lg transition-all duration-300 hover:shadow-xl hover:border-black/20 ${bannerActive ? 'bottom-28' : 'bottom-6'}`}
         aria-label="Send feedback"
       >
         <svg className="h-4 w-4 text-black/40" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -71,7 +80,7 @@ export default function FeedbackWidget() {
 
       {/* Panel */}
       {phase !== 'closed' && (
-        <div className="fixed bottom-20 left-6 z-[100] w-[340px] max-w-[calc(100vw-3rem)] overflow-hidden rounded-2xl border border-black/10 bg-white shadow-2xl">
+        <div className={`fixed left-6 z-[80] w-[340px] max-w-[calc(100vw-3rem)] overflow-hidden rounded-2xl border border-black/10 bg-white shadow-2xl transition-all duration-300 ${bannerActive ? 'bottom-[10.5rem]' : 'bottom-20'}`}>
 
           {/* Done state */}
           {phase === 'done' && (

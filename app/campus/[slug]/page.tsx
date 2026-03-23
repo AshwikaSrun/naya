@@ -61,6 +61,21 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
 
   useEffect(() => {
     window.localStorage.setItem('naya-campus', campus.slug);
+
+    const existing = document.querySelector('link[rel="manifest"]');
+    if (campus.slug === 'purdue') {
+      const link = existing || document.createElement('link');
+      link.setAttribute('rel', 'manifest');
+      link.setAttribute('href', `/api/manifest/purdue`);
+      if (!existing) document.head.appendChild(link);
+    } else if (existing) {
+      existing.setAttribute('href', '/manifest.json');
+    }
+
+    return () => {
+      const el = document.querySelector('link[rel="manifest"]');
+      if (el) el.setAttribute('href', '/manifest.json');
+    };
   }, [campus.slug]);
 
   useEffect(() => {

@@ -2,7 +2,7 @@
   "name": "naya — second-hand shopping, simplified",
   "short_name": "naya",
   "description": "Search second-hand listings in one place. Built for college students who want better style, better prices, and less waste.",
-  "start_url": "/campus/purdue",
+  "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
   "theme_color": "#faf9f7",
@@ -45,7 +45,7 @@
     {
       "name": "Search",
       "short_name": "Search",
-      "url": "/campus/purdue",
+      "url": "/",
       "description": "Search across all marketplaces"
     },
     {
