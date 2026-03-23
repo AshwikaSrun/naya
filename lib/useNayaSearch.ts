@@ -33,7 +33,6 @@ const CAMPUS_PLATFORMS: Record<string, readonly string[]> = {
   purdue: ['boiler_vintage'],
 };
 
-export const SEARCH_LIMIT = 50;
 const FAST_LIMIT = 25;
 const FULL_LIMIT = 50;
 const PLATFORM_TIMEOUT_MS = 30000;
@@ -87,12 +86,6 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isPurdue, setIsPurdue] = useState(false);
   const [searchCount, setSearchCount] = useState(0);
-  const [showEmailGate, setShowEmailGate] = useState(false);
-  const [showLimitGate, setShowLimitGate] = useState(false);
-  const [emailInput, setEmailInput] = useState('');
-  const [emailLoading, setEmailLoading] = useState(false);
-  const [emailError, setEmailError] = useState<string | null>(null);
-  const pendingSearchRef = useRef<{ query: string; platform?: 'all' | Platform } | null>(null);
 
   const [cartOpen, setCartOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
@@ -385,66 +378,7 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
     platformOverride?: 'all' | Platform
   ) => {
     if (!searchQuery.trim()) return;
-
-    if (!userEmail && typeof window !== 'undefined' && !window.localStorage.getItem('naya-user-email')) {
-      pendingSearchRef.current = { query: searchQuery, platform: platformOverride };
-      setShowEmailGate(true);
-      return;
-    }
-
-    const currentIsPurdue = isPurdue || (typeof window !== 'undefined' && (window.localStorage.getItem('naya-user-email') || '').endsWith('@purdue.edu'));
-    if (!currentIsPurdue) {
-      const currentCount = typeof window !== 'undefined'
-        ? parseInt(window.localStorage.getItem('naya-search-count') || '0', 10)
-        : searchCount;
-      if (currentCount >= SEARCH_LIMIT) {
-        pendingSearchRef.current = { query: searchQuery, platform: platformOverride };
-        setShowLimitGate(true);
-        return;
-      }
-    }
-
     runSearch(searchQuery, platformOverride);
-  };
-
-  const handleEmailSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const email = emailInput.trim().toLowerCase();
-    if (!email || !email.includes('@')) {
-      setEmailError('please enter a valid email.');
-      return;
-    }
-
-    setEmailLoading(true);
-    setEmailError(null);
-
-    try {
-      await fetch('/api/waitlist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-    } catch {
-      // Still let them through even if recording fails
-    }
-
-    window.localStorage.setItem('naya-user-email', email);
-    setUserEmail(email);
-    const purdueUser = email.endsWith('@purdue.edu');
-    setIsPurdue(purdueUser);
-    if (purdueUser) {
-      window.localStorage.setItem('naya-search-count', '0');
-      setSearchCount(0);
-    }
-    setShowEmailGate(false);
-    setShowLimitGate(false);
-    setEmailLoading(false);
-
-    const pending = pendingSearchRef.current;
-    pendingSearchRef.current = null;
-    if (pending) {
-      runSearch(pending.query, pending.platform);
-    }
   };
 
   const handleShareSearch = async () => {
@@ -485,16 +419,6 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
     userEmail,
     isPurdue,
     searchCount,
-    showEmailGate,
-    setShowEmailGate,
-    showLimitGate,
-    setShowLimitGate,
-    emailInput,
-    setEmailInput,
-    emailError,
-    emailLoading,
-    handleEmailSubmit,
-    pendingSearchRef,
     // cart
     cartOpen,
     setCartOpen,

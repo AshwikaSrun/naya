@@ -36,7 +36,7 @@ export default function PrivacyPage() {
             data may be stored to improve search quality and product experience.
           </p>
           <p>
-            If you submit feedback or join a waitlist, we store the information you provide
+            If you submit feedback or sign up for updates, we store the information you provide
             to respond and improve the product.
           </p>
           <p>

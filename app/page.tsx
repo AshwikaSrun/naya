@@ -6,8 +6,9 @@ import SearchBar from '@/components/SearchBar';
 import BottomSearchBar from '@/components/BottomSearchBar';
 import ResultsGrid from '@/components/ResultsGrid';
 import CartPanel from '@/components/CartPanel';
-import { useNayaSearch, SEARCH_LIMIT } from '@/lib/useNayaSearch';
+import { useNayaSearch } from '@/lib/useNayaSearch';
 import GetNayaBanner from '@/components/GetNayaBanner';
+import EmailSignup from '@/components/EmailSignup';
 import NewFindsSection from '@/components/NewFindsSection';
 import CampusProductGrid from '@/components/CampusProductGrid';
 import { ALL_CAMPUSES } from '@/lib/campuses';
@@ -202,13 +203,6 @@ export default function Home() {
                   </Link>
                 ))}
               </nav>
-              {s.userEmail && (
-                <span className={`hidden rounded-full px-3 py-1 text-[10px] tracking-wide md:inline ${
-                  s.isPurdue ? 'bg-amber-50 font-medium text-amber-800' : 'bg-neutral-100 text-black/40'
-                }`}>
-                  {s.isPurdue ? '✦ purdue unlimited' : `${Math.max(0, SEARCH_LIMIT - s.searchCount)} searches left`}
-                </span>
-              )}
               <button type="button" onClick={() => s.setCartOpen(true)} className="relative flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-black/5" aria-label="Open cart">
                 <svg className="h-5 w-5 text-black/60" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
@@ -525,6 +519,18 @@ export default function Home() {
       {/* ── Get the App / Extension ── */}
       <GetNayaBanner variant="full" />
 
+      {/* ── Stay in the Loop ── */}
+      <section className="bg-[#111] px-6 py-16 md:px-10">
+        <div className="mx-auto max-w-md text-center">
+          <p className="font-naya-sans text-[10px] lowercase tracking-[0.2em] text-white/35">stay in the loop</p>
+          <h2 className="font-naya-serif mt-3 text-2xl font-light text-white md:text-3xl">get notified about new drops &amp; deals.</h2>
+          <p className="font-naya-sans mt-2 text-xs text-white/40">no spam. just the good stuff.</p>
+          <div className="mt-6">
+            <EmailSignup source="home_footer" />
+          </div>
+        </div>
+      </section>
+
       {/* ── Footer ── */}
       <footer className="bg-night-bg px-6 py-14 md:px-10">
         <div className="mx-auto flex max-w-5xl flex-col gap-6 md:flex-row md:items-center md:justify-between">
@@ -541,46 +547,6 @@ export default function Home() {
           </div>
         </div>
       </footer>
-
-      {/* ── Email capture modal ── */}
-      {s.showEmailGate && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="mx-4 w-full max-w-sm rounded-2xl bg-white p-8 shadow-2xl">
-            <h2 className="font-naya-serif text-2xl font-light text-black">let&apos;s find your next favorite piece</h2>
-            <p className="font-naya-sans mt-2 text-sm text-black/50">drop your email to start discovering vintage finds. no waitlist, no spam.</p>
-            <form onSubmit={s.handleEmailSubmit} className="mt-6">
-              <input type="email" value={s.emailInput} onChange={(e) => s.setEmailInput(e.target.value)} placeholder="your email" required autoComplete="email" autoCapitalize="none" inputMode="email" autoFocus className="font-naya-sans w-full rounded-full border border-black/10 bg-neutral-50 px-5 py-3.5 text-base text-black placeholder:text-black/30 focus:border-black/30 focus:outline-none" />
-              {s.emailError && <p className="font-naya-sans mt-2 text-xs text-red-500">{s.emailError}</p>}
-              <button type="submit" disabled={s.emailLoading || !s.emailInput.trim()} className="mt-4 w-full rounded-full bg-black px-6 py-3.5 text-[11px] font-medium lowercase tracking-[0.1em] text-white transition-opacity hover:opacity-90 disabled:opacity-40">
-                {s.emailLoading ? 'one sec...' : 'start finding deals'}
-              </button>
-            </form>
-            <div className="mt-5 rounded-lg bg-amber-50 px-4 py-3 text-center">
-              <p className="font-naya-sans text-[11px] font-medium text-amber-900">purdue students get unlimited searches</p>
-              <p className="font-naya-sans mt-0.5 text-[10px] text-amber-700/70">use your @purdue.edu email for full access</p>
-            </div>
-            <button type="button" onClick={() => { s.setShowEmailGate(false); s.pendingSearchRef.current = null; }} className="font-naya-sans mt-4 w-full py-2 text-[11px] text-black/30 transition-colors hover:text-black/50">maybe later</button>
-          </div>
-        </div>
-      )}
-
-      {/* ── Search limit reached modal ── */}
-      {s.showLimitGate && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="mx-4 w-full max-w-sm rounded-2xl bg-white p-8 shadow-2xl">
-            <h2 className="font-naya-serif text-2xl font-light text-black">you&apos;ve used all {SEARCH_LIMIT} searches</h2>
-            <p className="font-naya-sans mt-2 text-sm text-black/50">want unlimited access? sign in with your @purdue.edu email.</p>
-            <form onSubmit={s.handleEmailSubmit} className="mt-6">
-              <input type="email" value={s.emailInput} onChange={(e) => s.setEmailInput(e.target.value)} placeholder="you@purdue.edu" required autoComplete="email" autoCapitalize="none" inputMode="email" autoFocus className="font-naya-sans w-full rounded-full border border-black/10 bg-neutral-50 px-5 py-3.5 text-base text-black placeholder:text-black/30 focus:border-black/30 focus:outline-none" />
-              {s.emailError && <p className="font-naya-sans mt-2 text-xs text-red-500">{s.emailError}</p>}
-              <button type="submit" disabled={s.emailLoading || !s.emailInput.trim()} className="mt-4 w-full rounded-full bg-black px-6 py-3.5 text-[11px] font-medium lowercase tracking-[0.1em] text-white transition-opacity hover:opacity-90 disabled:opacity-40">
-                {s.emailLoading ? 'one sec...' : 'unlock unlimited searches'}
-              </button>
-            </form>
-            <button type="button" onClick={() => { s.setShowLimitGate(false); s.pendingSearchRef.current = null; }} className="font-naya-sans mt-4 w-full py-2 text-[11px] text-black/30 transition-colors hover:text-black/50">close</button>
-          </div>
-        </div>
-      )}
 
       {/* ── Sticky mobile app banner ── */}
       <GetNayaBanner variant="sticky" />

@@ -5,17 +5,20 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const email = (body.email ?? '').trim().toLowerCase();
+    const source = (body.source ?? 'signup').trim();
 
     if (!email || !email.includes('@')) {
       return NextResponse.json({ error: 'Valid email is required.' }, { status: 400 });
     }
 
-    console.log(`[WAITLIST] New signup: ${email} at ${new Date().toISOString()}`);
+    console.log(`[EMAIL] New signup: ${email} (source: ${source}) at ${new Date().toISOString()}`);
 
     const supabase = getSupabase();
     if (supabase) {
-      const { error } = await supabase.from('waitlist_signups').insert({ email });
-      if (error) console.error('[WAITLIST] Supabase insert failed:', error);
+      const { error } = await supabase
+        .from('waitlist_signups')
+        .upsert({ email, source }, { onConflict: 'email' });
+      if (error) console.error('[EMAIL] Supabase upsert failed:', error);
     }
 
     const sheetWebhook = process.env.GOOGLE_SHEET_WEBHOOK?.trim();
@@ -24,16 +27,16 @@ export async function POST(request: Request) {
         await fetch(sheetWebhook, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email }),
+          body: JSON.stringify({ email, source }),
         });
       } catch (sheetErr) {
-        console.error('[WAITLIST] Google Sheet write failed:', sheetErr);
+        console.error('[EMAIL] Google Sheet write failed:', sheetErr);
       }
     }
 
     return NextResponse.json({
       success: true,
-      message: "you're on the list. we'll be in touch.",
+      message: "you're in. welcome to naya.",
     });
   } catch {
     return NextResponse.json({ error: 'Something went wrong.' }, { status: 500 });
