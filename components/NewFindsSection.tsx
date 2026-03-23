@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { getDepopImageUrl, DEPOP_WIDTH_CARD } from '@/lib/depopImage';
+import { getDepopImageUrl, DEPOP_WIDTH_CARD, DEPOP_WIDTH_HERO } from '@/lib/depopImage';
 
 interface FindItem {
   title: string;
@@ -168,6 +168,10 @@ export default function NewFindsSection({ campus, onSearch }: Props) {
             const displayImage = item.source === 'depop'
               ? getDepopImageUrl(item.image, DEPOP_WIDTH_CARD)
               : item.image;
+            const productPageImage =
+              item.source === 'depop'
+                ? getDepopImageUrl(item.image, DEPOP_WIDTH_HERO)
+                : item.image;
 
             return (
               <Link
@@ -175,7 +179,7 @@ export default function NewFindsSection({ campus, onSearch }: Props) {
                 href={`/product/${buildSlug(item.title) || 'item'}?${new URLSearchParams({
                   title: item.title,
                   price: item.price.toFixed(2),
-                  image: item.image,
+                  image: productPageImage,
                   url: item.url,
                   source: item.source,
                 }).toString()}`}

@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Cormorant_Garamond, DM_Sans } from 'next/font/google';
+import { getDepopImageUrl, DEPOP_WIDTH_HERO } from '@/lib/depopImage';
 
 const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
@@ -32,6 +33,13 @@ export default async function ProductPage({ searchParams }: ProductPageProps) {
   const url = params.url;
   const source = params.source ?? 'source';
 
+  /** Query string carries raw CDN URLs; Depop defaults are tiny — upscale for full-bleed hero */
+  const heroImage =
+    image &&
+    (source.toLowerCase() === 'depop' || image.includes('depop.com'))
+      ? getDepopImageUrl(image, DEPOP_WIDTH_HERO)
+      : image;
+
   return (
     <div className={`${dmSans.className} min-h-screen bg-night-bg`}>
       <div className="mx-auto max-w-6xl px-6 py-10 md:px-10 md:py-16">
@@ -45,9 +53,9 @@ export default async function ProductPage({ searchParams }: ProductPageProps) {
         <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="rounded-3xl border border-border-dark bg-night-card p-6 shadow-soft">
             <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl bg-night-surface">
-              {image ? (
+              {heroImage ? (
                 <Image
-                  src={image}
+                  src={heroImage}
                   alt={title}
                   fill
                   className="object-cover"

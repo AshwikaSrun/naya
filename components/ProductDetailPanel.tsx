@@ -143,7 +143,9 @@ export default function ProductDetailPanel({ product, onClose }: ProductDetailPa
   const handleShareProduct = async () => {
     if (!product) return;
     const slug = product.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-    const shareUrl = `${window.location.origin}/product/${slug || 'item'}?title=${encodeURIComponent(product.title)}&price=${product.price.toFixed(2)}&image=${encodeURIComponent(product.image)}&url=${encodeURIComponent(product.url)}&source=${product.source}`;
+    const shareImage =
+      product.source === 'depop' ? getDepopImageUrl(product.image, DEPOP_WIDTH_HERO) : product.image;
+    const shareUrl = `${window.location.origin}/product/${slug || 'item'}?title=${encodeURIComponent(product.title)}&price=${product.price.toFixed(2)}&image=${encodeURIComponent(shareImage)}&url=${encodeURIComponent(product.url)}&source=${product.source}`;
     const shareData = {
       title: product.title,
       text: `found this for $${product.price.toFixed(0)} on naya`,
