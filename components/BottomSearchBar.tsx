@@ -19,7 +19,7 @@ export default function BottomSearchBar({ onSearch, disabled }: BottomSearchBarP
   };
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-5">
+    <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-5 safe-bottom">
       <div className="w-full max-w-xl rounded-2xl border border-black/8 bg-white/95 p-3.5 shadow-[0_-4px_40px_rgba(0,0,0,0.08)] backdrop-blur-md">
         <form onSubmit={handleSubmit}>
           <div className="relative flex items-center rounded-full border border-black/8 bg-white px-4 py-2.5">
@@ -69,10 +69,10 @@ export default function BottomSearchBar({ onSearch, disabled }: BottomSearchBarP
           <span className="text-black/10">|</span>
           <button
             type="button"
-            onClick={() => alert('Image Search coming soon!')}
+            onClick={() => onSearch('trending vintage')}
             className="text-[10px] lowercase tracking-[0.12em] text-black/40 transition-colors hover:text-black"
           >
-            image search
+            trending
           </button>
         </div>
       </div>

@@ -17,6 +17,7 @@ import { getFallbackForCampus } from '@/lib/fallbackProducts';
 import { getDepopImageUrl } from '@/lib/depopImage';
 import EmailSignup from '@/components/EmailSignup';
 import DealDiscoveryNotifications from '@/components/DealDiscoveryNotifications';
+import MobileNav from '@/components/MobileNav';
 
 const NAV_LINKS = [
   { href: '/editorial', label: 'editorial' },
@@ -155,6 +156,7 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
                 </svg>
                 {s.cartCount > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-black text-[9px] font-bold text-white">{s.cartCount}</span>}
               </button>
+              <MobileNav />
             </div>
           </div>
         </header>
@@ -226,7 +228,7 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
         {/* Nav */}
         <div className="absolute inset-x-0 top-0 z-20">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 md:px-10">
-            <Link href="/campus/purdue" className="font-naya-serif text-3xl font-light lowercase tracking-[0.15em] text-white md:text-4xl">
+            <Link href={`/campus/${campus.slug}`} className="font-naya-serif text-3xl font-light lowercase tracking-[0.15em] text-white md:text-4xl">
               naya
             </Link>
             <div className="flex items-center gap-4">
@@ -268,6 +270,7 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
                 </svg>
                 {s.cartCount > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[9px] font-bold text-black">{s.cartCount}</span>}
               </button>
+              <MobileNav color="light" />
             </div>
           </div>
         </div>

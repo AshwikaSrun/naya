@@ -23,18 +23,24 @@ export default function EmailSignup({ source = 'footer' }: { source?: string }) 
 
     setLoading(true);
     try {
-      await fetch('/api/waitlist', {
+      const res = await fetch('/api/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: trimmed, source }),
       });
-    } catch { /* still mark as submitted */ }
-
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem('naya-user-email', trimmed);
+      if (!res.ok) throw new Error('signup failed');
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('naya-user-email', trimmed);
+      }
+      setSubmitted(true);
+    } catch {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('naya-user-email', trimmed);
+      }
+      setSubmitted(true);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-    setSubmitted(true);
   };
 
   if (submitted) {

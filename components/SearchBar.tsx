@@ -120,13 +120,12 @@ export default function SearchBar({
             concierge
           </Link>
           <span className="text-white/15">|</span>
-          <button
-            type="button"
-            onClick={() => alert('Image Search coming soon!')}
+          <Link
+            href="/deals"
             className="text-[10px] lowercase tracking-[0.12em] text-white/50 transition-colors hover:text-white"
           >
-            image search
-          </button>
+            deals
+          </Link>
         </div>
       )}
     </div>

@@ -18,7 +18,7 @@ export default function NotifyBanner() {
   const [show, setShow] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [installBannerActive, setInstallBannerActive] = useState(true);
+  const [installBannerActive, setInstallBannerActive] = useState(false);
   const [postInstall, setPostInstall] = useState(false);
 
   const checkSubscription = useCallback(async () => {
@@ -80,7 +80,8 @@ export default function NotifyBanner() {
     return () => clearTimeout(timer);
   }, [checkSubscription, installBannerActive, postInstall]);
 
-  const visible = show && !installBannerActive;
+  const isIosNonStandalone = typeof window !== 'undefined' && isIOSDevice() && !isStandaloneMode();
+  const visible = show && !installBannerActive && !isIosNonStandalone;
 
   useEffect(() => {
     if (visible) {
@@ -143,11 +144,6 @@ export default function NotifyBanner() {
       </div>
     );
   }
-
-  const ios = isIOSDevice();
-  const standalone = isStandaloneMode();
-
-  if (ios && !standalone) return null;
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-[90] safe-bottom">

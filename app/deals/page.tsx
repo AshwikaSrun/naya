@@ -6,6 +6,7 @@ import ProductCard from '@/components/ProductCard';
 import ProductDetailPanel from '@/components/ProductDetailPanel';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import DealDiscoveryNotifications from '@/components/DealDiscoveryNotifications';
+import MobileNav from '@/components/MobileNav';
 
 interface Product {
   title: string;
@@ -133,13 +134,16 @@ export default function DealsPage() {
           >
             naya
           </Link>
-          <nav className="font-naya-sans hidden items-center gap-3 text-[10px] lowercase tracking-[0.15em] text-black/60 md:flex">
-            <Link href="/deals" className="px-3 py-1.5 text-black font-medium">deals</Link>
-            <Link href="/college" className="px-3 py-1.5 transition-colors hover:text-black">campus</Link>
-            <Link href="/insights" className="px-3 py-1.5 transition-colors hover:text-black">insights</Link>
-            <Link href="/app" className="px-3 py-1.5 transition-colors hover:text-black">concierge</Link>
-            <Link href="/profile" className="px-3 py-1.5 transition-colors hover:text-black">profile</Link>
-          </nav>
+          <div className="flex items-center gap-3">
+            <nav className="font-naya-sans hidden items-center gap-3 text-[10px] lowercase tracking-[0.15em] text-black/60 md:flex">
+              <Link href="/deals" className="px-3 py-1.5 text-black font-medium">deals</Link>
+              <Link href="/college" className="px-3 py-1.5 transition-colors hover:text-black">campus</Link>
+              <Link href="/insights" className="px-3 py-1.5 transition-colors hover:text-black">insights</Link>
+              <Link href="/app" className="px-3 py-1.5 transition-colors hover:text-black">concierge</Link>
+              <Link href="/profile" className="px-3 py-1.5 transition-colors hover:text-black">profile</Link>
+            </nav>
+            <MobileNav />
+          </div>
         </div>
       </header>
 

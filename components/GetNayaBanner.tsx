@@ -36,7 +36,7 @@ export default function GetNayaBanner({ variant = 'full' }: GetNayaBannerProps) 
 
   if (variant === 'sticky') {
     return (
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-black/5 bg-white/95 px-4 py-3 backdrop-blur-md md:hidden">
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-black/5 bg-white/95 px-4 py-3 backdrop-blur-md safe-bottom md:hidden">
         <div className="mx-auto flex max-w-md items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black">
             <span className="font-naya-serif text-[15px] font-light text-white">n</span>

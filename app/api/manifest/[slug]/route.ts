@@ -46,6 +46,8 @@ export async function GET(
     short_name: 'naya',
     description: campus.description,
     start_url: campus.start_url,
+    scope: '/',
+    id: `naya-${slug}`,
     shortcuts: campus.shortcuts,
   };
 

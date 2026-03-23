@@ -13,6 +13,7 @@ import NewFindsSection from '@/components/NewFindsSection';
 import CampusProductGrid from '@/components/CampusProductGrid';
 import { ALL_CAMPUSES } from '@/lib/campuses';
 import { getDepopImageUrl } from '@/lib/depopImage';
+import MobileNav from '@/components/MobileNav';
 
 const NAV_LINKS = [
   { href: '/deals', label: 'deals' },
@@ -211,6 +212,7 @@ export default function Home() {
                   <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-black text-[9px] font-bold text-white">{s.cartCount}</span>
                 )}
               </button>
+              <MobileNav />
             </div>
           </div>
         </header>
@@ -301,6 +303,7 @@ export default function Home() {
                   <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[9px] font-bold text-black">{s.cartCount}</span>
                 )}
               </button>
+              <MobileNav color="light" />
             </div>
           </div>
         </div>

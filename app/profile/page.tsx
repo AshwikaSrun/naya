@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import ProductCard from '@/components/ProductCard';
 import DealDiscoveryNotifications from '@/components/DealDiscoveryNotifications';
+import MobileNav from '@/components/MobileNav';
 
 interface Product {
   title: string;
@@ -21,6 +22,8 @@ export default function ProfilePage() {
     style: 'casual',
     alertEmail: '',
   });
+
+  const [prefsLoaded, setPrefsLoaded] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -40,12 +43,13 @@ export default function ProfilePage() {
     } catch (error) {
       console.error('Failed to load profile data', error);
     }
+    setPrefsLoaded(true);
   }, []);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !prefsLoaded) return;
     window.localStorage.setItem('profilePrefs', JSON.stringify(prefs));
-  }, [prefs]);
+  }, [prefs, prefsLoaded]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -53,13 +57,16 @@ export default function ProfilePage() {
         {/* Header */}
         <div className="mb-10 flex items-center justify-between">
           <Link href="/" className="font-naya-serif text-2xl font-light lowercase tracking-[0.12em] text-black">naya</Link>
-          <nav className="font-naya-sans hidden items-center gap-3 text-[10px] lowercase tracking-[0.15em] text-black/60 md:flex">
-            <Link href="/deals" className="px-3 py-1.5 transition-colors hover:text-black">deals</Link>
-            <Link href="/college" className="px-3 py-1.5 transition-colors hover:text-black">campus</Link>
-            <Link href="/insights" className="px-3 py-1.5 transition-colors hover:text-black">insights</Link>
-            <Link href="/app" className="px-3 py-1.5 transition-colors hover:text-black">concierge</Link>
-            <Link href="/profile" className="px-3 py-1.5 text-black font-medium">profile</Link>
-          </nav>
+          <div className="flex items-center gap-3">
+            <nav className="font-naya-sans hidden items-center gap-3 text-[10px] lowercase tracking-[0.15em] text-black/60 md:flex">
+              <Link href="/deals" className="px-3 py-1.5 transition-colors hover:text-black">deals</Link>
+              <Link href="/college" className="px-3 py-1.5 transition-colors hover:text-black">campus</Link>
+              <Link href="/insights" className="px-3 py-1.5 transition-colors hover:text-black">insights</Link>
+              <Link href="/app" className="px-3 py-1.5 transition-colors hover:text-black">concierge</Link>
+              <Link href="/profile" className="px-3 py-1.5 text-black font-medium">profile</Link>
+            </nav>
+            <MobileNav />
+          </div>
         </div>
 
         <header className="mb-12 text-center">
