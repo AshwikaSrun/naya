@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { getDepopImageUrl } from '@/lib/depopImage';
+import { getDepopImageUrl, DEPOP_WIDTH_CARD } from '@/lib/depopImage';
 
 interface FindItem {
   title: string;
@@ -102,8 +102,10 @@ export default function NewFindsSection({ campus, onSearch }: Props) {
     return (
       <section className="bg-white px-6 py-20 md:px-10">
         <div className="mx-auto max-w-5xl">
-          <p className="font-naya-sans text-[10px] lowercase tracking-[0.2em] text-text-muted">just listed</p>
-          <h2 className="font-naya-serif mt-3 text-3xl font-light text-text-primary md:text-5xl">new vintage finds.</h2>
+          <h2 className="font-naya-serif text-3xl font-light text-text-primary md:text-5xl">new vintage finds.</h2>
+          <p className="font-naya-sans mt-2 max-w-xl text-xs leading-relaxed text-text-muted">
+            posted in the last 30 minutes across all marketplaces.
+          </p>
           <div className="mt-10 flex flex-col items-center py-8">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-black/10 border-t-black/40" />
             <p className="mt-4 text-xs text-text-muted">scanning marketplaces...</p>
@@ -120,10 +122,9 @@ export default function NewFindsSection({ campus, onSearch }: Props) {
       <div className="mx-auto max-w-5xl">
         <div className="flex items-start justify-between">
           <div>
-            <p className="font-naya-sans text-[10px] lowercase tracking-[0.2em] text-text-muted">just listed</p>
-            <h2 className="font-naya-serif mt-3 text-3xl font-light text-text-primary md:text-5xl">new vintage finds.</h2>
+            <h2 className="font-naya-serif text-3xl font-light text-text-primary md:text-5xl">new vintage finds.</h2>
             <p className="font-naya-sans mt-2 max-w-xl text-xs leading-relaxed text-text-muted">
-              biased toward cheaper listings (think thrift-to-mid, not grail pricing). ralph &amp; carhartt anchors plus it-girl, denim, soft pinterest, and under-the-radar names — use filters to lean into a vibe.
+              posted in the last 30 minutes across all marketplaces.
             </p>
           </div>
           <button
@@ -161,7 +162,7 @@ export default function NewFindsSection({ campus, onSearch }: Props) {
         <div className="mt-10 space-y-3">
           {items.slice(0, 8).map((item) => {
             const displayImage = item.source === 'depop'
-              ? getDepopImageUrl(item.image, 400)
+              ? getDepopImageUrl(item.image, DEPOP_WIDTH_CARD)
               : item.image;
 
             return (

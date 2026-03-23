@@ -5,6 +5,49 @@ const { chromium } = require('playwright');
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 const { LAUNCH_ARGS } = require('./launchArgs');
 
+/**
+ * Pick the largest / best primary Depop image from __NEXT_DATA__ product payload.
+ * (We used to prefer P4 before P1 and raw preview.url — both are often low-res.)
+ */
+function bestDepopImageFromProduct(product) {
+  if (!product) return '';
+
+  const preview = product.preview;
+  if (preview && typeof preview === 'object') {
+    const numericKeys = Object.keys(preview)
+      .filter((k) => /^\d+$/.test(k))
+      .map(Number)
+      .sort((a, b) => b - a);
+    for (const k of numericKeys) {
+      const u = preview[String(k)];
+      if (typeof u === 'string' && u.includes('http')) return u;
+    }
+    if (typeof preview.url === 'string' && preview.url.includes('http')) return preview.url;
+  } else if (typeof preview === 'string' && preview.includes('http')) {
+    return preview;
+  }
+
+  const pic = product.pictures?.[0];
+  if (pic?.formats && typeof pic.formats === 'object') {
+    const order = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P0'];
+    for (const key of order) {
+      const u = pic.formats[key]?.url;
+      if (typeof u === 'string' && u) return u;
+    }
+    const vals = Object.values(pic.formats);
+    const withUrl = vals.find((f) => f && typeof f.url === 'string' && f.url);
+    if (withUrl?.url) return withUrl.url;
+  }
+  if (pic?.url) return pic.url;
+
+  if (product.imageUrl) return product.imageUrl;
+  if (product.images?.[0]) {
+    const im = product.images[0];
+    return typeof im === 'string' ? im : im?.url || '';
+  }
+  return '';
+}
+
 /** Try Cheerio + __NEXT_DATA__ first — fast, no browser, often works */
 async function scrapeDepopCheerio(query, limit) {
   try {
@@ -70,13 +113,7 @@ async function scrapeDepopCheerio(query, limit) {
             null;
           const origPriceNum = origPriceRaw != null ? parseFloat(origPriceRaw) : null;
 
-          let image = '';
-          if (product.preview?.url) image = product.preview.url;
-          else if (product.pictures?.[0]?.url) image = product.pictures[0].url;
-          else if (product.pictures?.[0]?.formats?.P4?.url) image = product.pictures[0].formats.P4.url;
-          else if (product.pictures?.[0]?.formats?.P1?.url) image = product.pictures[0].formats.P1.url;
-          else if (product.imageUrl) image = product.imageUrl;
-          else if (product.images?.[0]) image = typeof product.images[0] === 'string' ? product.images[0] : product.images[0]?.url || '';
+          const image = bestDepopImageFromProduct(product);
 
           const itemUrl = product.slug
             ? `https://www.depop.com/products/${product.slug}/`
@@ -165,7 +202,7 @@ function parseDepopHtml(html, limit) {
         const priceNum = price != null ? parseFloat(price) : null;
         const origPriceRaw = product.price?.originalPriceAmount || product.price?.originalPrice || product.pricing?.originalPrice?.amount || product.originalPrice || null;
         const origPriceNum = origPriceRaw != null ? parseFloat(origPriceRaw) : null;
-        let image = product.preview?.url || product.pictures?.[0]?.url || product.pictures?.[0]?.formats?.P4?.url || product.pictures?.[0]?.formats?.P1?.url || product.imageUrl || '';
+        const image = bestDepopImageFromProduct(product);
         const itemUrl = product.slug ? `https://www.depop.com/products/${product.slug}/` : product.url || product.link || '';
         if (priceNum != null && priceNum > 0 && image && itemUrl) {
           const item = { title: (title || 'Depop Item').length > 120 ? (title || 'Depop Item').slice(0, 120) + '...' : (title || 'Depop Item'), price: priceNum, image, url: itemUrl, source: 'depop' };

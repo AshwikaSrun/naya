@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { addToCart, isInCart } from './CartPanel';
-import { getDepopImageUrl } from '@/lib/depopImage';
+import { getDepopImageUrl, DEPOP_WIDTH_CARD } from '@/lib/depopImage';
 
 interface Product {
   title: string;
@@ -22,7 +22,7 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, onSelect }: ProductCardProps) {
   const preferredImage = product.source === 'depop'
-    ? getDepopImageUrl(product.image, 600)
+    ? getDepopImageUrl(product.image, DEPOP_WIDTH_CARD)
     : product.image;
   const [imageSrc, setImageSrc] = useState(preferredImage);
   const [isWishlisted, setIsWishlisted] = useState(false);

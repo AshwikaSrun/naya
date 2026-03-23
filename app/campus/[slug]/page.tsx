@@ -14,7 +14,7 @@ import NewFindsSection from '@/components/NewFindsSection';
 import CampusProductGrid from '@/components/CampusProductGrid';
 import SearchPromptCard from '@/components/SearchPromptCard';
 import { getFallbackForCampus } from '@/lib/fallbackProducts';
-import { getDepopImageUrl } from '@/lib/depopImage';
+import { getDepopImageUrl, DEPOP_WIDTH_CARD } from '@/lib/depopImage';
 import EmailSignup from '@/components/EmailSignup';
 import DealDiscoveryNotifications from '@/components/DealDiscoveryNotifications';
 import MobileNav from '@/components/MobileNav';
@@ -502,7 +502,7 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {s.recentlyViewed.map((item) => {
-                  const displayImage = item.source === 'depop' ? getDepopImageUrl(item.image, 400) : item.image;
+                  const displayImage = item.source === 'depop' ? getDepopImageUrl(item.image, DEPOP_WIDTH_CARD) : item.image;
                   return (
                     <Link key={`${item.source}-${item.url}`} href={`/product/${buildSlug(item.title) || 'item'}?${new URLSearchParams({ title: item.title, price: item.price.toFixed(2), image: item.image, url: item.url, source: item.source }).toString()}`} className="group overflow-hidden rounded-2xl bg-white transition-all hover:shadow-soft">
                       <div className="relative aspect-[3/4] w-full overflow-hidden bg-neutral-100">

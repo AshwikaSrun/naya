@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { addToCart, isInCart } from './CartPanel';
 import { addToCompare, isInCompare, removeFromCompare } from '@/lib/compare';
-import { getDepopImageUrl } from '@/lib/depopImage';
+import { getDepopImageUrl, DEPOP_WIDTH_HERO } from '@/lib/depopImage';
 import { addPriceAlert, getPriceAlerts } from '@/lib/priceAlerts';
 import { recordProductView } from '@/lib/impact';
 import { deriveCompleteTheLookQuery } from '@/lib/completeTheLook';
@@ -163,7 +163,7 @@ export default function ProductDetailPanel({ product, onClose }: ProductDetailPa
   if (!product) return null;
 
   const meta = extractMeta(product.title);
-  const displayImage = product.source === 'depop' ? getDepopImageUrl(product.image, 900) : product.image;
+  const displayImage = product.source === 'depop' ? getDepopImageUrl(product.image, DEPOP_WIDTH_HERO) : product.image;
 
   return (
     <div className="fixed inset-0 z-[100] flex">
