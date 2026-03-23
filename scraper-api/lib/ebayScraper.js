@@ -120,53 +120,89 @@ async function scrapeEbayCheerio(query, limit) {
   }
 }
 
+/** Prefer evaluate() — page.content() often throws if Chromium died (common with --single-process). */
+async function safeGetPageHtml(page) {
+  try {
+    const html = await page.evaluate(() => {
+      try {
+        return document.documentElement ? document.documentElement.outerHTML : '';
+      } catch {
+        return '';
+      }
+    });
+    if (html && html.length > 500) return html;
+  } catch {
+    /* fall through */
+  }
+  return page.content();
+}
+
 async function scrapeEbayPlaywright(query, limit) {
   const searchUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}&_ipg=${Math.min(limit, 200)}`;
+  const maxAttempts = 3;
 
-  for (let attempt = 1; attempt <= 2; attempt++) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     let browser = null;
+    let context = null;
     try {
-      browser = await chromium.launch({ headless: true, args: LAUNCH_ARGS, timeout: 20000 });
+      browser = await chromium.launch({ headless: true, args: LAUNCH_ARGS, timeout: 25000 });
 
-      const context = await browser.newContext({
+      context = await browser.newContext({
         userAgent: USER_AGENT,
-        viewport: { width: 1920, height: 1080 },
+        viewport: { width: 1366, height: 768 },
         locale: 'en-US',
         javaScriptEnabled: true,
       });
 
       const page = await context.newPage();
 
-      // Mask automation signals that trigger bot detection
       await page.addInitScript(() => {
         Object.defineProperty(navigator, 'webdriver', { get: () => false });
       });
 
-      await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
+      await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 28000 });
 
       try {
-        await page.waitForSelector('ul.srp-results li.s-card', { timeout: 10000 });
+        await page.waitForSelector('ul.srp-results li.s-card, li.s-item, a[href*="/itm/"]', {
+          timeout: 8000,
+        });
       } catch {
-        // Continue anyway — page might still have content
+        /* still try to read DOM */
       }
 
-      await new Promise((r) => setTimeout(r, 500));
-      const html = await page.content();
+      await new Promise((r) => setTimeout(r, 900));
+
+      const html = await safeGetPageHtml(page);
+
+      await context.close().catch(() => {});
+      context = null;
       await browser.close();
       browser = null;
 
       if (!ebayHtmlLooksParseable(html)) {
+        if (attempt < maxAttempts) {
+          console.warn(`[eBay] Playwright attempt ${attempt}: unparseable HTML, retrying...`);
+          await new Promise((r) => setTimeout(r, 2000));
+          continue;
+        }
         return [];
       }
 
       const items = parseEbayHtml(html, limit);
       if (items.length > 0) return items;
-    } catch (err) {
-      if (browser) await browser.close().catch(() => {});
-      const isRetryable = /crashed|closed|disconnected|timeout|target/i.test(err.message);
-      if (isRetryable && attempt < 2) {
-        console.warn(`[eBay] Playwright attempt ${attempt} failed (${err.message}), retrying...`);
+      if (attempt < maxAttempts) {
+        console.warn(`[eBay] Playwright attempt ${attempt}: 0 items parsed, retrying...`);
         await new Promise((r) => setTimeout(r, 2000));
+      }
+    } catch (err) {
+      if (context) await context.close().catch(() => {});
+      if (browser) await browser.close().catch(() => {});
+      context = null;
+      browser = null;
+      const isRetryable = /crashed|closed|disconnected|timeout|target/i.test(err.message);
+      if (isRetryable && attempt < maxAttempts) {
+        console.warn(`[eBay] Playwright attempt ${attempt} failed (${err.message}), retrying...`);
+        await new Promise((r) => setTimeout(r, 2500));
         continue;
       }
       console.error('[eBay] Playwright error:', err.message);

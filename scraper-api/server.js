@@ -195,7 +195,8 @@ app.get('/search', async (req, res) => {
         await runScraper(name);
         // Let the previous browser fully release memory before launching the next Playwright scraper
         if (i < pwPlatforms.length - 1) {
-          await new Promise((r) => setTimeout(r, 750));
+          // Let Chromium fully exit + free RAM before the next Playwright scraper (eBay after Depop).
+          await new Promise((r) => setTimeout(r, 2500));
         }
       }
     };
