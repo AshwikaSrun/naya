@@ -15,9 +15,9 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.nayaeditorial.shop"),
-  title: "naya — purdue vintage & deals",
+  title: "naya — second-hand shopping, simplified",
   description:
-    "Vintage Purdue gear, campus deals, and second-hand finds from eBay, Grailed, Depop, Poshmark & Boiler Vintage — all in one search.",
+    "Search second-hand listings in one place. Built for college students who want better style, better prices, and less waste.",
   manifest: "/manifest.json",
   icons: {
     icon: [
@@ -33,17 +33,17 @@ export const metadata: Metadata = {
     title: "naya",
   },
   openGraph: {
-    title: "naya — purdue vintage & deals",
+    title: "naya — second-hand shopping, simplified",
     description:
-      "Vintage Purdue gear, campus deals, and second-hand finds from eBay, Grailed, Depop, Poshmark & Boiler Vintage — all in one search.",
+      "Search second-hand listings in one place. Built for college students who want better style, better prices, and less waste.",
     images: ["/brands/naya-og.png"],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "naya — purdue vintage & deals",
+    title: "naya — second-hand shopping, simplified",
     description:
-      "Vintage Purdue gear, campus deals, and second-hand finds from eBay, Grailed, Depop, Poshmark & Boiler Vintage — all in one search.",
+      "Search second-hand listings in one place. Built for college students who want better style, better prices, and less waste.",
     images: ["/brands/naya-og.png"],
   },
 };
