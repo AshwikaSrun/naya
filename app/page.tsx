@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import SearchBar from '@/components/SearchBar';
 import BottomSearchBar from '@/components/BottomSearchBar';
 import ResultsGrid from '@/components/ResultsGrid';
@@ -280,17 +279,11 @@ export default function Home() {
     <div className="min-h-screen bg-night-bg">
       {/* Hero */}
       <section className="relative flex min-h-[min(100svh,56rem)] flex-col items-center justify-start overflow-hidden pb-12 md:min-h-[80vh] md:justify-center md:pb-0">
-        <div className="absolute inset-0">
-          <Image
-            src="/finds/streetwear3.jpg"
-            alt=""
-            fill
-            priority
-            quality={90}
-            sizes="100vw"
-            className="object-cover object-center"
-          />
-        </div>
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: "url('/brands/browser.png')" }}
+          aria-hidden
+        />
         <div className="absolute inset-0 bg-black/50" aria-hidden />
 
         {/* Nav */}
