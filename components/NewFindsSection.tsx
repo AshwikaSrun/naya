@@ -17,12 +17,22 @@ interface FindItem {
 
 const FILTER_PRESETS = [
   { label: 'all', value: 'default' },
-  { label: 'carhartt • flat lay', value: 'carhartt' },
-  { label: 'nike vintage • clean', value: 'nike' },
-  { label: 'y2k', value: 'y2k' },
-  { label: 'denim • minimal', value: 'denim' },
-  { label: 'streetwear • aesthetic', value: 'streetwear' },
-];
+  { label: 'ralph • carhartt', value: 'anchors' },
+  { label: 'it girl • viral', value: 'itgirl' },
+  { label: 'denim • street', value: 'denimstreet' },
+  { label: 'soft • pinterest', value: 'soft' },
+  { label: 'under the radar', value: 'elite' },
+] as const;
+
+/** Deep-link search when user taps “search for more finds” */
+const PRESET_SEARCH_QUERY: Record<string, string> = {
+  default: 'vintage ralph lauren',
+  anchors: 'vintage carhartt jacket',
+  itgirl: 'vintage miu miu',
+  denimstreet: 'carhartt double knee vintage',
+  soft: 'reformation vintage',
+  elite: 'jean paul gaultier vintage',
+};
 
 function timeAgo(timestamp: number): string {
   const seconds = Math.floor((Date.now() - timestamp) / 1000);
@@ -112,7 +122,9 @@ export default function NewFindsSection({ campus, onSearch }: Props) {
           <div>
             <p className="font-naya-sans text-[10px] lowercase tracking-[0.2em] text-text-muted">just listed</p>
             <h2 className="font-naya-serif mt-3 text-3xl font-light text-text-primary md:text-5xl">new vintage finds.</h2>
-            <p className="font-naya-sans mt-2 text-xs text-text-muted">posted in the last 30 minutes across all marketplaces.</p>
+            <p className="font-naya-sans mt-2 max-w-xl text-xs leading-relaxed text-text-muted">
+              biased toward cheaper listings (think thrift-to-mid, not grail pricing). ralph &amp; carhartt anchors plus it-girl, denim, soft pinterest, and under-the-radar names — use filters to lean into a vibe.
+            </p>
           </div>
           <button
             type="button"
@@ -200,7 +212,7 @@ export default function NewFindsSection({ campus, onSearch }: Props) {
           <div className="mt-8 text-center">
             <button
               type="button"
-              onClick={() => onSearch(activePreset === 'default' ? 'vintage' : FILTER_PRESETS.find(p => p.value === activePreset)?.label || 'vintage')}
+              onClick={() => onSearch(PRESET_SEARCH_QUERY[activePreset] || PRESET_SEARCH_QUERY.default)}
               className="text-[10px] lowercase tracking-[0.15em] text-text-muted transition-colors hover:text-text-primary"
             >
               search for more finds →
