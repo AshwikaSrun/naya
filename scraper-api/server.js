@@ -166,7 +166,15 @@ app.get('/search', async (req, res) => {
     const playwrightPlatforms = new Set(['ebay', 'depop']);
     const selected = allAvailable.filter((p) => selectedPlatforms.has(p) && scraperMap[p]);
     const httpPlatforms = selected.filter((p) => !playwrightPlatforms.has(p));
-    const pwPlatforms = selected.filter((p) => playwrightPlatforms.has(p));
+    // Depop first: eBay's Playwright fallback can be heavy on Railway memory; run Depop before eBay.
+    const PW_ORDER = ['depop', 'ebay'];
+    const pwPlatforms = selected
+      .filter((p) => playwrightPlatforms.has(p))
+      .sort((a, b) => {
+        const ia = PW_ORDER.indexOf(a);
+        const ib = PW_ORDER.indexOf(b);
+        return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+      });
 
     const runScraper = (name) => {
       const timeoutMs = playwrightPlatforms.has(name) ? PLAYWRIGHT_SCRAPER_TIMEOUT_MS : SCRAPER_TIMEOUT_MS;
@@ -182,8 +190,13 @@ app.get('/search', async (req, res) => {
 
     // Run Playwright scrapers (ebay, depop) sequentially to avoid memory pressure
     const runPlaywrightSequentially = async () => {
-      for (const name of pwPlatforms) {
+      for (let i = 0; i < pwPlatforms.length; i++) {
+        const name = pwPlatforms[i];
         await runScraper(name);
+        // Let the previous browser fully release memory before launching the next Playwright scraper
+        if (i < pwPlatforms.length - 1) {
+          await new Promise((r) => setTimeout(r, 750));
+        }
       }
     };
 
