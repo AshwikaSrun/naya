@@ -9,10 +9,12 @@ export interface SearchSuggestion {
 }
 
 const DEFAULT_SUGGESTIONS: SearchSuggestion[] = [
-  { label: 'vintage carhartt flat lay', query: 'vintage carhartt jacket' },
-  { label: 'y2k aesthetic', query: 'y2k zip hoodie' },
-  { label: 'baggy denim minimal', query: 'baggy levi 550' },
-  { label: 'nike vintage clean', query: 'vintage nike crewneck' },
+  { label: 'vintage carhartt jacket worn in', query: 'vintage carhartt jacket worn' },
+  { label: 'baggy denim faded levis 569', query: 'vintage levi 569 faded' },
+  { label: 'oversized hoodie washed vintage', query: 'oversized vintage hoodie washed' },
+  { label: 'graphic tee faded vintage clean', query: 'vintage graphic tee faded' },
+  { label: 'carhartt double knee pants faded', query: 'carhartt double knee faded' },
+  { label: 'distressed knit sweater oversized', query: 'oversized vintage knit sweater distressed' },
 ];
 
 interface SearchBarProps {
@@ -70,7 +72,7 @@ export default function SearchBar({
               }
               setInternalValue(nextValue);
             }}
-            placeholder="vintage carhartt flat lay, y2k aesthetic, baggy denim..."
+            placeholder="vintage carhartt jacket worn in, baggy levis 569, oversized hoodie..."
             disabled={disabled}
             className="font-naya-sans w-full bg-transparent text-sm font-light tracking-[0.02em] text-white placeholder:text-white/35 focus:outline-none disabled:opacity-50"
           />

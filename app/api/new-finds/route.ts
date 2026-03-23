@@ -71,6 +71,9 @@ const PRESET_QUERIES: Record<string, string[]> = {
     'vintage nike crewneck',
     'y2k zip hoodie',
     'vintage girbaud',
+    // isabel marant (correct spelling; listings often typo “marrant”)
+    'isabel marant vintage',
+    'isabel marant etoile vintage',
   ],
   /** Ralph Lauren + Carhartt only — same energy as before, deeper */
   anchors: [
@@ -96,6 +99,16 @@ const PRESET_QUERIES: Record<string, string[]> = {
     'vintage chloe bag',
     'balenciaga city bag vintage',
     'balenciaga vintage pre 2018',
+  ],
+  /** Isabel Marant — boho / parisian designer secondhand */
+  isabelmarant: [
+    'isabel marant vintage',
+    'isabel marant etoile vintage',
+    'vintage isabel marant dress',
+    'isabel marant boots vintage',
+    'isabel marant sweater vintage',
+    'isabel marant jacket vintage',
+    'isabel marrant vintage',
   ],
   denimstreet: [
     'diesel y2k jeans',

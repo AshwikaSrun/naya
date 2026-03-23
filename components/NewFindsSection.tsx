@@ -19,6 +19,7 @@ const FILTER_PRESETS = [
   { label: 'all', value: 'default' },
   { label: 'ralph • carhartt', value: 'anchors' },
   { label: 'it girl • viral', value: 'itgirl' },
+  { label: 'isabel marrant', value: 'isabelmarant' },
   { label: 'denim • street', value: 'denimstreet' },
   { label: 'soft • pinterest', value: 'soft' },
   { label: 'under the radar', value: 'elite' },
@@ -29,6 +30,7 @@ const PRESET_SEARCH_QUERY: Record<string, string> = {
   default: 'vintage ralph lauren',
   anchors: 'vintage carhartt jacket',
   itgirl: 'vintage miu miu',
+  isabelmarant: 'isabel marant vintage',
   denimstreet: 'carhartt double knee vintage',
   soft: 'reformation vintage',
   elite: 'jean paul gaultier vintage',
@@ -102,7 +104,8 @@ export default function NewFindsSection({ campus, onSearch }: Props) {
     return (
       <section className="bg-white px-6 py-20 md:px-10">
         <div className="mx-auto max-w-5xl">
-          <h2 className="font-naya-serif text-3xl font-light text-text-primary md:text-5xl">new vintage finds.</h2>
+          <p className="font-naya-sans text-[10px] lowercase tracking-[0.2em] text-text-muted">just listed</p>
+          <h2 className="font-naya-serif mt-3 text-3xl font-light text-text-primary md:text-5xl">new vintage finds.</h2>
           <p className="font-naya-sans mt-2 max-w-xl text-xs leading-relaxed text-text-muted">
             posted in the last 30 minutes across all marketplaces.
           </p>
@@ -122,7 +125,8 @@ export default function NewFindsSection({ campus, onSearch }: Props) {
       <div className="mx-auto max-w-5xl">
         <div className="flex items-start justify-between">
           <div>
-            <h2 className="font-naya-serif text-3xl font-light text-text-primary md:text-5xl">new vintage finds.</h2>
+            <p className="font-naya-sans text-[10px] lowercase tracking-[0.2em] text-text-muted">just listed</p>
+            <h2 className="font-naya-serif mt-3 text-3xl font-light text-text-primary md:text-5xl">new vintage finds.</h2>
             <p className="font-naya-sans mt-2 max-w-xl text-xs leading-relaxed text-text-muted">
               posted in the last 30 minutes across all marketplaces.
             </p>

@@ -24,11 +24,12 @@ const NAV_LINKS = [
 ];
 
 const DEFAULT_TRENDING = [
-  { label: 'vintage carhartt jacket flat lay', query: 'vintage carhartt jacket' },
-  { label: 'baggy levi 550 minimal', query: 'baggy levi 550' },
-  { label: 'y2k zip hoodie', query: 'y2k zip hoodie' },
-  { label: 'vintage nike crewneck clean', query: 'vintage nike crewneck' },
-  { label: 'vintage purdue hoodie aesthetic', query: 'vintage purdue hoodie' },
+  { label: 'vintage carhartt jacket worn in', query: 'vintage carhartt jacket worn' },
+  { label: 'baggy denim faded levis 569', query: 'vintage levi 569 faded' },
+  { label: 'oversized hoodie washed vintage', query: 'oversized vintage hoodie washed' },
+  { label: 'graphic tee faded vintage clean', query: 'vintage graphic tee faded' },
+  { label: 'carhartt double knee pants faded', query: 'carhartt double knee faded' },
+  { label: 'distressed knit sweater oversized', query: 'oversized vintage knit sweater distressed' },
 ];
 
 type PreviewProduct = {
