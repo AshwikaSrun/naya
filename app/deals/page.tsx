@@ -5,6 +5,7 @@ import Link from 'next/link';
 import ProductCard from '@/components/ProductCard';
 import ProductDetailPanel from '@/components/ProductDetailPanel';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import DealDiscoveryNotifications from '@/components/DealDiscoveryNotifications';
 
 interface Product {
   title: string;
@@ -153,6 +154,9 @@ export default function DealsPage() {
         <p className="font-naya-sans mt-3 text-sm font-light text-black/40">
           {MIN_DISCOUNT}%+ off across ebay, grailed, depop & poshmark
         </p>
+        <div className="mx-auto mt-10 max-w-lg text-left">
+          <DealDiscoveryNotifications variant="deals" />
+        </div>
       </section>
 
       {/* Category pills */}

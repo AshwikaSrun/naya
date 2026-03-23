@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import ProductCard from '@/components/ProductCard';
+import DealDiscoveryNotifications from '@/components/DealDiscoveryNotifications';
 
 interface Product {
   title: string;
@@ -127,6 +128,13 @@ export default function ProfilePage() {
               className="font-naya-sans mt-2 w-full border-b border-black/10 bg-transparent py-2 text-[12px] lowercase text-black placeholder:text-black/25 focus:border-black focus:outline-none"
             />
           </div>
+        </section>
+
+        <section className="mb-12">
+          <p className="font-naya-sans mb-3 text-[10px] uppercase tracking-[0.2em] text-black/25">
+            app notifications
+          </p>
+          <DealDiscoveryNotifications variant="profile" />
         </section>
 
         <div className="mb-6 text-center">

@@ -16,6 +16,7 @@ import SearchPromptCard from '@/components/SearchPromptCard';
 import { getFallbackForCampus } from '@/lib/fallbackProducts';
 import { getDepopImageUrl } from '@/lib/depopImage';
 import EmailSignup from '@/components/EmailSignup';
+import DealDiscoveryNotifications from '@/components/DealDiscoveryNotifications';
 
 const NAV_LINKS = [
   { href: '/editorial', label: 'editorial' },
@@ -412,6 +413,15 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
       {/* ── Boiler Vintage Spotlight (Purdue only) ── */}
       {campus.slug === 'purdue' && (
         <BoilerVintageSpotlight onSearch={s.handleSearch} />
+      )}
+
+      {/* ── Purdue push alerts (installed app) ── */}
+      {campus.slug === 'purdue' && (
+        <section className="bg-night-bg px-6 py-12 md:px-10">
+          <div className="mx-auto max-w-2xl">
+            <DealDiscoveryNotifications variant="campus" />
+          </div>
+        </section>
       )}
 
       {/* ── Brand Spotlight ── */}

@@ -77,3 +77,27 @@ alter table redirect_events disable row level security;
 alter table app_installs disable row level security;
 alter table waitlist_signups disable row level security;
 alter table auth_events disable row level security;
+
+-- Web Push: Purdue daily deal alerts (PWA)
+create table if not exists push_subscriptions (
+  id bigint generated always as identity primary key,
+  endpoint text not null unique,
+  p256dh text not null,
+  auth text not null,
+  alert_type text not null default 'purdue_deals',
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table if not exists push_campaign_log (
+  id bigint generated always as identity primary key,
+  campaign text not null,
+  run_date date not null,
+  unique (campaign, run_date)
+);
+
+create index if not exists idx_push_subscriptions_alert on push_subscriptions (alert_type);
+create index if not exists idx_push_campaign_run on push_campaign_log (campaign, run_date);
+
+alter table push_subscriptions disable row level security;
+alter table push_campaign_log disable row level security;

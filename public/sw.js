@@ -1,4 +1,4 @@
-const CACHE_NAME = 'naya-v1';
+const CACHE_NAME = 'naya-v3';
 
 const PRECACHE_URLS = [
   '/',
@@ -72,6 +72,66 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       });
+    })
+  );
+});
+
+// ── Web Push: Purdue deal alerts (and future campaigns) ──
+self.addEventListener('push', (event) => {
+  let payload = {
+    title: 'naya',
+    body: 'check this deal — something good just dropped.',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    tag: 'naya-push',
+    data: { url: '/' },
+  };
+  try {
+    if (event.data) {
+      const parsed = event.data.json();
+      payload = { ...payload, ...parsed };
+    }
+  } catch {
+    try {
+      const text = event.data?.text();
+      if (text) payload.body = text;
+    } catch {
+      /* ignore */
+    }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: payload.icon || '/icon-192.png',
+      badge: payload.badge || '/icon-192.png',
+      tag: payload.tag || 'naya-push',
+      data: payload.data || { url: '/' },
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const rawUrl = event.notification.data && event.notification.data.url;
+  const url = typeof rawUrl === 'string' && rawUrl.startsWith('http')
+    ? rawUrl
+    : `${self.location.origin}${rawUrl && rawUrl.startsWith('/') ? rawUrl : '/campus/purdue'}`;
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      const sameOrigin = clientList.find(
+        (c) => c.url.startsWith(self.location.origin) && 'focus' in c
+      );
+      if (sameOrigin && 'navigate' in sameOrigin && typeof sameOrigin.navigate === 'function') {
+        return sameOrigin.navigate(url).then(() => sameOrigin.focus()).catch(() => {
+          if (self.clients.openWindow) return self.clients.openWindow(url);
+        });
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(url);
+      }
+      if (sameOrigin) return sameOrigin.focus();
     })
   );
 });
