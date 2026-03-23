@@ -18,7 +18,7 @@ export default function NotifyBanner() {
   const [show, setShow] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [installBannerActive, setInstallBannerActive] = useState(false);
+  const [installBannerActive, setInstallBannerActive] = useState(true);
   const [postInstall, setPostInstall] = useState(false);
 
   const checkSubscription = useCallback(async () => {
@@ -34,11 +34,14 @@ export default function NotifyBanner() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const onBannerChange = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { id: string; active: boolean };
-      if (detail.id === 'install') setInstallBannerActive(detail.active);
+    const syncInstallBanner = () => {
+      setInstallBannerActive(document.body.hasAttribute('data-naya-install-banner'));
     };
-    window.addEventListener('naya-bottom-banner', onBannerChange);
+
+    syncInstallBanner();
+
+    const observer = new MutationObserver(syncInstallBanner);
+    observer.observe(document.body, { attributes: true, attributeFilter: ['data-naya-install-banner'] });
 
     const onInstalled = () => {
       setPostInstall(true);
@@ -48,7 +51,7 @@ export default function NotifyBanner() {
     window.addEventListener('naya-app-installed', onInstalled);
 
     return () => {
-      window.removeEventListener('naya-bottom-banner', onBannerChange);
+      observer.disconnect();
       window.removeEventListener('naya-app-installed', onInstalled);
     };
   }, []);
@@ -77,10 +80,16 @@ export default function NotifyBanner() {
     return () => clearTimeout(timer);
   }, [checkSubscription, installBannerActive, postInstall]);
 
+  const visible = show && !installBannerActive;
+
   useEffect(() => {
-    const active = show && !installBannerActive;
-    window.dispatchEvent(new CustomEvent('naya-bottom-banner', { detail: { id: 'notify', active } }));
-  }, [show, installBannerActive]);
+    if (visible) {
+      document.body.setAttribute('data-naya-notify-banner', '1');
+    } else {
+      document.body.removeAttribute('data-naya-notify-banner');
+    }
+    return () => document.body.removeAttribute('data-naya-notify-banner');
+  }, [visible]);
 
   const handleEnable = async () => {
     setLoading(true);
@@ -123,7 +132,7 @@ export default function NotifyBanner() {
     localStorage.setItem('naya-notify-dismissed', '1');
   };
 
-  if (!show || installBannerActive) return null;
+  if (!visible) return null;
 
   if (subscribed) {
     return (

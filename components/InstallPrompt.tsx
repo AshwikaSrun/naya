@@ -84,7 +84,12 @@ export default function InstallPrompt() {
   const visible = !isStandalone && showBanner;
 
   useEffect(() => {
-    window.dispatchEvent(new CustomEvent('naya-bottom-banner', { detail: { id: 'install', active: visible } }));
+    if (visible) {
+      document.body.setAttribute('data-naya-install-banner', '1');
+    } else {
+      document.body.removeAttribute('data-naya-install-banner');
+    }
+    return () => document.body.removeAttribute('data-naya-install-banner');
   }, [visible]);
 
   const handleInstall = useCallback(async () => {

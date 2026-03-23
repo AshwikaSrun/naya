@@ -24,13 +24,20 @@ export default function FeedbackWidget() {
     const stored = window.localStorage.getItem('naya-user-email');
     if (stored) setEmail(stored);
 
-    const onBanner = (e: Event) => {
-      const { active } = (e as CustomEvent).detail as { id: string; active: boolean };
-      if (active) setBannerActive(true);
-      else setTimeout(() => setBannerActive(false), 350);
+    const sync = () => {
+      const has = document.body.hasAttribute('data-naya-install-banner') ||
+                  document.body.hasAttribute('data-naya-notify-banner');
+      setBannerActive(has);
     };
-    window.addEventListener('naya-bottom-banner', onBanner);
-    return () => window.removeEventListener('naya-bottom-banner', onBanner);
+
+    sync();
+
+    const observer = new MutationObserver(sync);
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['data-naya-install-banner', 'data-naya-notify-banner'],
+    });
+    return () => observer.disconnect();
   }, []);
 
   const reset = () => {
