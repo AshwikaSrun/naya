@@ -71,13 +71,16 @@ export default function InstallPrompt() {
 
     const dismissed = localStorage.getItem('naya-install-dismissed');
     const standalone = isStandaloneMode();
+    let delayedShow: ReturnType<typeof setTimeout> | undefined;
     if (!dismissed && !standalone) {
-      setShowBanner(true);
+      // Delay so hero / search isn’t covered by install + feedback + campus on first paint
+      delayedShow = setTimeout(() => setShowBanner(true), 14000);
     }
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handler);
       window.removeEventListener('naya-install-used', onUsed);
+      if (delayedShow) clearTimeout(delayedShow);
     };
   }, []);
 

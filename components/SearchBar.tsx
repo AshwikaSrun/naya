@@ -15,6 +15,7 @@ const DEFAULT_SUGGESTIONS: SearchSuggestion[] = [
   { label: 'graphic tee faded vintage clean', query: 'vintage graphic tee faded' },
   { label: 'carhartt double knee pants faded', query: 'carhartt double knee faded' },
   { label: 'distressed knit sweater oversized', query: 'oversized vintage knit sweater distressed' },
+  { label: 'isabel marrant', query: 'isabel marant vintage' },
 ];
 
 interface SearchBarProps {
@@ -72,7 +73,7 @@ export default function SearchBar({
               }
               setInternalValue(nextValue);
             }}
-            placeholder="vintage carhartt jacket worn in, baggy levis 569, oversized hoodie..."
+            placeholder="vintage carhartt, baggy levis 569, isabel marant..."
             disabled={disabled}
             className="font-naya-sans w-full bg-transparent text-sm font-light tracking-[0.02em] text-white placeholder:text-white/35 focus:outline-none disabled:opacity-50"
           />

@@ -76,7 +76,7 @@ export default function FeedbackWidget() {
       <button
         type="button"
         onClick={() => setPhase(phase === 'closed' ? 'form' : 'closed')}
-        className={`fixed left-6 z-[80] flex items-center gap-2 rounded-full border border-black/10 bg-white px-4 py-2.5 shadow-lg transition-all duration-300 hover:shadow-xl hover:border-black/20 ${bannerActive ? 'bottom-28' : 'bottom-6'}`}
+        className={`fixed left-6 z-[80] flex items-center gap-2 rounded-full border border-black/10 bg-white px-4 py-2.5 shadow-lg transition-all duration-300 hover:shadow-xl hover:border-black/20 ${bannerActive ? 'bottom-36 max-sm:bottom-32' : 'bottom-6'}`}
         aria-label="Send feedback"
       >
         <svg className="h-4 w-4 text-black/40" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -87,7 +87,7 @@ export default function FeedbackWidget() {
 
       {/* Panel */}
       {phase !== 'closed' && (
-        <div className={`fixed left-6 z-[80] w-[340px] max-w-[calc(100vw-3rem)] overflow-hidden rounded-2xl border border-black/10 bg-white shadow-2xl transition-all duration-300 ${bannerActive ? 'bottom-[10.5rem]' : 'bottom-20'}`}>
+        <div className={`fixed left-6 z-[80] w-[340px] max-w-[calc(100vw-3rem)] overflow-hidden rounded-2xl border border-black/10 bg-white shadow-2xl transition-all duration-300 ${bannerActive ? 'bottom-[12.5rem] max-sm:bottom-[11rem]' : 'bottom-20'}`}>
 
           {/* Done state */}
           {phase === 'done' && (

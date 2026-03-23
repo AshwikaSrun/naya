@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import SearchBar from '@/components/SearchBar';
 import BottomSearchBar from '@/components/BottomSearchBar';
 import ResultsGrid from '@/components/ResultsGrid';
@@ -30,6 +31,7 @@ const DEFAULT_TRENDING = [
   { label: 'graphic tee faded vintage clean', query: 'vintage graphic tee faded' },
   { label: 'carhartt double knee pants faded', query: 'carhartt double knee faded' },
   { label: 'distressed knit sweater oversized', query: 'oversized vintage knit sweater distressed' },
+  { label: 'isabel marrant', query: 'isabel marant vintage' },
 ];
 
 type PreviewProduct = {
@@ -277,14 +279,24 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-night-bg">
       {/* Hero */}
-      <section className="relative flex min-h-[80vh] flex-col items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('/brands/browser.png')" }}></div>
-        <div className="absolute inset-0 bg-black/50"></div>
+      <section className="relative flex min-h-[min(100svh,56rem)] flex-col items-center justify-start overflow-hidden pb-12 md:min-h-[80vh] md:justify-center md:pb-0">
+        <div className="absolute inset-0">
+          <Image
+            src="/finds/streetwear3.jpg"
+            alt=""
+            fill
+            priority
+            quality={90}
+            sizes="100vw"
+            className="object-cover object-center"
+          />
+        </div>
+        <div className="absolute inset-0 bg-black/50" aria-hidden />
 
         {/* Nav */}
-        <div className="absolute inset-x-0 top-0 z-20">
-          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 md:px-10">
-            <Link href="/" className="font-naya-serif text-3xl font-light lowercase tracking-[0.15em] text-white md:text-4xl">
+        <div className="absolute inset-x-0 top-0 z-20 pt-[env(safe-area-inset-top)]">
+          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 md:px-10 md:py-6">
+            <Link href="/" className="font-naya-serif text-2xl font-light lowercase tracking-[0.15em] text-white sm:text-3xl md:text-4xl">
               naya
             </Link>
             <div className="flex items-center gap-4">
@@ -309,8 +321,8 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="relative z-10 w-full max-w-3xl px-6 text-center">
-          <h1 className="font-naya-serif text-4xl font-light lowercase text-white md:text-6xl lg:text-7xl">
+        <div className="relative z-10 mt-[calc(env(safe-area-inset-top)+5.25rem)] w-full max-w-3xl px-6 text-center md:mt-0">
+          <h1 className="font-naya-serif text-4xl font-light lowercase leading-tight text-white md:text-6xl lg:text-7xl">
             what are you looking for?
           </h1>
           <p className="font-naya-sans mt-4 text-xs lowercase tracking-[0.12em] text-white/60 md:text-sm">
@@ -319,9 +331,12 @@ export default function Home() {
           <div className="mt-8">
             <SearchBar onSearch={s.handleSearch} disabled={s.loading} value={s.searchInput} onValueChange={s.setSearchInput} showTabs />
           </div>
-          <Link href="/college" className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 py-2.5 text-[11px] lowercase tracking-[0.12em] text-white/90 backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/15">
-            <span>choose your campus</span>
-            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+          <Link
+            href="/college"
+            className="mt-8 inline-flex max-w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-[10px] lowercase tracking-[0.12em] text-white/90 backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/15 sm:px-5 sm:py-2.5 sm:text-[11px] md:mt-6"
+          >
+            <span className="truncate">choose your campus</span>
+            <svg className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
           </Link>
         </div>
       </section>

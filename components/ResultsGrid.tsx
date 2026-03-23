@@ -40,6 +40,7 @@ const DEFAULT_RELATED: RelatedSearch[] = [
   { label: 'graphic tee faded vintage clean', query: 'vintage graphic tee faded' },
   { label: 'carhartt double knee pants faded', query: 'carhartt double knee faded' },
   { label: 'distressed knit sweater oversized', query: 'oversized vintage knit sweater distressed' },
+  { label: 'isabel marrant', query: 'isabel marant vintage' },
 ];
 
 interface ResultsGridProps {
@@ -188,29 +189,10 @@ export default function ResultsGrid({ results, filters, onSearch, relatedSearche
 
         <PriceIndexBadge query={results.query} />
 
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           <span className="text-sm text-black/60">
             Showing {startIdx + 1}–{Math.min(startIdx + perPage, filteredProducts.length)} of {filteredProducts.length} results
           </span>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={saferPage === 1}
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-black/10 bg-white text-sm text-black/60 transition-opacity hover:opacity-70 disabled:opacity-30"
-            >
-              ‹
-            </button>
-            <span className="text-xs text-black/50">{saferPage} / {totalPages}</span>
-            <button
-              type="button"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={saferPage === totalPages}
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-black/10 bg-white text-sm text-black/60 transition-opacity hover:opacity-70 disabled:opacity-30"
-            >
-              ›
-            </button>
-          </div>
         </div>
 
         <div className="columns-2 gap-4 sm:columns-3 lg:columns-5 [&>div]:break-inside-avoid [&>div]:mb-4">
@@ -222,6 +204,30 @@ export default function ResultsGrid({ results, filters, onSearch, relatedSearche
               />
             </div>
           ))}
+        </div>
+
+        <div className="flex flex-wrap items-center justify-center gap-4 border-t border-black/5 pt-6">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={saferPage === 1}
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-black/10 bg-white text-sm text-black/60 transition-opacity hover:opacity-70 disabled:opacity-30"
+              aria-label="Previous page"
+            >
+              ‹
+            </button>
+            <span className="min-w-[3rem] text-center text-xs text-black/50">{saferPage} / {totalPages}</span>
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={saferPage === totalPages}
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-black/10 bg-white text-sm text-black/60 transition-opacity hover:opacity-70 disabled:opacity-30"
+              aria-label="Next page"
+            >
+              ›
+            </button>
+          </div>
         </div>
 
         <div className="mt-8">
