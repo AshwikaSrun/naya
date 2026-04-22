@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { TrendingItem } from '@/lib/campuses';
+import { parseSearchIntent } from '@/lib/searchIntent';
 
 export interface Product {
   title: string;
@@ -195,6 +196,13 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const [filters, setFilters] = useState<{ minPrice: string; maxPrice: string; size: string; condition: string }>({
+    minPrice: '',
+    maxPrice: '',
+    size: '',
+    condition: '',
+  });
+
   const runSearch = async (
     searchQuery: string,
     platformOverride?: 'all' | Platform
@@ -207,6 +215,15 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
     setError(null);
     setQuery(searchQuery);
     setSearchInput(searchQuery);
+
+    // Keep URL in sync (shareable searches)
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('q', searchQuery);
+        window.history.replaceState({}, '', url.toString());
+      } catch { /* ignore */ }
+    }
 
     const targetPlatform = platformOverride ?? platform;
     const cacheKey = `${searchQuery.toLowerCase().trim()}|${targetPlatform}`;
@@ -378,7 +395,15 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
     platformOverride?: 'all' | Platform
   ) => {
     if (!searchQuery.trim()) return;
-    runSearch(searchQuery, platformOverride);
+    const intent = parseSearchIntent(searchQuery);
+    // Apply intent-derived price constraints to UI filters
+    setFilters((prev) => ({
+      ...prev,
+      minPrice: intent.filters.minPrice !== undefined ? String(intent.filters.minPrice) : prev.minPrice,
+      maxPrice: intent.filters.maxPrice !== undefined ? String(intent.filters.maxPrice) : prev.maxPrice,
+    }));
+    // Search using the cleaned query so marketplaces get higher-signal terms
+    runSearch(intent.cleanedQuery || searchQuery, platformOverride);
   };
 
   const handleShareSearch = async () => {
@@ -430,6 +455,7 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
     recentlyViewed,
     activePlatforms: ACTIVE_PLATFORMS,
     platformStatus,
-    filters: { minPrice: '', maxPrice: '', size: '', condition: '' },
+    filters,
+    setFilters,
   } as const;
 }

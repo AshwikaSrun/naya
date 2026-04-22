@@ -13,7 +13,9 @@ export default function ComparePanel({ open, onClose }: ComparePanelProps) {
   const [items, setItems] = useState<CompareProduct[]>([]);
 
   useEffect(() => {
-    if (open) setItems(getCompareItems());
+    if (!open) return;
+    const id = window.setTimeout(() => setItems(getCompareItems()), 0);
+    return () => window.clearTimeout(id);
   }, [open]);
 
   useEffect(() => {

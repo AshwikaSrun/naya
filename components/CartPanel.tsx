@@ -58,7 +58,9 @@ export default function CartPanel({ open, onClose }: CartPanelProps) {
   const [items, setItems] = useState<Product[]>([]);
 
   useEffect(() => {
-    if (open) setItems(getCart());
+    if (!open) return;
+    const id = window.setTimeout(() => setItems(getCart()), 0);
+    return () => window.clearTimeout(id);
   }, [open]);
 
   useEffect(() => {

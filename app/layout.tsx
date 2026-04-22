@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import InstallPrompt from "@/components/InstallPrompt";
 import NotifyBanner from "@/components/NotifyBanner";
@@ -70,6 +71,7 @@ export default function RootLayout({
         <NotifyBanner />
         <FeedbackWidget />
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

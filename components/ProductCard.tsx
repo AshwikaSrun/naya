@@ -65,6 +65,20 @@ export default function ProductCard({ product, onSelect }: ProductCardProps) {
     } catch {}
   };
 
+  // Pull a brand-ish token from the title (first word) so we can show
+  // an editorial-looking kicker without a brand field on the product.
+  const brandGuess = (() => {
+    const first = (product.title || '').trim().split(/\s+/)[0];
+    if (!first) return '';
+    // Skip filler words so we get "Carhartt" not "Vintage"
+    const skip = new Set(['vintage', 'new', 'y2k', 'rare', 'nwt', 'euc', 'the', 'a', 'an']);
+    if (skip.has(first.toLowerCase())) {
+      const second = (product.title || '').trim().split(/\s+/)[1] || first;
+      return second;
+    }
+    return first;
+  })();
+
   return (
     <div
       className="group cursor-pointer"
@@ -73,12 +87,12 @@ export default function ProductCard({ product, onSelect }: ProductCardProps) {
         onSelect?.(product);
       }}
     >
-      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl bg-neutral-100">
+      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-md bg-black/[0.04]">
         <Image
           src={imageSrc}
           alt={product.title}
           fill
-          className="object-cover transition-transform duration-300 group-hover:scale-105"
+          className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
           unoptimized
           onError={() => {
@@ -86,7 +100,10 @@ export default function ProductCard({ product, onSelect }: ProductCardProps) {
           }}
         />
 
-        {/* Heart — only visible on hover */}
+        {/* Hover darkening wash — reveals source badge subtly */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+        {/* Save heart */}
         <button
           type="button"
           onClick={(e) => {
@@ -94,12 +111,12 @@ export default function ProductCard({ product, onSelect }: ProductCardProps) {
             updateWishlist(!isWishlisted);
           }}
           aria-label={isWishlisted ? 'Remove from wishlist' : 'Save'}
-          className={`absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-black/60 shadow-sm transition-all hover:bg-white ${
+          className={`absolute right-2.5 top-2.5 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-black shadow-sm backdrop-blur-sm transition-all hover:bg-white ${
             isWishlisted ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
           }`}
         >
           <svg
-            className="h-4 w-4"
+            className="h-3.5 w-3.5"
             fill={isWishlisted ? 'currentColor' : 'none'}
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -113,32 +130,48 @@ export default function ProductCard({ product, onSelect }: ProductCardProps) {
           </svg>
         </button>
 
-        {/* Discount badge */}
+        {/* Discount badge — top-left, monochrome */}
         {product.discountPercent && product.discountPercent > 0 && (
-          <div className={`absolute left-3 top-3 z-10 rounded-md px-2 py-0.5 text-[10px] font-semibold text-white ${
-            product.discountPercent >= 50 ? 'bg-red-500' : 'bg-black/70'
-          }`}>
-            {product.discountPercent}% off
+          <div
+            className="font-naya-sans absolute left-2.5 top-2.5 z-10 rounded-sm bg-black px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-[0.12em] text-white"
+          >
+            −{product.discountPercent}%
           </div>
         )}
+
+        {/* Cart pulse if already added */}
+        {inCart && (
+          <div className="font-naya-sans absolute bottom-2.5 left-2.5 rounded-sm bg-white/95 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-[0.12em] text-black">
+            in cart
+          </div>
+        )}
+
+        {/* Source badge — only on hover, bottom-right */}
+        <span
+          className="font-naya-sans absolute bottom-2.5 right-2.5 rounded-sm bg-white/95 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-[0.12em] text-black opacity-0 backdrop-blur-sm transition-opacity duration-300 group-hover:opacity-100"
+        >
+          {product.source}
+        </span>
       </div>
 
-      {/* Info below image — Pinterest style */}
-      <div className="px-1 pt-2 pb-1">
-        <p className="text-[11px] font-medium capitalize text-black/40">{product.source}</p>
-        <p className="mt-0.5 line-clamp-2 text-[13px] leading-snug text-black/80">
-          {product.title}
+      {/* Info below image — editorial, price-forward */}
+      <div className="px-0.5 pt-3 pb-1">
+        <p className="font-naya-sans text-[10px] font-medium uppercase tracking-[0.18em] text-black/55">
+          {brandGuess}
         </p>
-        <div className="mt-1 flex items-center gap-2">
-          <span className="text-[14px] font-semibold text-black">
-            ${product.price.toFixed(2)}
+        <div className="mt-1 flex items-baseline gap-2">
+          <span className="font-naya-sans text-[15px] font-semibold tracking-[-0.01em] text-black">
+            ${product.price.toFixed(0)}
           </span>
           {product.originalPrice && product.originalPrice > product.price && (
-            <span className="text-[11px] text-black/35 line-through">
+            <span className="font-naya-sans text-[11px] text-black/35 line-through">
               ${product.originalPrice.toFixed(0)}
             </span>
           )}
         </div>
+        <p className="font-naya-sans mt-1 line-clamp-1 text-[12px] leading-snug text-black/55">
+          {product.title}
+        </p>
       </div>
     </div>
   );

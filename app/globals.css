@@ -1,29 +1,42 @@
 @import "tailwindcss";
 
 @theme {
-  --color-night-bg: #faf9f7;
+  /* Core surfaces — one warm off-white base, one deep black for contrast moments. */
+  --color-night-bg: #f5f2ec;
   --color-night-surface: #ffffff;
   --color-night-card: #ffffff;
-  --color-orange-glow: #a68b5b;
-  --color-orange-accent: #97794a;
-  --color-accent-pink: #a68b5b;
-  --color-accent-orange: #a68b5b;
-  --color-accent-green: #a68b5b;
-  --color-accent-blue: #a68b5b;
-  --color-accent-navy: #1a1a2e;
-  --color-warm-amber: #ece6df;
-  --color-soft-orange: #f4efe9;
-  --color-text-primary: #1a1a1a;
-  --color-text-secondary: #2d2d2d;
-  --color-text-muted: #8a8a8a;
-  --color-border-dark: #e5e2de;
+  --color-night-ink: #0a0a0a;
+
+  /* Single true-black accent. No more beige confetti. */
+  --color-accent: #000000;
+  --color-accent-soft: rgba(0, 0, 0, 0.06);
+  --color-accent-navy: #000000;
+
+  /* Legacy names kept but collapsed onto the one accent so older components don't break. */
+  --color-orange-glow: #000000;
+  --color-orange-accent: #000000;
+  --color-accent-pink: #000000;
+  --color-accent-orange: #000000;
+  --color-accent-green: #000000;
+  --color-accent-blue: #000000;
+  --color-warm-amber: #ebe6dc;
+  --color-soft-orange: #efe9de;
+
+  /* Text with real contrast. */
+  --color-text-primary: #0a0a0a;
+  --color-text-secondary: #1f1f1f;
+  --color-text-muted: #6b6b6b;
+
+  /* Borders — slightly darker so edges read on the off-white. */
+  --color-border-dark: #dfd9cd;
   --color-border-glow: rgba(0, 0, 0, 0.08);
-  --color-ebay-badge: #1a1a1a;
-  --color-depop-badge: #1a1a1a;
+
+  --color-ebay-badge: #0a0a0a;
+  --color-depop-badge: #0a0a0a;
 
   --shadow-soft: 0 4px 24px rgba(0, 0, 0, 0.04);
   --shadow-glow: 0 8px 32px rgba(0, 0, 0, 0.06);
-  --shadow-vibrant: 0 16px 48px rgba(0, 0, 0, 0.08);
+  --shadow-vibrant: 0 20px 60px rgba(0, 0, 0, 0.10);
 }
 
 :root {

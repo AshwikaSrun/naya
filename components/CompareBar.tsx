@@ -13,10 +13,13 @@ export default function CompareBar({ onOpen }: CompareBarProps) {
   const [panelOpen, setPanelOpen] = useState(false);
 
   useEffect(() => {
-    setItems(getCompareItems());
+    const id = window.setTimeout(() => setItems(getCompareItems()), 0);
     const handler = () => setItems(getCompareItems());
     window.addEventListener('naya-compare-update', handler);
-    return () => window.removeEventListener('naya-compare-update', handler);
+    return () => {
+      window.clearTimeout(id);
+      window.removeEventListener('naya-compare-update', handler);
+    };
   }, []);
 
   if (items.length === 0) return null;

@@ -21,7 +21,23 @@ async function countRows(
   return count ?? 0;
 }
 
+function authorizeAnalytics(request: NextRequest): boolean {
+  const secret = process.env.ANALYTICS_SECRET?.trim();
+  if (!secret) return false;
+  const auth = request.headers.get('authorization');
+  const bearer = auth?.startsWith('Bearer ') ? auth.slice(7).trim() : '';
+  const headerKey = request.headers.get('x-naya-analytics-key')?.trim() || '';
+  return bearer === secret || headerKey === secret;
+}
+
+/** Private metrics API — not for the public site. Set ANALYTICS_SECRET in env, then:
+ *  curl -H "Authorization: Bearer YOUR_SECRET" "https://your-domain/api/analytics?range=30d"
+ *  Or use Supabase Table Editor on app_installs, search_events, redirect_events. */
 export async function GET(request: NextRequest) {
+  if (!authorizeAnalytics(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const supabase = getSupabase();
   if (!supabase) {
     return NextResponse.json({ error: 'Analytics not configured.' }, { status: 503 });

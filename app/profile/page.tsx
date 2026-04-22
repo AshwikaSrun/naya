@@ -27,23 +27,27 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    let parsedWishlist: Product[] = [];
     try {
       const storedWishlist = window.localStorage.getItem('wishlistItems');
-      const parsedWishlist = storedWishlist
+      parsedWishlist = storedWishlist
         ? (JSON.parse(storedWishlist) as Product[])
         : [];
-      setWishlist(parsedWishlist);
       const storedPrefs = window.localStorage.getItem('profilePrefs');
       if (storedPrefs) {
-        setPrefs(JSON.parse(storedPrefs));
+        const nextPrefs = JSON.parse(storedPrefs);
+        window.setTimeout(() => setPrefs(nextPrefs), 0);
       } else {
         const alertEmail = window.localStorage.getItem('alertEmail') || '';
-        setPrefs((prev) => ({ ...prev, alertEmail }));
+        window.setTimeout(() => setPrefs((prev) => ({ ...prev, alertEmail })), 0);
       }
     } catch (error) {
       console.error('Failed to load profile data', error);
     }
-    setPrefsLoaded(true);
+    window.setTimeout(() => {
+      setWishlist(parsedWishlist);
+      setPrefsLoaded(true);
+    }, 0);
   }, []);
 
   useEffect(() => {

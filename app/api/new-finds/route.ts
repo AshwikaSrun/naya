@@ -26,9 +26,78 @@ function parsePriceUsd(value: unknown): number {
 }
 
 /**
+ * Upgrade low-res marketplace thumbnails to full-size when we can safely
+ * guess the larger URL. Known patterns:
+ *   eBay:   s-l64.jpg / s-l140.jpg / s-l225.jpg → s-l1600.jpg
+ *   Depop:  "P0/..." with ?width=128 → bump to 640
+ */
+function upgradeImageUrl(url: string, source: string): string {
+  if (!url) return url;
+  if (source === 'ebay') {
+    return url.replace(/\/s-l\d+\.(jpg|jpeg|png|webp)/i, '/s-l1600.$1');
+  }
+  if (source === 'depop') {
+    return url.replace(/[?&]width=\d+/, '').replace(/[?&]height=\d+/, '');
+  }
+  return url;
+}
+
+/**
+ * Heuristic: is this listing likely a *clean, attractive* product shot?
+ * We reject obvious low-quality cases: missing image, suspiciously small
+ * CDN sizes, obvious bulk-lot titles, or placeholder URLs.
+ */
+function looksAttractive(item: RawProduct): boolean {
+  if (!item.image || typeof item.image !== 'string') return false;
+  // Tiny eBay thumbs — usually means the full image never loaded
+  if (/s-l(64|80|96)\./i.test(item.image)) return false;
+  // Placeholder or broken URLs
+  if (item.image.endsWith('.svg')) return false;
+  if (item.image.includes('no-image')) return false;
+
+  const t = (item.title || '').toLowerCase();
+  // Bulk / wholesale / "lot of" listings photograph poorly
+  if (/\b(lot of|bulk|wholesale|reseller|bundle of|\d+\s*pc|assorted|mystery)\b/.test(t)) return false;
+  // Worn-out resale filler
+  if (/\b(damaged|stained|broken|for parts|as is|aaa|replica|fake)\b/.test(t)) return false;
+
+  return true;
+}
+
+/**
  * New vintage finds — Ralph + Carhartt anchors + editorial pillars (it girl, denim, soft, under-radar).
  */
 const PRESET_QUERIES: Record<string, string[]> = {
+  /**
+   * Hand-picked designer + niche-archival pool used by the home hero.
+   * The goal here is clean flat-lay photography + real brand recognition:
+   * Miu Miu / Prada / Marithe + Francois Girbaud / Isabel Marant / JPG, etc.
+   */
+  curated: [
+    // archival / niche designer (flat-lay heavy on Depop + Grailed)
+    'marithe francois girbaud vintage',
+    'jean paul gaultier vintage',
+    'cop copine vintage',
+    'miss sixty y2k',
+    'vintage dior saddle',
+    'vintage miu miu',
+    'vintage prada bag',
+    'fendi baguette vintage',
+    'vintage chloe paddington',
+    'balenciaga city bag vintage',
+    'isabel marant etoile vintage',
+    'vintage jean paul gaultier mesh',
+    'vivienne westwood vintage',
+    'helmut lang archive',
+    'vintage maison margiela',
+    // strong anchors that photograph well
+    'vintage ralph lauren sweater',
+    'polo ralph lauren vintage',
+    'vintage carhartt detroit jacket',
+    'levis orange tab',
+    'diesel y2k jeans',
+  ],
+
   /** Broad mix: what already performs + full brand map */
   default: [
     // anchors (high hit rate)
@@ -181,13 +250,20 @@ export async function GET(request: Request) {
       if (batch.status === 'fulfilled') allItems.push(...batch.value);
     }
 
-    // Deduplicate by URL
+    // Deduplicate by URL + reject obviously low-quality listings so the
+    // hero/feed shows clean, attractive product shots only.
     const seen = new Set<string>();
-    const unique = allItems.filter((item) => {
-      if (seen.has(item.url)) return false;
-      seen.add(item.url);
-      return true;
-    });
+    const unique = allItems
+      .filter((item) => {
+        if (seen.has(item.url)) return false;
+        seen.add(item.url);
+        return true;
+      })
+      .filter(looksAttractive)
+      .map((item) => ({
+        ...item,
+        image: upgradeImageUrl(item.image, item.source),
+      }));
 
     // Price-aware mix: prefer under PREFERRED_MAX_USD; fill up to ABSOLUTE_MAX_USD only if thin
     const withPrice = unique
@@ -238,9 +314,30 @@ export async function GET(request: Request) {
       pickPool.push(...any.map(({ item }) => item));
     }
 
-    // Display order: cheaper pieces first, light jitter so it’s not a strict price ladder
-    // Pool is already price-skewed; shuffle for feed variety
-    const shuffled = pickPool.sort(() => Math.random() - 0.5).slice(0, 20);
+    // Display order:
+    //   - for the `curated` preset, lean hard on platforms with editorial
+    //     photography (Depop, Grailed). eBay/Poshmark photos are often busy
+    //     closet-shots which look cheap at hero size.
+    //   - for everything else, shuffle for feed variety.
+    const platformRank: Record<string, number> = {
+      depop: 0,
+      grailed: 1,
+      ebay: 2,
+      poshmark: 3,
+      boiler_vintage: 1,
+    };
+    const shuffled =
+      preset === 'curated'
+        ? pickPool
+            .slice()
+            .sort((a, b) => {
+              const ra = platformRank[a.source] ?? 9;
+              const rb = platformRank[b.source] ?? 9;
+              if (ra !== rb) return ra - rb;
+              return Math.random() - 0.5;
+            })
+            .slice(0, 20)
+        : pickPool.sort(() => Math.random() - 0.5).slice(0, 20);
 
     // Assign simulated recency — items are live listings, so they genuinely are recent
     const now = Date.now();

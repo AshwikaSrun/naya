@@ -32,8 +32,6 @@ export default function SearchBar({
   disabled,
   value,
   onValueChange,
-  showTabs = false,
-  suggestions = DEFAULT_SUGGESTIONS,
 }: SearchBarProps) {
   const [internalValue, setInternalValue] = useState('');
   const input = value ?? internalValue;
@@ -73,7 +71,7 @@ export default function SearchBar({
               }
               setInternalValue(nextValue);
             }}
-            placeholder="vintage carhartt, baggy levis 569, isabel marant..."
+            placeholder="search vintage finds…"
             disabled={disabled}
             className="font-naya-sans w-full bg-transparent text-sm font-light tracking-[0.02em] text-white placeholder:text-white/35 focus:outline-none disabled:opacity-50"
           />
@@ -90,47 +88,6 @@ export default function SearchBar({
         </div>
       </form>
 
-      {showTabs && suggestions.length > 0 && (
-        <div className="mt-4 flex flex-wrap justify-center gap-2">
-          {suggestions.map((s) => (
-            <button
-              key={s.query}
-              type="button"
-              onClick={() => onSearch(s.query)}
-              disabled={disabled}
-              className="rounded-full border border-white/20 bg-white/5 px-4 py-1.5 text-[10px] lowercase tracking-[0.1em] text-white/70 transition-colors hover:border-white/40 hover:bg-white/10 hover:text-white disabled:opacity-50"
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {showTabs && (
-        <div className="font-naya-sans mt-5 flex items-center justify-center gap-4">
-          <button
-            type="button"
-            onClick={() => { if (input.trim()) onSearch(input.trim()); }}
-            className="text-[10px] lowercase tracking-[0.12em] text-white/50 transition-colors hover:text-white"
-          >
-            shop
-          </button>
-          <span className="text-white/15">|</span>
-          <Link
-            href="/app"
-            className="text-[10px] lowercase tracking-[0.12em] text-white/50 transition-colors hover:text-white"
-          >
-            concierge
-          </Link>
-          <span className="text-white/15">|</span>
-          <Link
-            href="/deals"
-            className="text-[10px] lowercase tracking-[0.12em] text-white/50 transition-colors hover:text-white"
-          >
-            deals
-          </Link>
-        </div>
-      )}
     </div>
   );
 }

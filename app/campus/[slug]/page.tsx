@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import SearchBar from '@/components/SearchBar';
 import BottomSearchBar from '@/components/BottomSearchBar';
 import ResultsGrid from '@/components/ResultsGrid';
 import CartPanel from '@/components/CartPanel';
@@ -18,6 +17,10 @@ import { getDepopImageUrl, DEPOP_WIDTH_CARD, DEPOP_WIDTH_HERO } from '@/lib/depo
 import EmailSignup from '@/components/EmailSignup';
 import DealDiscoveryNotifications from '@/components/DealDiscoveryNotifications';
 import MobileNav from '@/components/MobileNav';
+import TrendingCards from '@/components/TrendingCards';
+import CommandSearchBar from '@/components/CommandSearchBar';
+import StickyHeader from '@/components/StickyHeader';
+import EditorialHero from '@/components/EditorialHero';
 
 const NAV_LINKS = [
   { href: '/editorial', label: 'editorial' },
@@ -120,9 +123,8 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
       { title: 'Vintage Band Tee', query: 'vintage band tee', priceRange: 'under $35' },
       { title: 'North Face Puffer', query: 'vintage north face puffer', priceRange: 'under $90' },
     ];
-    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
-    const startIdx = (dayOfYear * 3) % allFinds.length;
-    return Array.from({ length: 4 }, (_, i) => allFinds[(startIdx + i) % allFinds.length]);
+    // Keep render pure for strict linting (no Date.now in render).
+    return allFinds.slice(0, 4);
   }, [campus.name]);
 
   const buildSlug = (title: string) =>
@@ -206,7 +208,13 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
           </div>
         )}
 
-        <BottomSearchBar onSearch={s.handleSearch} disabled={s.loading} />
+        <BottomSearchBar
+          onSearch={s.handleSearch}
+          disabled={s.loading}
+          trending={s.trendingSearches}
+          saved={s.savedSearches}
+          recentlyViewed={s.recentlyViewed}
+        />
         <CartPanel open={s.cartOpen} onClose={() => s.setCartOpen(false)} />
       </div>
     );
@@ -216,87 +224,78 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
      CAMPUS LANDING
      Editorial foundation + school color as accent
      ================================================================ */
+  const campusSwitcher = (
+    <div className="relative hidden md:block">
+      <button
+        type="button"
+        onClick={() => setCampusDropdownOpen(!campusDropdownOpen)}
+        className="flex items-center gap-2 rounded-full border border-current/20 px-3 py-1.5 text-[10px] lowercase tracking-[0.1em] opacity-70 transition-opacity hover:opacity-100"
+        style={{ color: 'inherit' }}
+      >
+        <span className="h-1.5 w-1.5 rounded-full" style={{ background: campus.color }} />
+        {campus.name.toLowerCase()}
+        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {campusDropdownOpen && (
+        <div className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-xl border border-black/10 bg-white py-1 shadow-2xl">
+          <Link href="/" onClick={() => setCampusDropdownOpen(false)} className="block px-4 py-2 text-[11px] lowercase tracking-[0.08em] text-black/50 transition-colors hover:bg-black/5 hover:text-black">
+            all campuses
+          </Link>
+          {ALL_CAMPUSES.map((c) => (
+            <Link
+              key={c.slug}
+              href={`/campus/${c.slug}`}
+              onClick={() => setCampusDropdownOpen(false)}
+              className={`flex items-center gap-2 px-4 py-2 text-[11px] lowercase tracking-[0.08em] transition-colors hover:bg-black/5 hover:text-black ${campus.slug === c.slug ? 'text-black' : 'text-black/50'}`}
+            >
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: c.color }} />
+              {c.name.toLowerCase()}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-night-bg">
-      {/* Hero — subtle school-color glow at bottom */}
-      <section className="relative flex min-h-[80vh] flex-col items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('/brands/browser.png')" }}></div>
-        <div className="absolute inset-0 bg-black/50"></div>
-        {/* School-color glow at bottom of hero */}
-        <div className="absolute inset-x-0 bottom-0 h-40" style={{ background: `linear-gradient(to top, ${campus.color}12, transparent)` }} />
+      <StickyHeader
+        navLinks={NAV_LINKS}
+        cartCount={s.cartCount}
+        onCartClick={() => s.setCartOpen(true)}
+        onSearch={s.handleSearch}
+        searchValue={s.searchInput}
+        onSearchValueChange={s.setSearchInput}
+        trending={s.trendingSearches.length ? s.trendingSearches : campus.defaultTrending}
+        saved={s.savedSearches}
+        recentlyViewed={s.recentlyViewed}
+        rightSlot={campusSwitcher}
+        overHero={false}
+        homeHref={`/campus/${campus.slug}`}
+      />
 
-        {/* Nav */}
-        <div className="absolute inset-x-0 top-0 z-20">
-          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 md:px-10">
-            <Link href={`/campus/${campus.slug}`} className="font-naya-serif text-3xl font-light lowercase tracking-[0.15em] text-white md:text-4xl">
-              naya
-            </Link>
-            <div className="flex items-center gap-4">
-              <nav className="font-naya-sans hidden items-center gap-4 text-[10px] lowercase tracking-[0.15em] md:flex">
-                {NAV_LINKS.map((link) => (
-                  <Link key={link.href} href={link.href} className="text-white/70 transition-colors hover:text-white">{link.label}</Link>
-                ))}
-              </nav>
+      <EditorialHero
+        onSearch={s.handleSearch}
+        searchValue={s.searchInput}
+        onSearchValueChange={s.setSearchInput}
+        trending={s.trendingSearches.length ? s.trendingSearches : campus.defaultTrending}
+        saved={s.savedSearches}
+        recentlyViewed={s.recentlyViewed}
+        kicker={`trending at ${campus.name}`}
+        kickerColor={campus.color}
+        ctaLabel="switch campus"
+        ctaHref="/college"
+        findsEndpoint={`/api/new-finds?preset=curated&campus=${encodeURIComponent(campus.slug)}`}
+        backgroundImage="/brands/browser.png"
+      />
 
-              {/* Campus switcher — dot of school color */}
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setCampusDropdownOpen(!campusDropdownOpen)}
-                  className="flex items-center gap-2 rounded-full border border-white/20 px-3 py-1.5 text-[10px] lowercase tracking-[0.1em] text-white/60 transition-colors hover:border-white/40 hover:text-white"
-                >
-                  <span className="h-1.5 w-1.5 rounded-full" style={{ background: campus.color }} />
-                  {campus.name.toLowerCase()}
-                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                </button>
-                {campusDropdownOpen && (
-                  <div className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-xl border border-white/10 bg-[#1a1a1a] py-1 shadow-2xl">
-                    <Link href="/" onClick={() => setCampusDropdownOpen(false)} className="block px-4 py-2 text-[11px] lowercase tracking-[0.08em] text-white/50 transition-colors hover:bg-white/5 hover:text-white">
-                      all campuses
-                    </Link>
-                    {ALL_CAMPUSES.map((c) => (
-                      <Link key={c.slug} href={`/campus/${c.slug}`} onClick={() => setCampusDropdownOpen(false)} className={`flex items-center gap-2 px-4 py-2 text-[11px] lowercase tracking-[0.08em] transition-colors hover:bg-white/5 hover:text-white ${campus.slug === c.slug ? 'text-white' : 'text-white/50'}`}>
-                        <span className="h-1.5 w-1.5 rounded-full" style={{ background: c.color }} />
-                        {c.name.toLowerCase()}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
+      {/* Thin school-colored rule as signature accent */}
+      <div className="h-[3px] w-full" style={{ background: campus.color }} />
 
-              <button type="button" onClick={() => s.setCartOpen(true)} className="relative flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-white/10" aria-label="Open cart">
-                <svg className="h-5 w-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                </svg>
-                {s.cartCount > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[9px] font-bold text-black">{s.cartCount}</span>}
-              </button>
-              <MobileNav color="light" />
-            </div>
-          </div>
-        </div>
 
-        {/* Headline + search */}
-        <div className="relative z-10 w-full max-w-3xl px-6 text-center">
-          <h1 className="font-naya-serif text-4xl font-light lowercase text-white md:text-6xl lg:text-7xl">
-            what are you looking for?
-          </h1>
-          <p className="font-naya-sans mt-4 flex items-center justify-center gap-2 text-xs lowercase tracking-[0.12em] text-white/60 md:text-sm">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ background: campus.color }} />
-              <span className="relative inline-flex h-2 w-2 rounded-full" style={{ background: campus.color }} />
-            </span>
-            the entire resale market in one search
-          </p>
-          <div className="mt-8">
-            <SearchBar onSearch={s.handleSearch} disabled={s.loading} value={s.searchInput} onValueChange={s.setSearchInput} showTabs suggestions={campus.defaultTrending.slice(0, 4)} />
-          </div>
-        </div>
-      </section>
-
-      {/* ── New Finds Feed ── */}
-      <NewFindsSection campus={campus.slug} onSearch={s.handleSearch} />
-
-      {/* ── Trending at {School} — school-colored rank numbers ── */}
+      {/* ── Campus Mode: social proof + identity ── */}
       {s.trendingSearches.length > 0 && (
         <section className="bg-night-bg px-6 py-16 md:px-10">
           <div className="mx-auto max-w-5xl">
@@ -304,16 +303,19 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
               <p className="font-naya-sans text-[10px] lowercase tracking-[0.2em] text-text-muted">trending now</p>
               <span className="h-1 w-1 rounded-full" style={{ background: campus.color }} />
             </div>
-            <h2 className="font-naya-serif mt-3 text-2xl font-light text-text-primary md:text-4xl">trending at {campus.name.toLowerCase()}.</h2>
-            <div className="mt-8 space-y-1">
-              {s.trendingSearches.map((tq, i) => (
-                <button key={tq.query} type="button" onClick={() => s.handleSearch(tq.query)} className="group flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left transition-all hover:bg-black/[0.03]">
-                  <span className="font-naya-serif w-8 text-2xl font-extralight md:text-3xl" style={{ color: campus.color + (i === 0 ? '' : i === 1 ? 'aa' : '55') }}>{i + 1}</span>
-                  <span className="font-naya-serif text-lg font-light text-text-primary transition-colors group-hover:text-black md:text-xl">{tq.label}</span>
-                  <svg className="ml-auto h-4 w-4 shrink-0 text-black/10 transition-all group-hover:translate-x-1 group-hover:text-black/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" /></svg>
-                </button>
-              ))}
-            </div>
+            <h2 className="font-naya-serif mt-3 text-2xl font-light text-text-primary md:text-4xl">
+              see what people at {campus.name.toLowerCase()} are buying right now.
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm font-light leading-relaxed text-text-muted">
+              campus mode pulls the patterns from your school — what’s getting searched and saved this week.
+            </p>
+            <TrendingCards
+              trends={s.trendingSearches}
+              onPick={s.handleSearch}
+              previewProducts={previewProducts}
+              accentColor={campus.color}
+              contextLabel="at your school this week"
+            />
 
             {(() => {
               const fallback = getFallbackForCampus(campus.name);
@@ -338,6 +340,9 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
           </div>
         </section>
       )}
+
+      {/* ── New Finds Feed ── */}
+      <NewFindsSection campus={campus.slug} onSearch={s.handleSearch} />
 
       {/* ── Vintage {School} Merch — school-colored left accent on first card ── */}
       <section className="bg-white px-6 py-20 md:px-10">
