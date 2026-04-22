@@ -1,8 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import SearchBar from '@/components/SearchBar';
 import BottomSearchBar from '@/components/BottomSearchBar';
 import ResultsGrid from '@/components/ResultsGrid';
 import CartPanel from '@/components/CartPanel';
@@ -12,8 +11,12 @@ import EmailSignup from '@/components/EmailSignup';
 import NewFindsSection from '@/components/NewFindsSection';
 import CampusProductGrid from '@/components/CampusProductGrid';
 import { ALL_CAMPUSES } from '@/lib/campuses';
-import { getDepopImageUrl, DEPOP_WIDTH_CARD, DEPOP_WIDTH_HERO } from '@/lib/depopImage';
 import MobileNav from '@/components/MobileNav';
+import TrendingCards from '@/components/TrendingCards';
+import CampusModeTeaser from '@/components/CampusModeTeaser';
+import StickyHeader from '@/components/StickyHeader';
+import EditorialHero from '@/components/EditorialHero';
+import BrandSpotlight from '@/components/BrandSpotlight';
 
 const NAV_LINKS = [
   { href: '/deals', label: 'deals' },
@@ -64,129 +67,6 @@ export default function Home() {
     return () => { cancelled = true; };
   }, []);
 
-  const brandCards = [
-    { name: 'Ralph Lauren', image: 'Ralph Lauren.png', query: 'Ralph Lauren' },
-    { name: 'Polo Sport', image: 'Polo Sport.png', query: 'Polo Sport' },
-    { name: 'Pacsun', image: 'Pacsun.png', query: 'Pacsun' },
-    { name: 'Princess Polly', image: 'Princess Polly.png', query: 'Princess Polly' },
-    { name: 'Carhartt', image: 'Carhartt.png', query: 'Carhartt' },
-    { name: 'Zara', image: 'zara.jpg', query: 'Zara' },
-  ];
-
-  const featuredCategories = [
-    { title: 'Vintage denim', description: '501s, cargos, and lived-in washes.', query: 'vintage denim' },
-    { title: 'Outerwear', description: 'Leather, puffers, and layered classics.', query: 'vintage outerwear' },
-    { title: 'Graphic tees', description: 'Band tees, sports, and pop culture.', query: 'vintage graphic tee' },
-    { title: 'Accessories', description: 'Bags, belts, and statement jewelry.', query: 'vintage accessories' },
-  ];
-
-  const dailyFinds = useMemo(() => {
-    const allFinds = [
-      { title: 'Vintage Carhartt Jacket', query: 'vintage carhartt jacket', priceRange: 'under $80' },
-      { title: 'Nike Vintage Crewneck', query: 'vintage nike crewneck', priceRange: 'under $40' },
-      { title: "Levi's 501 Jeans", query: 'vintage levi 501', priceRange: 'under $50' },
-      { title: 'Vintage Purdue Hoodie', query: 'vintage purdue hoodie', priceRange: 'under $45' },
-      { title: 'Y2K Zip Hoodie', query: 'y2k zip hoodie', priceRange: 'under $35' },
-      { title: 'Ralph Lauren Polo', query: 'vintage ralph lauren polo', priceRange: 'under $30' },
-      { title: 'Vintage Band Tee', query: 'vintage band tee', priceRange: 'under $35' },
-      { title: 'North Face Puffer', query: 'vintage north face puffer', priceRange: 'under $90' },
-      { title: 'Vintage Starter Jacket', query: 'vintage starter jacket', priceRange: 'under $70' },
-      { title: 'Adidas Track Jacket', query: 'vintage adidas track jacket', priceRange: 'under $45' },
-      { title: 'Vintage Champion Hoodie', query: 'vintage champion hoodie', priceRange: 'under $40' },
-      { title: 'Baggy Levi 550', query: 'levi 550 baggy', priceRange: 'under $45' },
-    ];
-    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
-    const startIdx = (dayOfYear * 3) % allFinds.length;
-    return Array.from({ length: 4 }, (_, i) => allFinds[(startIdx + i) % allFinds.length]);
-  }, []);
-
-  const productFeatures = [
-    {
-      tag: 'discover',
-      title: 'find it before anyone else.',
-      description: 'search eBay, Grailed, Depop, and Poshmark at once. the best pieces, before they sell out.',
-      icon: (
-        <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.2}>
-          <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" strokeLinecap="round" />
-        </svg>
-      ),
-    },
-    {
-      tag: 'quality',
-      title: 'no junk. only real finds.',
-      description: 'smart scoring surfaces the best vintage pieces and hides everything else.',
-      icon: (
-        <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.2}>
-          <path d="M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
-          <circle cx="12" cy="12" r="10" />
-        </svg>
-      ),
-    },
-    {
-      tag: 'deals',
-      title: 'always get the best price.',
-      description: 'see the same piece listed across multiple sites. grab the cheapest one instantly.',
-      icon: (
-        <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.2}>
-          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      ),
-    },
-    {
-      tag: 'saves',
-      title: 'one listing, best price.',
-      description: 'when the same item appears on multiple sites, naya keeps the cheapest one.',
-      icon: (
-        <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.2}>
-          <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><path d="M17.5 14v7m-3.5-3.5h7" strokeLinecap="round" />
-        </svg>
-      ),
-    },
-    {
-      tag: 'style',
-      title: 'describe your vibe. we\'ll find it.',
-      description: 'tell us what you\'re going for. naya finds pieces that match your style — no keywords needed.',
-      icon: (
-        <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.2}>
-          <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      ),
-    },
-    {
-      tag: 'campus',
-      title: 'vintage campus gear, cheap.',
-      description: 'vintage Purdue gear, Carhartt jackets, and streetwear deals — all at student prices.',
-      icon: (
-        <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.2}>
-          <path d="M22 10v6M2 10l10-5 10 5-10 5z" strokeLinecap="round" strokeLinejoin="round" /><path d="M6 12v5c3 3 9 3 12 0v-5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      ),
-    },
-  ];
-
-  const [activeFeature, setActiveFeature] = useState(0);
-  const featureTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const startFeatureTimer = useCallback(() => {
-    if (featureTimerRef.current) clearInterval(featureTimerRef.current);
-    featureTimerRef.current = setInterval(() => {
-      setActiveFeature((prev) => (prev + 1) % productFeatures.length);
-    }, 3500);
-  }, [productFeatures.length]);
-
-  useEffect(() => {
-    startFeatureTimer();
-    return () => { if (featureTimerRef.current) clearInterval(featureTimerRef.current); };
-  }, [startFeatureTimer]);
-
-  const handleFeatureClick = (index: number) => {
-    setActiveFeature(index);
-    startFeatureTimer();
-  };
-
-  const buildSlug = (title: string) =>
-    title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-
   /* ================================================================
      RESULTS MODE
      ================================================================ */
@@ -194,14 +74,29 @@ export default function Home() {
     return (
       <div className="min-h-screen bg-white pb-32">
         <header className="sticky top-0 z-40 border-b border-black/5 bg-white">
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-            <Link href="/" className="font-naya-serif text-2xl font-light lowercase tracking-[0.12em] text-black" onClick={() => s.clearResults()}>
+          <div className="mx-auto flex max-w-7xl items-center gap-3 px-6 py-3">
+            <Link href="/" className="font-naya-serif shrink-0 text-2xl font-light lowercase tracking-[0.12em] text-black" onClick={() => s.clearResults()}>
               naya
             </Link>
-            <div className="flex items-center gap-3">
-              <nav className="font-naya-sans hidden items-center gap-3 text-[10px] lowercase tracking-[0.15em] text-black/60 md:flex">
+            <form
+              className="relative flex min-w-0 flex-1 items-center"
+              onSubmit={(e) => { e.preventDefault(); const v = s.searchInput.trim(); if (v) s.handleSearch(v); }}
+            >
+              <svg className="pointer-events-none absolute left-3 h-4 w-4 text-black/30" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+              </svg>
+              <input
+                type="text"
+                value={s.searchInput}
+                onChange={(e) => s.setSearchInput(e.target.value)}
+                placeholder="search vintage, brands, styles..."
+                className="h-9 w-full rounded-full border border-black/8 bg-neutral-50 pl-9 pr-4 text-[13px] text-black placeholder:text-black/30 focus:border-black/20 focus:outline-none"
+              />
+            </form>
+            <div className="flex shrink-0 items-center gap-2">
+              <nav className="font-naya-sans hidden items-center gap-2 text-[10px] lowercase tracking-[0.15em] text-black/60 lg:flex">
                 {NAV_LINKS.slice(0, 3).map((link) => (
-                  <Link key={link.href} href={link.href} className="px-3 py-1.5 transition-colors hover:text-black">
+                  <Link key={link.href} href={link.href} className="px-2 py-1.5 transition-colors hover:text-black">
                     {link.label}
                   </Link>
                 ))}
@@ -266,7 +161,13 @@ export default function Home() {
           </div>
         )}
 
-        <BottomSearchBar onSearch={s.handleSearch} disabled={s.loading} />
+        <BottomSearchBar
+          onSearch={s.handleSearch}
+          disabled={s.loading}
+          trending={s.trendingSearches}
+          saved={s.savedSearches}
+          recentlyViewed={s.recentlyViewed}
+        />
         <CartPanel open={s.cartOpen} onClose={() => s.setCartOpen(false)} />
       </div>
     );
@@ -277,90 +178,68 @@ export default function Home() {
      ================================================================ */
   return (
     <div className="min-h-screen bg-night-bg">
-      {/* Hero */}
-      <section className="relative flex min-h-[min(100svh,56rem)] flex-col items-center justify-start overflow-hidden pb-12 md:min-h-[80vh] md:justify-center md:pb-0">
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: "url('/brands/browser.png')" }}
-          aria-hidden
-        />
-        <div className="absolute inset-0 bg-black/50" aria-hidden />
+      <StickyHeader
+        navLinks={NAV_LINKS}
+        cartCount={s.cartCount}
+        onCartClick={() => s.setCartOpen(true)}
+        onSearch={s.handleSearch}
+        searchValue={s.searchInput}
+        onSearchValueChange={s.setSearchInput}
+        trending={s.trendingSearches.length ? s.trendingSearches : DEFAULT_TRENDING}
+        saved={s.savedSearches}
+        recentlyViewed={s.recentlyViewed}
+        overHero={false}
+      />
 
-        {/* Nav */}
-        <div className="absolute inset-x-0 top-0 z-20 pt-[env(safe-area-inset-top)]">
-          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 md:px-10 md:py-6">
-            <Link href="/" className="font-naya-serif text-2xl font-light lowercase tracking-[0.15em] text-white sm:text-3xl md:text-4xl">
-              naya
-            </Link>
-            <div className="flex items-center gap-4">
-              <nav className="font-naya-sans hidden items-center gap-4 text-[10px] lowercase tracking-[0.15em] md:flex">
-                {NAV_LINKS.map((link) => (
-                  <Link key={link.href} href={link.href} className="text-white/70 transition-colors hover:text-white">
-                    {link.label}
-                  </Link>
-                ))}
-              </nav>
+      <EditorialHero
+        onSearch={s.handleSearch}
+        searchValue={s.searchInput}
+        onSearchValueChange={s.setSearchInput}
+        trending={s.trendingSearches.length ? s.trendingSearches : DEFAULT_TRENDING}
+        saved={s.savedSearches}
+        recentlyViewed={s.recentlyViewed}
+        ctaLabel="shop your campus"
+        ctaHref="/college"
+        findsEndpoint="/api/new-finds?preset=curated"
+        backgroundImage="/brands/browser.png"
+      />
 
-              <button type="button" onClick={() => s.setCartOpen(true)} className="relative flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-white/10" aria-label="Open cart">
-                <svg className="h-5 w-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                </svg>
-                {s.cartCount > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[9px] font-bold text-black">{s.cartCount}</span>
-                )}
-              </button>
-              <MobileNav color="light" />
-            </div>
-          </div>
-        </div>
-
-        <div className="relative z-10 mt-[calc(env(safe-area-inset-top)+5.25rem)] w-full max-w-3xl px-6 text-center md:mt-0">
-          <h1 className="font-naya-serif text-4xl font-light lowercase leading-tight text-white md:text-6xl lg:text-7xl">
-            what are you looking for?
-          </h1>
-          <p className="font-naya-sans mt-4 text-xs lowercase tracking-[0.12em] text-white/60 md:text-sm">
-            the entire resale market in one search
-          </p>
-          <div className="mt-8">
-            <SearchBar onSearch={s.handleSearch} disabled={s.loading} value={s.searchInput} onValueChange={s.setSearchInput} showTabs />
-          </div>
-          <Link
-            href="/college"
-            className="mt-8 inline-flex max-w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-[10px] lowercase tracking-[0.12em] text-white/90 backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/15 sm:px-5 sm:py-2.5 sm:text-[11px] md:mt-6"
-          >
-            <span className="truncate">choose your campus</span>
-            <svg className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
-          </Link>
-        </div>
-      </section>
-
-      {/* ── New Finds Feed ── */}
+      {/* ── New Finds Feed — the main "live marketplace" moment ── */}
       <NewFindsSection onSearch={s.handleSearch} />
 
-      {/* ── Trending ── */}
+      {/* ── Shop by Brand — editorial image grid ── */}
+      <BrandSpotlight />
+
+      {/* ── Trending picks (visual cards + live product row) ── */}
       {s.trendingSearches.length > 0 && (
-        <section className="bg-night-bg px-6 py-16 md:px-10">
-          <div className="mx-auto max-w-5xl">
-            <p className="font-naya-sans text-[10px] lowercase tracking-[0.2em] text-text-muted">trending now</p>
-            <h2 className="font-naya-serif mt-3 text-2xl font-light text-text-primary md:text-4xl">trending right now.</h2>
-            <div className="mt-8 space-y-1">
-              {s.trendingSearches.map((tq, i) => (
-                <button key={tq.query} type="button" onClick={() => s.handleSearch(tq.query)} className="group flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left transition-all hover:bg-black/[0.03]">
-                  <span className="font-naya-serif w-8 text-2xl font-extralight text-black/15 md:text-3xl">{i + 1}</span>
-                  <span className="font-naya-serif text-lg font-light text-text-primary transition-colors group-hover:text-black md:text-xl">{tq.label}</span>
-                  <svg className="ml-auto h-4 w-4 shrink-0 text-black/10 transition-all group-hover:translate-x-1 group-hover:text-black/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" /></svg>
-                </button>
-              ))}
+        <section className="bg-night-bg px-6 py-24 md:px-10 md:py-32">
+          <div className="mx-auto max-w-6xl">
+            <div className="flex items-end justify-between gap-6">
+              <div>
+                <p className="font-naya-sans text-[10px] uppercase tracking-[0.28em] text-black/50">this week</p>
+                <h2 className="font-naya-serif mt-3 text-4xl font-light leading-[1.05] tracking-[-0.01em] text-black md:text-6xl">
+                  trending <span className="italic text-black/75">right now.</span>
+                </h2>
+              </div>
+              <Link href="/finds" className="font-naya-sans hidden text-[10px] uppercase tracking-[0.22em] text-black/50 transition-colors hover:text-black md:inline-block">
+                view all →
+              </Link>
             </div>
+            <TrendingCards
+              trends={s.trendingSearches}
+              onPick={s.handleSearch}
+              previewProducts={previewProducts}
+              contextLabel="this week"
+            />
 
             {(previewProducts === null || previewProducts.length > 0) && (
               <>
-                <p className="font-naya-sans mt-12 text-[10px] lowercase tracking-[0.2em] text-text-muted">picked for you</p>
-                <div className="mt-4">
+                <p className="font-naya-sans mt-16 text-[10px] uppercase tracking-[0.28em] text-black/50">picked for you</p>
+                <div className="mt-5">
                   {previewProducts === null ? (
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
                       {Array.from({ length: 6 }).map((_, i) => (
-                        <div key={i} className="aspect-[3/4] animate-pulse rounded-2xl bg-neutral-100" />
+                        <div key={i} className="aspect-[4/5] animate-pulse rounded-lg bg-black/[0.05]" />
                       ))}
                     </div>
                   ) : (
@@ -373,173 +252,21 @@ export default function Home() {
         </section>
       )}
 
-      {/* ── Product Features — rotating showcase ── */}
-      <section className="bg-night-bg px-6 py-24 md:px-10">
-        <div className="mx-auto max-w-5xl">
-          <p className="font-naya-sans text-[10px] lowercase tracking-[0.2em] text-text-muted">how it works</p>
-          <h2 className="font-naya-serif mt-4 text-3xl font-light text-text-primary md:text-5xl">treasure hunting for vintage clothes.</h2>
-          <div className="mt-16 grid gap-10 md:grid-cols-[280px_1fr] md:gap-16">
-            <div className="flex flex-row gap-1 overflow-x-auto md:flex-col md:gap-0 md:overflow-x-visible">
-              {productFeatures.map((feat, i) => (
-                <button key={feat.tag} type="button" onClick={() => handleFeatureClick(i)} className={`group relative flex-shrink-0 rounded-lg px-4 py-3 text-left transition-all duration-300 md:px-5 md:py-4 ${activeFeature === i ? 'bg-black/[0.04]' : 'hover:bg-black/[0.02]'}`}>
-                  <div className="flex items-center gap-3">
-                    <span className={`font-naya-serif text-lg font-extralight transition-colors duration-300 ${activeFeature === i ? 'text-text-primary' : 'text-black/15'}`}>{String(i + 1).padStart(2, '0')}</span>
-                    <span className={`text-[10px] font-medium lowercase tracking-[0.1em] transition-colors duration-300 md:text-[11px] ${activeFeature === i ? 'text-text-primary' : 'text-text-muted'}`}>{feat.tag}</span>
-                  </div>
-                  {activeFeature === i && (
-                    <div className="absolute bottom-0 left-4 right-4 h-[2px] overflow-hidden rounded-full bg-black/[0.06] md:left-5 md:right-5">
-                      <div className="h-full rounded-full bg-black/25" style={{ animation: 'featureProgress 3.5s linear' }} />
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
-            <div className="relative min-h-[260px]">
-              {productFeatures.map((feat, i) => (
-                <div key={feat.tag} className={`absolute inset-0 flex flex-col justify-center transition-all duration-500 ${activeFeature === i ? 'pointer-events-auto translate-y-0 opacity-100' : 'pointer-events-none translate-y-4 opacity-0'}`}>
-                  <div className="text-black/10">{feat.icon}</div>
-                  <h3 className="font-naya-serif mt-6 text-2xl font-light text-text-primary md:text-4xl lg:text-5xl">{feat.title}</h3>
-                  <p className="mt-4 max-w-lg text-sm font-light leading-relaxed text-text-muted md:text-base">{feat.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* ── Campus Mode (single moment, unified with teaser) ── */}
+      <CampusModeTeaser campuses={ALL_CAMPUSES} />
 
-      <style jsx>{`@keyframes featureProgress { from { width: 0%; } to { width: 100%; } }`}</style>
-
-      {/* ── Brand Spotlight ── */}
-      <section className="bg-[#111] px-6 py-24 md:px-10">
-        <div className="mx-auto max-w-5xl">
-          <div className="mb-12 flex items-end justify-between">
-            <div>
-              <p className="font-naya-sans text-[10px] lowercase tracking-[0.2em] text-white/35">brands</p>
-              <h2 className="font-naya-serif mt-3 text-3xl font-light text-white md:text-5xl">shop by brand.</h2>
-            </div>
-            <Link href="/brands" className="hidden text-[10px] lowercase tracking-[0.15em] text-white/40 transition-colors hover:text-white md:inline-block">view all</Link>
-          </div>
-          <div className="grid auto-rows-[260px] grid-cols-2 gap-2 sm:auto-rows-[340px] md:grid-cols-4 md:gap-3">
-            {brandCards.map((brand, i) => {
-              const isFeature = i === 0 || i === 3;
-              return (
-                <button key={brand.name} type="button" onClick={() => s.handleSearch(brand.query)} className={`group relative overflow-hidden rounded-xl ${isFeature ? 'col-span-2' : ''}`}>
-                  <img src={encodeURI(`/brands/${brand.image}`)} alt={brand.name} className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-                  <div className="absolute inset-x-0 bottom-0 p-5">
-                    <p className="font-naya-serif text-lg font-light lowercase text-white md:text-xl">{brand.name.toLowerCase()}</p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-          <div className="mt-8 flex justify-center md:hidden">
-            <Link href="/brands" className="text-[10px] lowercase tracking-[0.15em] text-white/40 transition-colors hover:text-white">view all brands</Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Featured Categories ── */}
-      <section className="bg-white px-6 py-24 md:px-10">
-        <div className="mx-auto max-w-5xl">
-          <p className="font-naya-sans text-[10px] lowercase tracking-[0.2em] text-text-muted">categories</p>
-          <h2 className="font-naya-serif mt-3 text-3xl font-light text-text-primary md:text-5xl">find something you&apos;ll actually wear.</h2>
-          <div className="mt-14 grid gap-3 md:grid-cols-2">
-            {featuredCategories.map((cat) => (
-              <button key={cat.title} type="button" onClick={() => s.handleSearch(cat.query)} className="group flex items-center justify-between rounded-xl bg-[#f6f5f3] px-8 py-8 text-left transition-all hover:bg-[#efeee9]">
-                <div>
-                  <p className="font-naya-serif text-2xl font-light lowercase text-text-primary md:text-3xl">{cat.title.toLowerCase()}</p>
-                  <p className="mt-2 text-xs font-light lowercase tracking-[0.04em] text-text-muted">{cat.description.toLowerCase()}</p>
-                </div>
-                <svg className="h-4 w-4 shrink-0 text-black/15 transition-transform duration-500 group-hover:translate-x-1.5 group-hover:text-black/40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" /></svg>
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Campus Mode ── */}
-      <section className="relative overflow-hidden px-6 py-24 md:px-10">
-        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('/brands/coll2.jpg')" }}></div>
-        <div className="absolute inset-0 bg-black/50"></div>
-        <div className="relative mx-auto max-w-5xl">
-          <p className="font-naya-sans text-[10px] lowercase tracking-[0.2em] text-white/40">campus mode</p>
-          <h2 className="font-naya-serif mt-3 text-3xl font-light text-white md:text-5xl">trending at your school.</h2>
-          <p className="mt-4 max-w-lg text-sm font-light leading-relaxed text-white/65">choose your campus for localized trending searches, vintage merch, and picks tailored to your school.</p>
-          <div className="mt-10 flex flex-wrap gap-2">
-            {ALL_CAMPUSES.slice(0, 8).map((c) => (
-              <Link key={c.slug} href={`/campus/${c.slug}`} className="flex items-center gap-1.5 rounded-full border border-white/20 px-4 py-2 text-[10px] lowercase tracking-[0.12em] text-white/75 transition-colors hover:border-white/50 hover:text-white">
-                <span className="h-1.5 w-1.5 rounded-full" style={{ background: c.color }} />
-                {c.name.toLowerCase()}
-              </Link>
-            ))}
-          </div>
-          <Link href="/college" className="mt-10 inline-block text-[10px] lowercase tracking-[0.15em] text-white/50 transition-colors hover:text-white">choose your campus →</Link>
-        </div>
-      </section>
-
-      {/* ── Today's Best Finds ── */}
-      <section className="bg-white px-6 py-20 md:px-10">
-        <div className="mx-auto max-w-5xl">
-          <p className="font-naya-sans text-[10px] lowercase tracking-[0.2em] text-text-muted">updated daily</p>
-          <h2 className="font-naya-serif mt-3 text-3xl font-light text-text-primary md:text-5xl">today&apos;s best finds.</h2>
-          <div className="mt-10 grid gap-3 sm:grid-cols-2">
-            {dailyFinds.map((find) => (
-              <button key={find.query} type="button" onClick={() => s.handleSearch(find.query)} className="group flex items-center justify-between rounded-xl border border-black/[0.06] px-6 py-5 text-left transition-all hover:border-black/15 hover:shadow-sm">
-                <div>
-                  <p className="font-naya-serif text-lg font-light text-text-primary md:text-xl">{find.title.toLowerCase()}</p>
-                  <p className="mt-1 text-xs text-text-muted">{find.priceRange}</p>
-                </div>
-                <svg className="h-4 w-4 shrink-0 text-black/10 transition-transform duration-500 group-hover:translate-x-1.5 group-hover:text-black/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" /></svg>
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Recently Viewed ── */}
-      <section className="bg-night-bg px-6 py-24 md:px-10">
-        <div className="mx-auto max-w-5xl">
-          <p className="font-naya-sans text-[10px] lowercase tracking-[0.2em] text-text-muted">recently viewed</p>
-          <h2 className="font-naya-serif mt-3 text-2xl font-light text-text-primary md:text-4xl">pick up where you left off.</h2>
-          <div className="mt-10">
-            {s.recentlyViewed.length === 0 ? (
-              <p className="text-sm text-text-muted">Browse a few listings and your recently viewed items will show up here.</p>
-            ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {s.recentlyViewed.map((item) => {
-                  const displayImage = item.source === 'depop' ? getDepopImageUrl(item.image, DEPOP_WIDTH_CARD) : item.image;
-                  const productPageImage =
-                    item.source === 'depop' ? getDepopImageUrl(item.image, DEPOP_WIDTH_HERO) : item.image;
-                  return (
-                    <Link key={`${item.source}-${item.url}`} href={`/product/${buildSlug(item.title) || 'item'}?${new URLSearchParams({ title: item.title, price: item.price.toFixed(2), image: productPageImage, url: item.url, source: item.source }).toString()}`} className="group overflow-hidden rounded-2xl bg-white transition-all hover:shadow-soft">
-                      <div className="relative aspect-[3/4] w-full overflow-hidden bg-neutral-100">
-                        <img src={displayImage} alt={item.title} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" onError={(e) => { if (displayImage !== item.image) e.currentTarget.src = item.image; }} />
-                      </div>
-                      <div className="p-4">
-                        <p className="text-[10px] uppercase tracking-[0.2em] text-text-muted">{item.source}</p>
-                        <p className="mt-2 line-clamp-2 text-sm font-medium text-text-primary">{item.title}</p>
-                        <p className="mt-2 text-sm font-semibold text-text-secondary">${item.price.toFixed(2)}</p>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Get the App / Extension ── */}
+      {/* ── App / Extension — the single dark "moment" of the page ── */}
       <GetNayaBanner variant="full" />
 
-      {/* ── Stay in the Loop ── */}
-      <section className="bg-[#111] px-6 py-16 md:px-10">
+      {/* ── Stay in the Loop — continues the dark section ── */}
+      <section className="bg-[#0a0a0a] px-6 py-20 md:px-10 md:py-28">
         <div className="mx-auto max-w-md text-center">
-          <p className="font-naya-sans text-[10px] lowercase tracking-[0.2em] text-white/35">stay in the loop</p>
-          <h2 className="font-naya-serif mt-3 text-2xl font-light text-white md:text-3xl">get notified about new drops &amp; deals.</h2>
-          <p className="font-naya-sans mt-2 text-xs text-white/40">no spam. just the good stuff.</p>
-          <div className="mt-6">
+          <p className="font-naya-sans text-[10px] uppercase tracking-[0.28em] text-white/45">stay in the loop</p>
+          <h2 className="font-naya-serif mt-4 text-3xl font-light leading-[1.1] text-white md:text-4xl">
+            get notified about <span className="italic">new drops</span> &amp; deals.
+          </h2>
+          <p className="font-naya-sans mt-3 text-xs text-white/45">no spam. just the good stuff.</p>
+          <div className="mt-7">
             <EmailSignup source="home_footer" />
           </div>
         </div>
@@ -547,12 +274,12 @@ export default function Home() {
 
       {/* ── Footer ── */}
       <footer className="bg-night-bg px-6 py-14 md:px-10">
-        <div className="mx-auto flex max-w-5xl flex-col gap-6 md:flex-row md:items-center md:justify-between">
+        <div className="mx-auto flex max-w-6xl flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-4">
             <span className="font-naya-serif text-lg font-light lowercase tracking-[0.12em] text-text-primary">naya</span>
             <span className="text-[10px] text-text-muted">&copy; 2026</span>
           </div>
-          <div className="flex flex-wrap gap-6 text-[10px] lowercase tracking-[0.12em] text-text-muted">
+          <div className="flex flex-wrap gap-6 text-[10px] uppercase tracking-[0.2em] text-text-muted">
             <Link href="/editorial" className="transition-colors hover:text-text-primary">editorial</Link>
             <Link href="/brands" className="transition-colors hover:text-text-primary">brands</Link>
             <Link href="/privacy" className="transition-colors hover:text-text-primary">privacy</Link>
