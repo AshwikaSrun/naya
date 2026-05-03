@@ -342,10 +342,13 @@ function buildPlatformBreakdown(items) {
 async function runLiveSearch(query, limit) {
   // Reuse the existing /search pipeline by calling it locally over HTTP.
   // Keeps the dedupe/rank/relevance logic in one place.
+  // Budget: /search itself runs Playwright (Depop+eBay sequential, 38s each)
+  // plus a 2.5s gap. Worst case ~50s with all platforms cold. Cache hits
+  // come back in <100ms so the long path is rare.
   const port = process.env.PORT || 3005;
   const url = `http://127.0.0.1:${port}/search?q=${encodeURIComponent(query)}&limit=${limit}&platform=all`;
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 28000);
+  const timer = setTimeout(() => controller.abort(), 55000);
   try {
     const res = await fetch(url, { signal: controller.signal });
     if (!res.ok) return null;
