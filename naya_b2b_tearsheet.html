@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>naya — b2b tearsheet</title>
+<meta name="description" content="naya resale intelligence api — one-page b2b tearsheet for prospects." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --serif: 'Cormorant Garamond', Georgia, serif;
+    --sans: 'DM Sans', system-ui, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --bg: #f0ece4;
+    --paper: #ffffff;
+    --paper-warm: #faf8f3;
+    --ink: #0a0a0a;
+    --ink-2: #1f1f1f;
+    --ink-3: rgba(10,10,10,0.6);
+    --ink-4: rgba(10,10,10,0.4);
+    --ink-5: rgba(10,10,10,0.2);
+    --line: rgba(10,10,10,0.12);
+    --line-soft: rgba(10,10,10,0.07);
+    --accent: #0a0a0a;
+    --good: #15803d;
+    --bad: #be123c;
+  }
+
+  html { font-size: 14px; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+    padding: 32px 16px;
+  }
+
+  /* Letter-size sheet (8.5×11). Locked aspect for print. */
+  .sheet {
+    width: 100%;
+    max-width: 850px;
+    min-height: 1100px;
+    margin: 0 auto;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    box-shadow: 0 12px 40px rgba(10,10,10,0.05);
+    padding: 44px 52px 36px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* ── Top strip ── */
+  .top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 1px solid var(--ink);
+    padding-bottom: 16px;
+  }
+  .wordmark {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: 1.625rem;
+    letter-spacing: 0.12em;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .top .meta {
+    text-align: right;
+    font-size: 0.625rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+    line-height: 1.7;
+  }
+  .top .meta .doc-title {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  /* ── Hero block ── */
+  .hero h1 {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: 2.5rem;
+    line-height: 1.05;
+    color: var(--ink);
+    max-width: 22ch;
+  }
+  .hero .lead {
+    margin-top: 12px;
+    color: var(--ink-3);
+    font-size: 0.9375rem;
+    max-width: 64ch;
+  }
+
+  /* ── Three column "what / how / why" ── */
+  .three-col {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .col {
+    border: 1px solid var(--line-soft);
+    background: var(--paper-warm);
+    padding: 18px 18px 20px;
+    border-radius: 10px;
+  }
+  .col .col-num {
+    font-family: var(--serif);
+    font-size: 1.4rem;
+    color: var(--ink);
+    font-weight: 300;
+  }
+  .col .col-label {
+    font-size: 0.5625rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+    margin-top: -2px;
+  }
+  .col h3 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 1.0625rem;
+    color: var(--ink);
+    margin-top: 10px;
+  }
+  .col p {
+    font-size: 0.8125rem;
+    line-height: 1.55;
+    color: var(--ink-3);
+    margin-top: 6px;
+  }
+
+  /* ── Sections ── */
+  .section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  .section-head h2 {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: 1.25rem;
+    color: var(--ink);
+  }
+  .section-head .num {
+    font-size: 0.625rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+  }
+
+  /* ── Endpoints table ── */
+  .endpoints {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+  }
+  .endpoints td {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line-soft);
+    vertical-align: top;
+  }
+  .endpoints tr:last-child td { border-bottom: 0; }
+  .endpoints td.method {
+    width: 60px;
+  }
+  .endpoints td.method span {
+    display: inline-block;
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: 0.625rem;
+    letter-spacing: 0.1em;
+    background: var(--ink);
+    color: #fff;
+    padding: 3px 7px;
+    border-radius: 3px;
+  }
+  .endpoints td.path {
+    width: 32%;
+    font-family: var(--mono);
+    font-size: 0.8125rem;
+    color: var(--ink);
+  }
+  .endpoints td.desc {
+    color: var(--ink-3);
+  }
+
+  /* ── Pricing strip ── */
+  .pricing-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .price-cell {
+    padding: 16px 18px;
+    border-right: 1px solid var(--line-soft);
+  }
+  .price-cell:last-child { border-right: 0; }
+  .price-cell.featured {
+    background: var(--ink);
+    color: #fff;
+  }
+  .price-cell .name {
+    font-size: 0.5625rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+  }
+  .price-cell.featured .name { color: rgba(255,255,255,0.5); }
+  .price-cell .price {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: 1.875rem;
+    margin-top: 4px;
+    line-height: 1;
+    color: var(--ink);
+  }
+  .price-cell.featured .price { color: #fff; }
+  .price-cell .quota {
+    font-size: 0.6875rem;
+    color: var(--ink-4);
+    margin-top: 2px;
+  }
+  .price-cell.featured .quota { color: rgba(255,255,255,0.55); }
+  .price-cell .blurb {
+    font-size: 0.75rem;
+    color: var(--ink-3);
+    line-height: 1.5;
+    margin-top: 10px;
+  }
+  .price-cell.featured .blurb { color: rgba(255,255,255,0.7); }
+
+  /* ── Sample / coverage two-up ── */
+  .two-up {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 18px;
+  }
+
+  /* ── Code block ── */
+  .code {
+    background: var(--ink);
+    color: #fff;
+    border-radius: 10px;
+    padding: 18px 20px;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    line-height: 1.7;
+    white-space: pre;
+    overflow-x: auto;
+  }
+  .code .comment { color: rgba(255,255,255,0.45); }
+  .code .key { color: #c4d0a3; }
+  .code .num { color: #f0c382; }
+  .code .str { color: #d6b78a; }
+  .code .label-row {
+    font-family: var(--sans);
+    font-size: 0.5625rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 8px;
+    display: block;
+    white-space: normal;
+  }
+
+  /* ── Coverage block ── */
+  .coverage {
+    background: var(--paper-warm);
+    border: 1px solid var(--line-soft);
+    border-radius: 10px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .coverage h4 {
+    font-size: 0.5625rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+    font-weight: 500;
+  }
+  .coverage .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 14px;
+  }
+  .coverage .stat .num {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: 1.5rem;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .coverage .stat .lbl {
+    font-size: 0.625rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+    margin-top: 2px;
+  }
+  .coverage .platforms {
+    border-top: 1px solid var(--line-soft);
+    padding-top: 10px;
+    font-size: 0.6875rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    line-height: 1.7;
+  }
+
+  /* ── Bottom: who it's for + footer ── */
+  .who {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+    align-items: stretch;
+  }
+  .who-list {
+    background: var(--paper-warm);
+    border: 1px solid var(--line-soft);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .who-list h4 {
+    font-size: 0.5625rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+    font-weight: 500;
+    margin-bottom: 10px;
+  }
+  .who-list ul {
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 18px;
+    font-size: 0.8125rem;
+    color: var(--ink-3);
+  }
+  .who-list ul li { display: flex; gap: 8px; }
+  .who-list ul li::before { content: '—'; color: var(--ink-5); }
+
+  .contact {
+    background: var(--ink);
+    color: #fff;
+    border-radius: 10px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .contact .label-r {
+    font-size: 0.5625rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+  }
+  .contact .name {
+    font-family: var(--serif);
+    font-size: 1.25rem;
+    font-weight: 400;
+    margin-top: 4px;
+  }
+  .contact a {
+    color: #fff;
+    text-decoration: none;
+    font-size: 0.8125rem;
+    margin-top: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.3);
+    padding-bottom: 1px;
+    display: inline-block;
+    align-self: flex-start;
+  }
+  .contact a:hover { border-bottom-color: #fff; }
+
+  .foot {
+    border-top: 1px solid var(--line);
+    padding-top: 12px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.625rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+  }
+  .foot .right { display: flex; gap: 18px; }
+
+  /* ── Print ── */
+  @page { size: letter; margin: 0.4in; }
+  @media print {
+    body { background: #fff; padding: 0; }
+    .sheet {
+      max-width: none;
+      width: 100%;
+      min-height: 0;
+      box-shadow: none;
+      border: none;
+      padding: 0;
+    }
+  }
+
+  /* ── Smaller screens — keep readable but stop pretending it's a sheet ── */
+  @media (max-width: 720px) {
+    .sheet {
+      min-height: 0;
+      padding: 28px 22px;
+    }
+    .three-col, .pricing-strip, .two-up, .who {
+      grid-template-columns: 1fr;
+    }
+    .pricing-strip .price-cell { border-right: 0; border-bottom: 1px solid var(--line-soft); }
+    .pricing-strip .price-cell:last-child { border-bottom: 0; }
+    .hero h1 { font-size: 2rem; }
+  }
+</style>
+</head>
+<body>
+
+<article class="sheet">
+
+  <!-- Top -->
+  <header class="top">
+    <div class="wordmark">naya</div>
+    <div class="meta">
+      <div class="doc-title">b2b tearsheet · v1</div>
+      <div>q2 2026 · resale intelligence api</div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <h1>resale price intelligence, as a single api call.</h1>
+    <p class="lead">
+      naya gives shopping apps, browser extensions, and inventory engines a
+      live, normalized view of secondhand prices across ebay, grailed, depop,
+      and poshmark. one bearer token, three endpoints, no scrapers to maintain.
+    </p>
+  </section>
+
+  <!-- What / How / Why -->
+  <section class="three-col">
+    <div class="col">
+      <div class="col-num">01</div>
+      <div class="col-label">what</div>
+      <h3>price-check + cross-listings</h3>
+      <p>
+        median, p25, p75, and a deal score for any query — plus the same item,
+        cheaper, on a different platform.
+      </p>
+    </div>
+    <div class="col">
+      <div class="col-num">02</div>
+      <div class="col-label">how</div>
+      <h3>one bearer, json, sub-3s.</h3>
+      <p>
+        bring your own client. naya runs the scrapers, deduplicates listings,
+        rotates infrastructure, and absorbs platform changes for you.
+      </p>
+    </div>
+    <div class="col">
+      <div class="col-num">03</div>
+      <div class="col-label">why</div>
+      <h3>ship in an afternoon.</h3>
+      <p>
+        zero scraping risk on your side. transparent monthly limits, no
+        per-call overages, kill-switch revocable keys.
+      </p>
+    </div>
+  </section>
+
+  <!-- Endpoints -->
+  <section>
+    <div class="section-head">
+      <h2>endpoints</h2>
+      <span class="num">v1 · base: api.naya.so</span>
+    </div>
+    <table class="endpoints">
+      <tr>
+        <td class="method"><span>GET</span></td>
+        <td class="path">/v1/price-check</td>
+        <td class="desc">median + p25/p75 + deal score across resale platforms.</td>
+      </tr>
+      <tr>
+        <td class="method"><span>GET</span></td>
+        <td class="path">/v1/cross-listings</td>
+        <td class="desc">find the same item, cheaper, on a different platform.</td>
+      </tr>
+      <tr>
+        <td class="method"><span>GET</span></td>
+        <td class="path">/v1/health</td>
+        <td class="desc">liveness probe. no auth.</td>
+      </tr>
+    </table>
+  </section>
+
+  <!-- Pricing -->
+  <section>
+    <div class="section-head">
+      <h2>pricing</h2>
+      <span class="num">monthly · usd</span>
+    </div>
+    <div class="pricing-strip">
+      <div class="price-cell">
+        <div class="name">pilot</div>
+        <div class="price">free</div>
+        <div class="quota">1,000 calls / mo</div>
+        <div class="blurb">validate fit. sandbox key in 30 seconds, no card.</div>
+      </div>
+      <div class="price-cell featured">
+        <div class="name">growth</div>
+        <div class="price">$249</div>
+        <div class="quota">50,000 calls / mo</div>
+        <div class="blurb">production key. monthly reports + 24h email sla.</div>
+      </div>
+      <div class="price-cell">
+        <div class="name">scale</div>
+        <div class="price">custom</div>
+        <div class="quota">unmetered</div>
+        <div class="blurb">private deploy, exports, webhooks, 4h slack sla.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sample + coverage -->
+  <section class="two-up">
+    <div class="code">
+<span class="label-row">sample request + response</span>
+<span class="comment"># request</span>
+curl 'https://api.naya.so/v1/price-check?<span class="key">q</span>=carhartt+detroit+jacket&<span class="key">price</span>=180' \
+  -H 'Authorization: Bearer naya_<span class="str">&lt;key&gt;</span>'
+
+<span class="comment"># response</span>
+{
+  <span class="key">"medianPrice"</span>: <span class="num">165</span>,
+  <span class="key">"p25"</span>: <span class="num">130</span>,
+  <span class="key">"p75"</span>: <span class="num">210</span>,
+  <span class="key">"count"</span>: <span class="num">23</span>,
+  <span class="key">"dealScore"</span>: <span class="str">"fair"</span>,
+  <span class="key">"byPlatform"</span>: {
+    <span class="key">"ebay"</span>:    { <span class="key">"median"</span>: <span class="num">155</span>, <span class="key">"count"</span>: <span class="num">11</span> },
+    <span class="key">"grailed"</span>: { <span class="key">"median"</span>: <span class="num">189</span>, <span class="key">"count"</span>:  <span class="num">7</span> },
+    <span class="key">"depop"</span>:   { <span class="key">"median"</span>: <span class="num">170</span>, <span class="key">"count"</span>:  <span class="num">5</span> }
+  }
+}
+    </div>
+
+    <div class="coverage">
+      <h4>coverage</h4>
+      <div class="stats">
+        <div class="stat"><div class="num">4</div><div class="lbl">platforms</div></div>
+        <div class="stat"><div class="num">~2.1s</div><div class="lbl">p50 latency</div></div>
+        <div class="stat"><div class="num">99.9%</div><div class="lbl">uptime target</div></div>
+        <div class="stat"><div class="num">5 min</div><div class="lbl">cache window</div></div>
+      </div>
+      <div class="platforms">
+        ebay · grailed<br>
+        depop · poshmark<br>
+        + campus sources
+      </div>
+    </div>
+  </section>
+
+  <!-- Who it's for + contact -->
+  <section class="who">
+    <div class="who-list">
+      <h4>built for</h4>
+      <ul>
+        <li>resale shopping apps</li>
+        <li>price-check chrome extensions</li>
+        <li>fashion inventory engines</li>
+        <li>marketplace aggregators</li>
+        <li>secondhand brokers + dealers</li>
+        <li>vintage e-commerce</li>
+      </ul>
+    </div>
+    <div class="contact">
+      <div class="label-r">talk to us</div>
+      <div class="name">ashwin parthasarathy</div>
+      <a href="mailto:hello@naya.so?subject=naya%20api%20%E2%80%94%20tearsheet">hello@naya.so</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="foot">
+    <div>© naya · resale intelligence</div>
+    <div class="right">
+      <span>nayaeditorial.shop</span>
+      <span>api.naya.so</span>
+    </div>
+  </footer>
+
+</article>
+
+</body>
+</html>

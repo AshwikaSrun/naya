@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>naya — api pricing</title>
+<meta name="description" content="Transparent pricing for the naya resale price intelligence api. pilot, growth, and scale tiers." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --serif: 'Cormorant Garamond', Georgia, serif;
+    --sans: 'DM Sans', system-ui, sans-serif;
+    --bg: #faf9f7;
+    --bg-warm: #f5f2ec;
+    --surface: #ffffff;
+    --ink: #0a0a0a;
+    --ink-2: #1f1f1f;
+    --ink-3: rgba(10,10,10,0.55);
+    --ink-4: rgba(10,10,10,0.35);
+    --ink-5: rgba(10,10,10,0.18);
+    --line: rgba(10,10,10,0.08);
+    --line-2: rgba(10,10,10,0.14);
+    --good: #15803d;
+    --bad: #be123c;
+  }
+
+  html { font-size: 16px; scroll-behavior: smooth; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: 0.005em;
+    line-height: 1.55;
+  }
+
+  a { color: inherit; text-decoration: none; }
+
+  .serif { font-family: var(--serif); font-weight: 300; letter-spacing: 0.005em; }
+  .label {
+    font-family: var(--sans);
+    font-size: 0.625rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+  }
+  .label-tight {
+    font-family: var(--sans);
+    font-size: 0.625rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+  }
+
+  /* Header */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(6px);
+  }
+  .topbar-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 18px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .wordmark {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: 1.45rem;
+    letter-spacing: 0.12em;
+    color: var(--ink);
+  }
+  .nav {
+    display: none;
+    gap: 8px;
+    font-size: 0.625rem;
+    letter-spacing: 0.18em;
+    text-transform: lowercase;
+    color: var(--ink-3);
+  }
+  .nav a { padding: 6px 12px; transition: color .2s; }
+  .nav a:hover { color: var(--ink); }
+  .nav .current { color: var(--ink); font-weight: 500; }
+  @media (min-width: 760px) { .nav { display: flex; } }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 0 28px; }
+
+  /* Hero */
+  .hero { padding: 96px 0 72px; }
+  .hero h1 {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: clamp(2.5rem, 6vw, 4.25rem);
+    line-height: 1.05;
+    color: var(--ink);
+    margin-top: 14px;
+    max-width: 22ch;
+  }
+  .hero .lead {
+    margin-top: 22px;
+    color: var(--ink-3);
+    font-size: 1.0625rem;
+    max-width: 56ch;
+  }
+  .hero-meta {
+    margin-top: 30px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 28px;
+    align-items: baseline;
+  }
+  .hero-meta .stat .num {
+    font-family: var(--serif);
+    font-size: 2.25rem;
+    color: var(--ink);
+  }
+  .hero-meta .stat .lbl {
+    font-size: 0.625rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+    display: block;
+    margin-top: -2px;
+  }
+
+  /* Section */
+  .section { padding: 64px 0; }
+  .section-num {
+    font-family: var(--sans);
+    font-size: 0.625rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+  }
+  .section h2 {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+    color: var(--ink);
+    margin-top: 6px;
+  }
+  .section p.subhead {
+    margin-top: 8px;
+    color: var(--ink-3);
+    max-width: 56ch;
+  }
+
+  /* Tiers */
+  .tiers {
+    margin-top: 36px;
+    display: grid;
+    gap: 18px;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 760px) {
+    .tiers { grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  }
+  .tier {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 32px 30px;
+    display: flex;
+    flex-direction: column;
+    transition: border-color .2s, transform .2s;
+  }
+  .tier:hover { border-color: var(--line-2); }
+  .tier.featured {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: #fff;
+  }
+  .tier .name {
+    font-family: var(--sans);
+    font-size: 0.625rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+  }
+  .tier.featured .name { color: rgba(255,255,255,0.5); }
+  .tier .price {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: 2.75rem;
+    line-height: 1;
+    margin-top: 14px;
+    color: var(--ink);
+  }
+  .tier.featured .price { color: #fff; }
+  .tier .price small {
+    font-size: 0.85rem;
+    color: var(--ink-4);
+    font-family: var(--sans);
+    letter-spacing: 0.04em;
+  }
+  .tier.featured .price small { color: rgba(255,255,255,0.55); }
+  .tier .quota {
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    color: var(--ink-4);
+    margin-top: 6px;
+  }
+  .tier.featured .quota { color: rgba(255,255,255,0.55); }
+  .tier .desc {
+    font-size: 0.875rem;
+    color: var(--ink-3);
+    margin-top: 16px;
+    line-height: 1.55;
+  }
+  .tier.featured .desc { color: rgba(255,255,255,0.7); }
+  .tier ul {
+    margin-top: 22px;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 0.875rem;
+    color: rgba(10,10,10,0.62);
+  }
+  .tier.featured ul { color: rgba(255,255,255,0.78); }
+  .tier ul li { display: flex; gap: 10px; }
+  .tier ul li::before {
+    content: '—';
+    color: var(--ink-5);
+    flex-shrink: 0;
+  }
+  .tier.featured ul li::before { color: rgba(255,255,255,0.4); }
+  .tier .cta {
+    margin-top: 28px;
+    display: block;
+    text-align: center;
+    padding: 13px 18px;
+    border-radius: 10px;
+    font-size: 0.6875rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    background: var(--ink);
+    color: #fff;
+    transition: opacity .2s;
+  }
+  .tier .cta:hover { opacity: 0.82; }
+  .tier.featured .cta { background: #fff; color: var(--ink); }
+
+  /* Comparison */
+  .compare {
+    margin-top: 30px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .compare table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+  .compare th, .compare td {
+    padding: 14px 22px;
+    text-align: left;
+    border-bottom: 1px solid var(--line);
+  }
+  .compare tr:last-child td { border-bottom: 0; }
+  .compare th {
+    font-family: var(--sans);
+    font-weight: 500;
+    font-size: 0.625rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+    background: var(--bg-warm);
+  }
+  .compare td.row-label {
+    font-weight: 500;
+    color: var(--ink-2);
+    width: 30%;
+  }
+  .compare td.cell {
+    color: var(--ink-3);
+  }
+  .compare td.featured-col {
+    background: rgba(10,10,10,0.025);
+    color: var(--ink);
+  }
+  .compare .check { color: var(--good); }
+  .compare .dash { color: var(--ink-5); }
+
+  /* FAQ */
+  .faq {
+    margin-top: 30px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .faq details {
+    border-bottom: 1px solid var(--line);
+  }
+  .faq details:last-child { border-bottom: 0; }
+  .faq summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 22px 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    font-size: 0.9375rem;
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after {
+    content: '+';
+    font-family: var(--serif);
+    font-size: 1.5rem;
+    color: var(--ink-4);
+    transition: transform .2s;
+  }
+  .faq details[open] summary::after { content: '−'; }
+  .faq .answer {
+    padding: 0 28px 24px;
+    font-size: 0.9375rem;
+    color: var(--ink-3);
+    line-height: 1.65;
+    max-width: 70ch;
+  }
+
+  /* CTA */
+  .cta-card {
+    margin-top: 64px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    padding: 64px 32px;
+    text-align: center;
+  }
+  .cta-card .label { display: inline-block; }
+  .cta-card h3 {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: clamp(1.6rem, 3.2vw, 2.25rem);
+    color: var(--ink);
+    margin-top: 14px;
+    max-width: 22ch;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.15;
+  }
+  .cta-card p {
+    margin-top: 14px;
+    color: var(--ink-3);
+    max-width: 48ch;
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 0.9375rem;
+  }
+  .cta-card .button-row {
+    margin-top: 26px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .btn {
+    display: inline-block;
+    padding: 13px 22px;
+    border-radius: 10px;
+    font-size: 0.6875rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    border: 1px solid var(--ink);
+  }
+  .btn-primary { background: var(--ink); color: #fff; }
+  .btn-secondary { background: transparent; color: var(--ink); }
+  .btn:hover { opacity: 0.82; }
+
+  /* Footer */
+  footer {
+    margin-top: 80px;
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+  }
+  .foot-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--ink-4);
+  }
+  .foot-inner .foot-links { display: flex; gap: 22px; }
+  .foot-inner a:hover { color: var(--ink); }
+  @media (min-width: 760px) {
+    .foot-inner { flex-direction: row; align-items: center; }
+  }
+
+  /* Marquee */
+  .platforms {
+    margin-top: 40px;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 18px 0;
+    display: flex;
+    justify-content: center;
+    gap: 56px;
+    flex-wrap: wrap;
+    font-size: 0.625rem;
+    letter-spacing: 0.42em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  /* Hide on print, etc. */
+  @media print {
+    .topbar, .cta-card, footer { display: none; }
+    body { background: #fff; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a href="/" class="wordmark">naya</a>
+    <nav class="nav">
+      <a href="/deals">deals</a>
+      <a href="/college">campus</a>
+      <a href="/insights">insights</a>
+      <a href="/ai" class="current">api</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <!-- HERO -->
+  <section class="hero">
+    <p class="label">naya / api / pricing</p>
+    <h1>fair pricing for the resale intelligence layer.</h1>
+    <p class="lead">
+      one bearer token. real-time medians, p25/p75, and a deal score across
+      ebay, grailed, depop, and poshmark. start free, scale when you ship.
+    </p>
+    <div class="hero-meta">
+      <div class="stat"><div class="num">4</div><div class="lbl">platforms covered</div></div>
+      <div class="stat"><div class="num">~2.1s</div><div class="lbl">p50 latency</div></div>
+      <div class="stat"><div class="num">99.9%</div><div class="lbl">uptime target</div></div>
+      <div class="stat"><div class="num">3</div><div class="lbl">endpoints. no sdk.</div></div>
+    </div>
+
+    <div class="platforms">
+      <span>ebay</span><span>grailed</span><span>depop</span><span>poshmark</span><span>+ campus sources</span>
+    </div>
+  </section>
+
+  <!-- TIERS -->
+  <section class="section" id="tiers">
+    <p class="section-num">01</p>
+    <h2>three tiers. no per-call surprises.</h2>
+    <p class="subhead">monthly call ceilings, hard caps, no overages without your sign-off.</p>
+
+    <div class="tiers">
+
+      <div class="tier">
+        <p class="name">pilot</p>
+        <p class="price">free</p>
+        <p class="quota">1,000 calls / month</p>
+        <p class="desc">for early-stage teams validating fit. no card required.</p>
+        <ul>
+          <li>price-check + cross-listings</li>
+          <li>shared rate limit</li>
+          <li>community support</li>
+          <li>sandbox key in 30 seconds</li>
+        </ul>
+        <a href="mailto:hello@naya.so?subject=naya%20api%20%E2%80%94%20pilot" class="cta">start with sandbox</a>
+      </div>
+
+      <div class="tier featured">
+        <p class="name">growth</p>
+        <p class="price">$249<small> / mo</small></p>
+        <p class="quota">50,000 calls / month</p>
+        <p class="desc">for growing apps shipping price intelligence to real users.</p>
+        <ul>
+          <li>all v1 endpoints</li>
+          <li>p99 logging + monthly reports</li>
+          <li>dedicated key with kill switch</li>
+          <li>email support, 24h sla</li>
+        </ul>
+        <a href="mailto:hello@naya.so?subject=naya%20api%20%E2%80%94%20growth" class="cta">request a key</a>
+      </div>
+
+      <div class="tier">
+        <p class="name">scale</p>
+        <p class="price">talk to us</p>
+        <p class="quota">unmetered</p>
+        <p class="desc">for marketplaces, brokers, and inventory engines at volume.</p>
+        <ul>
+          <li>private deployment options</li>
+          <li>historical exports + webhooks</li>
+          <li>shared slack channel</li>
+          <li>4h sla, custom contracts</li>
+        </ul>
+        <a href="mailto:hello@naya.so?subject=naya%20api%20%E2%80%94%20scale" class="cta">book a call</a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- COMPARE -->
+  <section class="section" id="compare">
+    <p class="section-num">02</p>
+    <h2>everything in every plan.</h2>
+    <p class="subhead">core endpoints unlocked from day one. you only pay for volume and support sla.</p>
+
+    <div class="compare">
+      <table>
+        <thead>
+          <tr>
+            <th>feature</th>
+            <th>pilot</th>
+            <th>growth</th>
+            <th>scale</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="row-label">monthly calls</td>
+            <td class="cell">1,000</td>
+            <td class="cell featured-col">50,000</td>
+            <td class="cell">unmetered</td>
+          </tr>
+          <tr>
+            <td class="row-label">/v1/price-check</td>
+            <td class="cell"><span class="check">✓</span></td>
+            <td class="cell featured-col"><span class="check">✓</span></td>
+            <td class="cell"><span class="check">✓</span></td>
+          </tr>
+          <tr>
+            <td class="row-label">/v1/cross-listings</td>
+            <td class="cell"><span class="check">✓</span></td>
+            <td class="cell featured-col"><span class="check">✓</span></td>
+            <td class="cell"><span class="check">✓</span></td>
+          </tr>
+          <tr>
+            <td class="row-label">deal score (good/fair/high)</td>
+            <td class="cell"><span class="check">✓</span></td>
+            <td class="cell featured-col"><span class="check">✓</span></td>
+            <td class="cell"><span class="check">✓</span></td>
+          </tr>
+          <tr>
+            <td class="row-label">monthly usage report</td>
+            <td class="cell"><span class="dash">—</span></td>
+            <td class="cell featured-col"><span class="check">✓</span></td>
+            <td class="cell"><span class="check">✓</span></td>
+          </tr>
+          <tr>
+            <td class="row-label">historical exports</td>
+            <td class="cell"><span class="dash">—</span></td>
+            <td class="cell featured-col"><span class="dash">—</span></td>
+            <td class="cell"><span class="check">✓</span></td>
+          </tr>
+          <tr>
+            <td class="row-label">webhooks</td>
+            <td class="cell"><span class="dash">—</span></td>
+            <td class="cell featured-col"><span class="dash">—</span></td>
+            <td class="cell"><span class="check">✓</span></td>
+          </tr>
+          <tr>
+            <td class="row-label">private deployment</td>
+            <td class="cell"><span class="dash">—</span></td>
+            <td class="cell featured-col"><span class="dash">—</span></td>
+            <td class="cell"><span class="check">✓</span></td>
+          </tr>
+          <tr>
+            <td class="row-label">support</td>
+            <td class="cell">community</td>
+            <td class="cell featured-col">email · 24h sla</td>
+            <td class="cell">slack · 4h sla</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="section" id="faq">
+    <p class="section-num">03</p>
+    <h2>questions worth answering.</h2>
+
+    <div class="faq">
+      <details open>
+        <summary>what happens when i hit my monthly limit?</summary>
+        <div class="answer">
+          your key returns <code>429 monthly limit exceeded</code> with the
+          remaining quota in the body. no surprise overage bills — you opt into
+          the next tier when you're ready, or wait for the calendar month to
+          reset.
+        </div>
+      </details>
+      <details>
+        <summary>how fresh is the data?</summary>
+        <div class="answer">
+          every <code>/v1/price-check</code> call hits live listings from the
+          underlying marketplaces with a 5-minute cache layer in front. for
+          slow-moving categories we also blend in stored observations from
+          recent searches so you get a stable median even when listings churn.
+        </div>
+      </details>
+      <details>
+        <summary>do you handle marketplace tos / scraping risk?</summary>
+        <div class="answer">
+          yes — that's the value. naya operates the scrapers, rotates
+          infrastructure, handles blocks, and absorbs platform changes. you
+          get a stable <code>{ medianPrice, p25, p75, dealScore }</code>
+          contract.
+        </div>
+      </details>
+      <details>
+        <summary>can i pay annually?</summary>
+        <div class="answer">
+          growth and scale tiers can be billed annually with a 15% discount.
+          email <a href="mailto:hello@naya.so">hello@naya.so</a> with your billing details.
+        </div>
+      </details>
+      <details>
+        <summary>what categories beyond fashion?</summary>
+        <div class="answer">
+          today: vintage clothing, sneakers, accessories, and select
+          campus-localized inventory. on the roadmap: home goods and
+          collectibles. tell us what you'd buy and we'll prioritize.
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <div class="cta-card">
+    <p class="label">ready when you are</p>
+    <h3>ship resale intelligence in an afternoon.</h3>
+    <p>email <a href="mailto:hello@naya.so?subject=naya%20api">hello@naya.so</a> with your use case. we'll send a sandbox key the same day — and a 15-minute integration call if you want one.</p>
+    <div class="button-row">
+      <a href="mailto:hello@naya.so?subject=naya%20api%20%E2%80%94%20sandbox" class="btn btn-primary">request sandbox</a>
+      <a href="/ai" class="btn btn-secondary">try the demo</a>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <p>© naya — resale intelligence for the next decade of secondhand.</p>
+    <div class="foot-links">
+      <a href="/terms">terms</a>
+      <a href="/privacy">privacy</a>
+      <a href="mailto:hello@naya.so">contact</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

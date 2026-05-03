@@ -11,6 +11,7 @@ const { scrapeBoilerVintage } = require('./lib/boilerVintageScraper');
 const { filterByRelevance } = require('./lib/relevance');
 const { runPipeline, runGlobalPipeline } = require('./lib/dataPipeline');
 const { ingestSearchResults } = require('./lib/dataIngestion');
+const apiAuth = require('./middleware/apiAuth');
 
 const app = express();
 app.use(cors());
@@ -301,6 +302,195 @@ app.get('/retail-lookup', async (req, res) => {
     return res.json({ query: req.query.q, prices: [], medianRetailPrice: null, meta: { elapsed_ms: elapsed, error: err.message } });
   }
 });
+
+// ── B2B / v1 API ──────────────────────────────────────────────────────────
+//
+// /api/price-check + /api/cross-listings are the unprotected handlers used by
+// the consumer Next.js layer. /v1/price-check + /v1/cross-listings are the
+// B2B-versioned aliases, gated by apiAuth (key check + monthly rate limit +
+// fire-and-forget usage logging).
+
+function percentile(sortedAsc, p) {
+  if (sortedAsc.length === 0) return null;
+  if (sortedAsc.length === 1) return sortedAsc[0];
+  const idx = (sortedAsc.length - 1) * p;
+  const lo = Math.floor(idx);
+  const hi = Math.ceil(idx);
+  if (lo === hi) return sortedAsc[lo];
+  return sortedAsc[lo] + (sortedAsc[hi] - sortedAsc[lo]) * (idx - lo);
+}
+
+function median(sortedAsc) {
+  return percentile(sortedAsc, 0.5);
+}
+
+function buildPlatformBreakdown(items) {
+  const groups = {};
+  for (const item of items) {
+    const src = item.source || 'unknown';
+    if (!groups[src]) groups[src] = [];
+    groups[src].push(item.price);
+  }
+  const out = {};
+  for (const [src, prices] of Object.entries(groups)) {
+    prices.sort((a, b) => a - b);
+    out[src] = { median: median(prices), count: prices.length };
+  }
+  return out;
+}
+
+async function runLiveSearch(query, limit) {
+  // Reuse the existing /search pipeline by calling it locally over HTTP.
+  // Keeps the dedupe/rank/relevance logic in one place.
+  const port = process.env.PORT || 3005;
+  const url = `http://127.0.0.1:${port}/search?q=${encodeURIComponent(query)}&limit=${limit}&platform=all`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 28000);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function priceCheckHandler(req, res) {
+  const query = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+  if (!query) {
+    return res.status(400).json({ error: 'Query parameter "q" is required' });
+  }
+  const userPrice = parseFloat(req.query.price);
+  const hasUserPrice = Number.isFinite(userPrice) && userPrice > 0;
+
+  const body = await runLiveSearch(query, 25);
+  if (!body || !body.results) {
+    return res.json({
+      query,
+      medianPrice: null,
+      p25: null,
+      p75: null,
+      count: 0,
+      priceRange: null,
+      byPlatform: {},
+      dealScore: 'fair',
+      _source: 'none',
+    });
+  }
+
+  const allItems = [];
+  for (const [platform, items] of Object.entries(body.results)) {
+    if (!Array.isArray(items)) continue;
+    for (const item of items) {
+      const p = typeof item.price === 'number' ? item.price : parseFloat(item.price);
+      if (Number.isFinite(p) && p > 0) {
+        allItems.push({ price: p, source: platform });
+      }
+    }
+  }
+
+  if (allItems.length === 0) {
+    return res.json({
+      query,
+      medianPrice: null,
+      p25: null,
+      p75: null,
+      count: 0,
+      priceRange: null,
+      byPlatform: {},
+      dealScore: 'fair',
+      _source: 'live',
+    });
+  }
+
+  const prices = allItems.map((i) => i.price).sort((a, b) => a - b);
+  const med = median(prices);
+  const p25 = percentile(prices, 0.25);
+  const p75 = percentile(prices, 0.75);
+
+  let dealScore;
+  if (hasUserPrice) {
+    if (userPrice <= p25) dealScore = 'good';
+    else if (userPrice <= p75) dealScore = 'fair';
+    else dealScore = 'high';
+  } else {
+    // No specific listing price — we're reporting the market, not judging it.
+    dealScore = 'fair';
+  }
+
+  return res.json({
+    query,
+    medianPrice: med,
+    p25,
+    p75,
+    count: prices.length,
+    priceRange: { min: prices[0], max: prices[prices.length - 1] },
+    byPlatform: buildPlatformBreakdown(allItems),
+    userPrice: hasUserPrice ? userPrice : null,
+    dealScore,
+    _source: 'live',
+  });
+}
+
+async function crossListingsHandler(req, res) {
+  const query = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+  if (!query) {
+    return res.status(400).json({ error: 'Query parameter "q" is required' });
+  }
+  const currentSource = (typeof req.query.source === 'string' ? req.query.source : '')
+    .toLowerCase()
+    .trim();
+  const currentPrice = parseFloat(req.query.price);
+  const hasCurrentPrice = Number.isFinite(currentPrice) && currentPrice > 0;
+
+  const body = await runLiveSearch(query, 15);
+  if (!body || !body.results) {
+    return res.json({ query, currentSource: currentSource || null, listings: [] });
+  }
+
+  const listings = [];
+  for (const [platform, items] of Object.entries(body.results)) {
+    if (!Array.isArray(items)) continue;
+    if (platform.toLowerCase() === currentSource) continue;
+    for (const item of items) {
+      const p = typeof item.price === 'number' ? item.price : parseFloat(item.price);
+      if (!Number.isFinite(p) || p <= 0) continue;
+      listings.push({
+        title: item.title || '',
+        price: Math.round(p * 100) / 100,
+        source: platform,
+        url: item.url || '',
+        image: item.image || '',
+      });
+    }
+  }
+
+  listings.sort((a, b) => a.price - b.price);
+  const top = listings.slice(0, 6);
+  const cheaperCount = hasCurrentPrice ? top.filter((l) => l.price < currentPrice).length : 0;
+
+  return res.json({
+    query,
+    currentSource: currentSource || null,
+    currentPrice: hasCurrentPrice ? currentPrice : null,
+    cheaperCount,
+    listings: top,
+  });
+}
+
+// Consumer (unprotected) — used by the Next.js layer if it ever wants to skip
+// its own /api/price-check route and go straight to Express.
+app.get('/api/price-check', priceCheckHandler);
+app.get('/api/cross-listings', crossListingsHandler);
+
+// B2B (apiAuth-protected) — versioned aliases for external customers.
+app.get('/v1/health', (_req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+app.get('/v1/price-check', apiAuth, priceCheckHandler);
+app.get('/v1/cross-listings', apiAuth, crossListingsHandler);
 
 const port = process.env.PORT || 3005;
 app.listen(port, () => {
