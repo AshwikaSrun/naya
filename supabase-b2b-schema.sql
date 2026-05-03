@@ -43,12 +43,12 @@ alter table api_usage disable row level security;
 
 -- ── sandbox key (idempotent insert) ───────────────────────────────────────
 insert into api_keys (customer_name, customer_email, tier, monthly_limit, notes)
-select 'Sandbox', 'sandbox@naya.so', 'pilot', 100, 'Public sandbox key for evaluation. 100 calls/month.'
+select 'Sandbox', 'ashwikasrun@gmail.com', 'pilot', 100, 'Public sandbox key for evaluation. 100 calls/month.'
 where not exists (
-  select 1 from api_keys where customer_email = 'sandbox@naya.so'
+  select 1 from api_keys where customer_email = 'ashwikasrun@gmail.com'
 );
 
 -- Convenience: print the sandbox key after running so you can copy it.
 select api_key as sandbox_api_key, monthly_limit, tier
 from api_keys
-where customer_email = 'sandbox@naya.so';
+where customer_email = 'ashwikasrun@gmail.com';

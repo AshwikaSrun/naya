@@ -34,7 +34,7 @@ const TIERS = [
       'community support',
     ],
     cta: 'start with sandbox',
-    href: 'mailto:hello@naya.so?subject=naya%20api%20%E2%80%94%20pilot',
+    href: 'mailto:ashwikasrun@gmail.com?subject=naya%20api%20%E2%80%94%20pilot',
   },
   {
     name: 'growth',
@@ -47,7 +47,7 @@ const TIERS = [
       'email support, 24h sla',
     ],
     cta: 'request a key',
-    href: 'mailto:hello@naya.so?subject=naya%20api%20%E2%80%94%20growth',
+    href: 'mailto:ashwikasrun@gmail.com?subject=naya%20api%20%E2%80%94%20growth',
     featured: true,
   },
   {
@@ -61,7 +61,7 @@ const TIERS = [
       'shared slack channel, 4h sla',
     ],
     cta: 'book a call',
-    href: 'mailto:hello@naya.so?subject=naya%20api%20%E2%80%94%20scale',
+    href: 'mailto:ashwikasrun@gmail.com?subject=naya%20api%20%E2%80%94%20scale',
   },
 ];
 
@@ -358,7 +358,7 @@ export default function AiApiPage() {
 
           <div className="mt-6 rounded-2xl border border-black/10 bg-black p-6 font-mono text-[12.5px] leading-[1.7] text-white/85">
             <p className="text-[10px] uppercase tracking-[0.2em] text-white/40">curl</p>
-            <pre className="mt-2 overflow-x-auto whitespace-pre">{`curl 'https://api.naya.so/v1/price-check?q=carhartt+detroit+jacket&price=180' \\
+            <pre className="mt-2 overflow-x-auto whitespace-pre">{`curl 'https://scraper-api-production-d197.up.railway.app/v1/price-check?q=carhartt+detroit+jacket&price=180' \\
   -H 'Authorization: Bearer naya_<your_key>'
 
 # → { medianPrice: 165, p25: 130, p75: 210,
@@ -427,8 +427,8 @@ export default function AiApiPage() {
           </h2>
           <p className="mx-auto mt-4 max-w-lg text-sm text-black/50">
             email{' '}
-            <a className="underline decoration-black/20 underline-offset-4 hover:decoration-black" href="mailto:hello@naya.so?subject=naya%20api">
-              hello@naya.so
+            <a className="underline decoration-black/20 underline-offset-4 hover:decoration-black" href="mailto:ashwikasrun@gmail.com?subject=naya%20api">
+              ashwikasrun@gmail.com
             </a>{' '}
             with your use case. we&apos;ll send a sandbox key the same day.
           </p>
@@ -441,7 +441,7 @@ export default function AiApiPage() {
           <div className="flex gap-5">
             <Link href="/terms" className="hover:text-black">terms</Link>
             <Link href="/privacy" className="hover:text-black">privacy</Link>
-            <a href="mailto:hello@naya.so" className="hover:text-black">contact</a>
+            <a href="mailto:ashwikasrun@gmail.com" className="hover:text-black">contact</a>
           </div>
         </div>
       </footer>
