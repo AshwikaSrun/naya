@@ -467,7 +467,7 @@ export default function AiApiPage() {
   "mcpServers": {
     "naya": {
       "command": "npx",
-      "args": ["-y", "@naya/mcp-server"],
+      "args": ["-y", "@nayalabs/mcp-server"],
       "env": { "NAYA_API_KEY": "naya_<your_key>" }
     }
   }
@@ -480,12 +480,12 @@ export default function AiApiPage() {
 
           <div className="mt-6 flex flex-wrap items-center gap-3 text-[12px] text-black/45">
             <a
-              href="https://www.npmjs.com/package/@naya/mcp-server"
+              href="https://www.npmjs.com/package/@nayalabs/mcp-server"
               target="_blank"
               rel="noreferrer"
               className="rounded-full border border-black/10 bg-white px-3 py-1 transition-colors hover:border-black/30 hover:text-black"
             >
-              @naya/mcp-server on npm
+              @nayalabs/mcp-server on npm
             </a>
             <a
               href="https://github.com/AshwikaSrun/naya/tree/main/mcp-server"

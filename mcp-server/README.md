@@ -47,7 +47,7 @@ Add this to your `claude_desktop_config.json`:
   "mcpServers": {
     "naya": {
       "command": "npx",
-      "args": ["-y", "@naya/mcp-server"],
+      "args": ["-y", "@nayalabs/mcp-server"],
       "env": {
         "NAYA_API_KEY": "naya_your_key_here"
       }
@@ -67,7 +67,7 @@ Add to your global MCP config — `~/.cursor/mcp.json` (or **Settings → MCP �
   "mcpServers": {
     "naya": {
       "command": "npx",
-      "args": ["-y", "@naya/mcp-server"],
+      "args": ["-y", "@nayalabs/mcp-server"],
       "env": {
         "NAYA_API_KEY": "naya_your_key_here"
       }
@@ -79,7 +79,7 @@ Add to your global MCP config — `~/.cursor/mcp.json` (or **Settings → MCP �
 ### Claude Code (CLI)
 
 ```bash
-claude mcp add naya npx -y @naya/mcp-server -e NAYA_API_KEY=naya_your_key_here
+claude mcp add naya npx -y @nayalabs/mcp-server -e NAYA_API_KEY=naya_your_key_here
 ```
 
 ### Anthropic SDK (custom host)
@@ -91,7 +91,7 @@ const naya = await experimental_createMCPClient({
   transport: {
     type: 'stdio',
     command: 'npx',
-    args: ['-y', '@naya/mcp-server'],
+    args: ['-y', '@nayalabs/mcp-server'],
     env: { NAYA_API_KEY: process.env.NAYA_API_KEY! },
   },
 });
