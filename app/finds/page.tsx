@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import ProductCard from '@/components/ProductCard';
@@ -32,7 +32,7 @@ function buildApiUrl(preset: string, campus?: string | null) {
   return `/api/new-finds?${params.toString()}`;
 }
 
-export default function FindsPage() {
+function FindsPageContent() {
   const searchParams = useSearchParams();
   const presetFromUrl = searchParams.get('preset') || 'default';
   const campus = searchParams.get('campus');
@@ -156,6 +156,26 @@ export default function FindsPage() {
 
       <ProductDetailPanel product={selected} onClose={() => setSelected(null)} />
     </div>
+  );
+}
+
+export default function FindsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-white">
+          <div className="mx-auto max-w-7xl px-6 pt-10">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+              {Array.from({ length: 15 }).map((_, i) => (
+                <div key={i} className="aspect-[3/4] animate-pulse rounded-2xl bg-neutral-100" />
+              ))}
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <FindsPageContent />
+    </Suspense>
   );
 }
 
