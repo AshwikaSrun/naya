@@ -162,7 +162,11 @@ export default function AiApiPage() {
           <p className="mt-6 max-w-xl text-base leading-relaxed text-black/55">
             one endpoint. real-time medians, p25/p75, and a deal score across
             ebay, grailed, depop, and poshmark. built for shopping apps,
-            chrome extensions, and inventory engines.
+            chrome extensions, inventory engines, and{' '}
+            <a href="#mcp" className="underline decoration-black/20 underline-offset-4 hover:decoration-black">
+              ai agents
+            </a>
+            .
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <a
@@ -170,6 +174,12 @@ export default function AiApiPage() {
               className="rounded-xl bg-black px-6 py-3 text-[11px] uppercase tracking-[0.18em] text-white transition-opacity hover:opacity-80"
             >
               try it live
+            </a>
+            <a
+              href="#mcp"
+              className="rounded-xl border border-black/15 bg-white px-6 py-3 text-[11px] uppercase tracking-[0.18em] text-black/70 transition-colors hover:border-black/40 hover:text-black"
+            >
+              use with claude
             </a>
             <a
               href="#pricing"
@@ -366,9 +376,132 @@ export default function AiApiPage() {
           </div>
         </section>
 
+        {/* MCP server / use with AI agents */}
+        <section id="mcp" className="mb-24">
+          <p className="font-naya-sans text-[10px] uppercase tracking-[0.2em] text-black/30">03</p>
+          <h2 className="font-naya-serif mt-1 text-3xl font-light text-black">
+            use with claude, cursor, any agent.
+          </h2>
+          <p className="mt-2 max-w-xl text-sm text-black/45">
+            naya ships a{' '}
+            <a
+              href="https://modelcontextprotocol.io"
+              target="_blank"
+              rel="noreferrer"
+              className="underline decoration-black/20 underline-offset-4 hover:decoration-black"
+            >
+              model context protocol
+            </a>{' '}
+            server. drop it into your agent config and claude knows how to
+            check resale prices on its own — no glue code, no prompt
+            engineering.
+          </p>
+
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
+            {/* Example dialog */}
+            <div className="rounded-2xl border border-black/10 bg-white p-6">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-black/30">
+                what your user sees
+              </p>
+              <div className="mt-4 space-y-4 text-[13.5px] leading-relaxed">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-black/35">user</p>
+                  <p className="mt-1 text-black/75">
+                    i&apos;m looking at this air jordan 1 on grailed for $340 — is that a good price?
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-black/35">claude</p>
+                  <p className="mt-1 text-black/75">
+                    that&apos;s priced above the market median. across grailed,
+                    depop, and poshmark right now the median is{' '}
+                    <span className="font-medium text-black">$285</span> with a
+                    typical range of $240–$340. i&apos;d call this a{' '}
+                    <span className="rounded bg-rose-50 px-1.5 py-0.5 text-[12px] text-rose-600">
+                      high
+                    </span>{' '}
+                    — there are 4 cheaper pairs on depop starting at $240.
+                  </p>
+                  <p className="mt-2 text-[11px] italic text-black/35">
+                    via naya · check_resale_price
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Tools */}
+            <div className="rounded-2xl border border-black/10 bg-white p-6">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-black/30">
+                tools the agent gets
+              </p>
+              <div className="mt-4 space-y-5">
+                <div>
+                  <code className="font-naya-sans text-[13px] text-black">
+                    check_resale_price
+                  </code>
+                  <p className="mt-1 text-[12.5px] leading-relaxed text-black/55">
+                    median, p25/p75, deal score across grailed, poshmark,
+                    depop. claude calls it any time a user asks about
+                    secondhand prices.
+                  </p>
+                </div>
+                <div className="border-t border-black/5 pt-4">
+                  <code className="font-naya-sans text-[13px] text-black">
+                    find_cross_listings
+                  </code>
+                  <p className="mt-1 text-[12.5px] leading-relaxed text-black/55">
+                    same item, cheaper, on a different platform than the one
+                    the user is currently viewing. up to 6 alternatives,
+                    sorted cheapest first.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-black/10 bg-black p-6 font-mono text-[12.5px] leading-[1.7] text-white/85">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-white/40">
+              claude desktop · cursor · claude code
+            </p>
+            <pre className="mt-2 overflow-x-auto whitespace-pre">{`{
+  "mcpServers": {
+    "naya": {
+      "command": "npx",
+      "args": ["-y", "@naya/mcp-server"],
+      "env": { "NAYA_API_KEY": "naya_<your_key>" }
+    }
+  }
+}`}</pre>
+            <p className="mt-3 text-[11px] text-white/40">
+              drop into <code className="text-white/65">claude_desktop_config.json</code> or{' '}
+              <code className="text-white/65">~/.cursor/mcp.json</code>. restart your agent. done.
+            </p>
+          </div>
+
+          <div className="mt-6 flex flex-wrap items-center gap-3 text-[12px] text-black/45">
+            <a
+              href="https://www.npmjs.com/package/@naya/mcp-server"
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-full border border-black/10 bg-white px-3 py-1 transition-colors hover:border-black/30 hover:text-black"
+            >
+              @naya/mcp-server on npm
+            </a>
+            <a
+              href="https://github.com/AshwikaSrun/naya/tree/main/mcp-server"
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-full border border-black/10 bg-white px-3 py-1 transition-colors hover:border-black/30 hover:text-black"
+            >
+              source on github
+            </a>
+            <span>open source · MIT.</span>
+          </div>
+        </section>
+
         {/* Pricing */}
         <section id="pricing" className="mb-24">
-          <p className="font-naya-sans text-[10px] uppercase tracking-[0.2em] text-black/30">03</p>
+          <p className="font-naya-sans text-[10px] uppercase tracking-[0.2em] text-black/30">04</p>
           <h2 className="font-naya-serif mt-1 text-3xl font-light text-black">pricing</h2>
           <p className="mt-2 max-w-xl text-sm text-black/45">
             fair tiers. no per-call surprises. cancel anytime.

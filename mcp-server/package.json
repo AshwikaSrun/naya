@@ -1,0 +1,44 @@
+{
+  "name": "@naya/mcp-server",
+  "version": "0.1.0",
+  "description": "Model Context Protocol server for the naya resale price intelligence API. Lets Claude, Cursor, and other AI agents check live secondhand market prices, p25/p75, deal scores, and cross-platform alternatives across Grailed, Poshmark, Depop.",
+  "type": "module",
+  "main": "index.js",
+  "bin": {
+    "naya-mcp": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "inspect": "npx -y @modelcontextprotocol/inspector node index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "naya",
+    "resale",
+    "price-intelligence",
+    "secondhand",
+    "claude",
+    "anthropic",
+    "cursor",
+    "ai-tools"
+  ],
+  "homepage": "https://nayaeditorial.shop/ai",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AshwikaSrun/naya.git",
+    "directory": "mcp-server"
+  },
+  "author": "naya"
+}
