@@ -1,230 +1,150 @@
-// Etsy scraper using Axios + Cheerio (with Playwright fallback)
+// Etsy scraper — uses the official v3 Open API instead of HTML scraping.
+//
+// Why we switched: Etsy returns 403 to all non-browser User-Agents from
+// cloud IPs, even with rotating headers. Their public listings endpoint
+// accepts a simple `x-api-key` header and serves the same data with no
+// anti-bot drama and 10k calls/day free.
+//
+// Etsy's API quirk: the listings endpoint only returns metadata (no images).
+// Images come from a SEPARATE endpoint per listing. We could either:
+//   (a) batch-fetch images with one request per listing (10 calls per query)
+//   (b) request `includes=Images` on the listings call to inline them
+//   (c) skip images
+// We use (b): the v3 API supports an `includes` query param that joins
+// images into the response, costing one API call per query total.
+//
+// Required env var (set on Railway):
+//   ETSY_API_KEY  — "Keystring" from etsy.com/developers → Your Apps
+//
+// Free tier: 10,000 calls/day. Created at signup, no review.
+// Sign up: https://www.etsy.com/developers/your-apps
+
 const axios = require('axios');
-const cheerio = require('cheerio');
-const fs = require('fs');
-const path = require('path');
-const { playwrightManager } = require('./playwrightManager');
 
-const SCRAPER_DEBUG = process.env.SCRAPER_DEBUG === '1';
-const DEBUG_DIR = path.join(process.cwd(), 'debug');
+const API_KEY = process.env.ETSY_API_KEY || '';
+const SEARCH_URL = 'https://openapi.etsy.com/v3/application/listings/active';
 
-function writeDebugFile(filename, contents) {
-  if (!SCRAPER_DEBUG) return;
-  try {
-    fs.mkdirSync(DEBUG_DIR, { recursive: true });
-    fs.writeFileSync(path.join(DEBUG_DIR, filename), contents);
-  } catch (err) {
-    console.error('Debug write error:', err.message);
+function pickImage(raw) {
+  if (!raw) return null;
+  // When `includes=Images` is set, the response inlines a `images` array.
+  const imgs = raw.images;
+  if (Array.isArray(imgs) && imgs.length > 0) {
+    const first = imgs[0];
+    return (
+      first.url_fullxfull ||
+      first.url_570xN ||
+      first.url_300x300 ||
+      first.url_170x135 ||
+      null
+    );
   }
+  return null;
+}
+
+function buildListingUrl(raw) {
+  if (raw && typeof raw.url === 'string') return raw.url;
+  if (raw && raw.listing_id) return `https://www.etsy.com/listing/${raw.listing_id}`;
+  return null;
+}
+
+function parseItem(raw) {
+  if (!raw) return null;
+
+  const title = (raw.title || '').toString().trim();
+  if (!title) return null;
+
+  // Etsy v3 returns price as { amount: 9999, divisor: 100, currency_code: 'USD' }
+  // where amount/divisor = the dollar value.
+  const priceObj = raw.price || {};
+  const amt = parseFloat(priceObj.amount);
+  const div = parseFloat(priceObj.divisor) || 100;
+  const price = Number.isFinite(amt) ? amt / div : NaN;
+  if (!Number.isFinite(price) || price <= 0) return null;
+
+  const currency = (priceObj.currency_code || 'USD').toUpperCase();
+  if (currency !== 'USD') return null;
+
+  const image = pickImage(raw);
+  if (!image) return null;
+
+  const url = buildListingUrl(raw);
+  if (!url) return null;
+
+  const item = {
+    title: title.length > 200 ? title.slice(0, 200) : title,
+    price,
+    image,
+    url,
+    source: 'etsy',
+    _platformSearched: true,
+  };
+
+  if (typeof raw.taxonomy_path === 'object' && Array.isArray(raw.taxonomy_path) && raw.taxonomy_path.length > 0) {
+    item.category = raw.taxonomy_path.join(' / ');
+  }
+
+  return item;
 }
 
 async function scrapeEtsy(query, limit = 10) {
-  let browser = null;
-  try {
-    if (!query) return [];
+  if (!query) return [];
 
-    const url = `https://www.etsy.com/search?q=${encodeURIComponent(query)}`;
-
-    try {
-      const response = await axios.get(url, {
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept-Language': 'en-US,en;q=0.9',
-        },
-      });
-
-      writeDebugFile('etsy-axios.html', response.data);
-
-      const $ = cheerio.load(response.data);
-      const results = [];
-      const seen = new Set();
-
-      $('a[href*="/listing/"]').each((i, el) => {
-        if (results.length >= limit) return false;
-        const href = $(el).attr('href') || '';
-        if (!href || seen.has(href)) return;
-        seen.add(href);
-
-        const card = $(el).closest('article, li, div');
-        const title =
-          $(el).find('h3, h2').first().text().trim() ||
-          $(el).attr('title') ||
-          $(el).text().trim();
-        const priceText =
-          card.find('.currency-value, [class*="price"]').first().text().trim() ||
-          card.text();
-        const priceMatch = priceText.replace(/,/g, '').match(/\$\s?[\d.]+/);
-        const price = priceMatch ? parseFloat(priceMatch[0].replace(/[^\d.]/g, '')) : null;
-        const image =
-          card.find('img').first().attr('src') ||
-          card.find('img').first().attr('data-src') ||
-          '';
-
-        if (!title || !price || !image) return;
-
-        results.push({
-          title,
-          price,
-          image,
-          url: href,
-          source: 'etsy',
-        });
-      });
-
-      if (results.length > 0) {
-        return results;
-      }
-    } catch (err) {
-      // Fall back to Playwright if HTML scraping fails
-    }
-
-    browser = await playwrightManager.createBrowser();
-    const context = await browser.newContext({
-      userAgent:
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-      viewport: { width: 1920, height: 1080 },
-      locale: 'en-US',
-      extraHTTPHeaders: {
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
-    });
-
-    const page = await context.newPage();
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
-
-    // Handle Etsy cookie consent
-    try {
-      const acceptBtn = await page.$('button[data-gdpr-single-choice-accept], button[aria-label*="Accept"]');
-      if (acceptBtn) await acceptBtn.click();
-    } catch { /* no consent banner */ }
-
-    try {
-      await page.waitForLoadState('networkidle', { timeout: 15000 });
-    } catch (e) {
-      // Ignore network idle timeout
-    }
-
-    try {
-      await page.waitForSelector('a[href*="/listing/"], a.listing-link', { timeout: 15000 });
-    } catch (e) {
-      // Continue even if selector times out
-    }
-
-    await page.evaluate(() => {
-      window.scrollBy(0, window.innerHeight * 1.5);
-    });
-    await page.waitForTimeout(1500);
-
-    const results = await page.evaluate((maxLimit) => {
-      const items = [];
-      const seen = new Set();
-      const anchors = Array.from(
-        document.querySelectorAll('a[href*="/listing/"], a.listing-link, a[data-listing-id]')
-      );
-
-      for (const anchor of anchors) {
-        if (items.length >= maxLimit) break;
-        const href = anchor.href;
-        if (!href || seen.has(href)) continue;
-        seen.add(href);
-
-        const card = anchor.closest('article, li, div') || anchor;
-        const text = card.innerText || '';
-
-        const priceEl =
-          card.querySelector('[data-test-id*="price" i]') ||
-          card.querySelector('.currency-value') ||
-          card.querySelector('[class*="price" i]') ||
-          card.querySelector('[aria-label*="price" i]');
-        const priceText = priceEl ? priceEl.textContent : text;
-        const priceMatch = priceText.replace(/,/g, '').match(/\$\s?[\d.]+/);
-        const price = priceMatch ? parseFloat(priceMatch[0].replace(/[^\d.]/g, '')) : null;
-
-        const imgEl = card.querySelector('img');
-        const image = imgEl
-          ? imgEl.src || imgEl.getAttribute('data-src') || imgEl.getAttribute('data-srcset') || ''
-          : '';
-
-        const titleEl =
-          card.querySelector('[data-test-id*="listing-title" i]') ||
-          card.querySelector('h3, h2') ||
-          anchor;
-        const title =
-          (imgEl && imgEl.getAttribute('alt')) ||
-          (titleEl && titleEl.textContent ? titleEl.textContent.trim() : '') ||
-          '';
-
-        if (!title || !price || !image || !href) continue;
-
-        items.push({
-          title,
-          price,
-          image,
-          url: href,
-          source: 'etsy',
-        });
-      }
-
-      if (items.length === 0) {
-        const scripts = Array.from(document.querySelectorAll('script[type="application/ld+json"]'));
-        for (const script of scripts) {
-          try {
-            const data = JSON.parse(script.textContent || '{}');
-            const list =
-              data['@type'] === 'ItemList'
-                ? data.itemListElement
-                : Array.isArray(data)
-                ? data.find((entry) => entry['@type'] === 'ItemList')?.itemListElement
-                : [];
-            if (!Array.isArray(list)) continue;
-
-            for (const entry of list) {
-              if (items.length >= maxLimit) break;
-              const item = entry.item || entry;
-              const url = item.url || '';
-              if (!url || seen.has(url)) continue;
-              seen.add(url);
-
-              const title = item.name || '';
-              const image =
-                (Array.isArray(item.image) ? item.image[0] : item.image) || '';
-              const offer = item.offers || {};
-              const priceValue = offer.price || offer.lowPrice || '';
-              const price = priceValue ? parseFloat(priceValue) : null;
-
-              if (!title || !price || !image) continue;
-
-              items.push({
-                title,
-                price,
-                image,
-                url,
-                source: 'etsy',
-              });
-            }
-          } catch (e) {
-            // ignore invalid JSON-LD blocks
-          }
-          if (items.length >= maxLimit) break;
-        }
-      }
-
-      return items;
-    }, limit);
-
-    if (SCRAPER_DEBUG) {
-      const html = await page.content();
-      writeDebugFile('etsy-playwright.html', html);
-    }
-
-    await playwrightManager.closeBrowser(browser);
-    return results;
-  } catch (err) {
-    console.error('Etsy scrape error:', err.message);
-    await playwrightManager.closeBrowser(browser);
+  if (!API_KEY) {
+    console.warn('[Etsy] ETSY_API_KEY not set — returning []');
     return [];
   }
+
+  const params = new URLSearchParams({
+    keywords: query,
+    limit: String(Math.min(Math.max(limit, 1), 100)),
+    sort_on: 'score',
+    sort_order: 'desc',
+    // Inline images so we don't need a per-listing follow-up call.
+    includes: 'Images',
+    // Filter to vintage clothing + accessories taxonomies. Etsy taxonomy
+    // IDs: 68887200 = Clothing, 69152366 = Vintage Clothing. We deliberately
+    // include both; passing the comma-list does an OR.
+    // Without this filter, "carhartt" returns Etsy crafts unrelated to
+    // resale fashion (fabric scraps, patches, sewing kits).
+    taxonomy_id: '68887200,69152366',
+  });
+
+  let r;
+  try {
+    r = await axios.get(`${SEARCH_URL}?${params.toString()}`, {
+      headers: {
+        'x-api-key': API_KEY,
+        Accept: 'application/json',
+      },
+      timeout: 15000,
+      validateStatus: (s) => s < 500,
+    });
+  } catch (err) {
+    console.error('[Etsy] API call failed:', err.message);
+    return [];
+  }
+
+  if (r.status === 401 || r.status === 403) {
+    console.warn(`[Etsy] auth error ${r.status}: ${(r.data && r.data.error) || 'check ETSY_API_KEY'}`);
+    return [];
+  }
+  if (r.status !== 200 || !r.data) {
+    console.warn('[Etsy] API status', r.status, r.data && r.data.error);
+    return [];
+  }
+
+  const listings = Array.isArray(r.data.results) ? r.data.results : [];
+  const results = [];
+  for (const raw of listings) {
+    if (results.length >= limit) break;
+    const parsed = parseItem(raw);
+    if (parsed) results.push(parsed);
+  }
+
+  if (results.length > 0) {
+    console.log(`[Etsy] v3 API returned ${results.length} items (from ${listings.length})`);
+  }
+  return results;
 }
 
 module.exports = { scrapeEtsy };

@@ -1,233 +1,187 @@
+// eBay scraper — uses the official Browse API instead of HTML scraping.
+//
+// Why we switched: from cloud IPs (Railway, Vercel functions, anything not
+// residential), eBay's anti-bot returns 403 for ~100% of HTML requests
+// regardless of UA, headers, or Playwright stealth tricks. Official API
+// auth bypasses that entirely and gives us cleaner structured data.
+//
+// Auth model: OAuth 2.0 client_credentials flow.
+//   1. POST /identity/v1/oauth2/token with HTTP Basic (App ID:Cert ID)
+//   2. Receive access_token (valid 7200s)
+//   3. Use Bearer token for Browse API calls
+// We cache the token in-process for ~95% of its lifetime, so a busy
+// server hits the OAuth endpoint roughly once every 2 hours.
+//
+// Required env vars (set on Railway):
+//   EBAY_APP_ID    — Client ID from developer.ebay.com → "App ID (Client ID)"
+//   EBAY_CERT_ID   — Client Secret, called "Cert ID (Client Secret)"
+//
+// Free tier: 5,000 calls/day on production. Auto-approved at signup.
+// Sign up: https://developer.ebay.com → Get a Developer Account.
+
 const axios = require('axios');
-const cheerio = require('cheerio');
-const { chromium } = require('playwright');
 
-const { LAUNCH_ARGS } = require('./launchArgs');
-const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+const APP_ID = process.env.EBAY_APP_ID || '';
+const CERT_ID = process.env.EBAY_CERT_ID || '';
 
-function pushEbayRow(results, limit, { cleanTitle, priceText, url, image, wasText }) {
-  if (results.length >= limit) return;
-  if (!cleanTitle || !priceText || !url) return;
-  const priceMatch = priceText.match(/[\d,]+\.?\d*/);
-  const price = priceMatch ? parseFloat(priceMatch[0].replace(/,/g, '')) : null;
-  if (!price) return;
-  let originalPrice = null;
-  if (wasText) {
-    const wasMatch = wasText.match(/[\d,]+\.?\d*/);
-    originalPrice = wasMatch ? parseFloat(wasMatch[0].replace(/,/g, '')) : null;
-  }
-  let discountPercent = null;
-  if (originalPrice && price && originalPrice > price) {
-    discountPercent = Math.round(((originalPrice - price) / originalPrice) * 100);
-  }
-  const item = { title: cleanTitle, price, image: image || '', url, source: 'ebay' };
-  if (originalPrice && originalPrice > price) item.originalPrice = originalPrice;
-  if (discountPercent) item.discountPercent = discountPercent;
-  results.push(item);
-}
+const OAUTH_URL = 'https://api.ebay.com/identity/v1/oauth2/token';
+const BROWSE_URL = 'https://api.ebay.com/buy/browse/v1/item_summary/search';
+const SCOPE = 'https://api.ebay.com/oauth/api_scope';
 
-function parseEbayHtml(html, limit) {
-  const $ = cheerio.load(html);
-  const results = [];
+// Token cache. Refresh when within 5 minutes of expiry.
+let cachedToken = null;
+let tokenExpiresAt = 0;
 
-  $('ul.srp-results li.s-card, .srp-results li.s-card').each((i, elem) => {
-    if (results.length >= limit) return false;
+async function getAccessToken() {
+  if (!APP_ID || !CERT_ID) return null;
 
-    const el = $(elem);
-    const link = el.find('a[href*="/itm/"]').first();
-    const title = el.find('.s-card__title').text().trim() ||
-                  link.attr('aria-label') ||
-                  link.attr('title') ||
-                  link.text().trim();
-    const cleanTitle = title ? title.replace(/\s*Opens in a new window.*$/i, '').trim() : '';
-    const priceText = el.find('.s-card__price').text().trim();
-    const wasText =
-      el.find('.s-card__tagline .STRIKETHROUGH, .s-card__tagline s, .s-card__tagline del').text().trim() ||
-      el.find('span.s-item__price--original, .s-item__discount .STRIKETHROUGH').text().trim() ||
-      '';
+  const now = Date.now();
+  if (cachedToken && now < tokenExpiresAt - 5 * 60 * 1000) return cachedToken;
 
-    let image = el.find('img').first().attr('src') || '';
-    if (image) image = image.replace(/s-l\d+/i, 's-l500');
-    if (!image || image.includes('/null')) return;
-
-    const url = link.attr('href') || '';
-    pushEbayRow(results, limit, { cleanTitle, priceText, url, image, wasText });
-  });
-
-  if (results.length === 0) {
-    $('ul.srp-results li.s-item, .srp-river-results li.s-item, li.s-item').each((i, elem) => {
-      if (results.length >= limit) return false;
-      const el = $(elem);
-      if (el.hasClass('s-card')) return;
-      const link = el.find('a.s-item__link, a[href*="/itm/"]').first();
-      const title =
-        el.find('.s-item__title span, .s-item__title').first().text().trim() ||
-        link.attr('title') ||
-        link.text().trim();
-      if (/shop on ebay/i.test(title)) return;
-      const cleanTitle = title ? title.replace(/\s*Opens in a new window.*$/i, '').trim() : '';
-      const priceText = el.find('.s-item__price').first().text().trim();
-      const wasText = el.find('.s-item__original-price, .s-item__price--original').text().trim();
-      let image = el.find('img').first().attr('src') || '';
-      if (image) image = image.replace(/s-l\d+/i, 's-l500');
-      const url = link.attr('href') || '';
-      pushEbayRow(results, limit, { cleanTitle, priceText, url, image, wasText });
-    });
-  }
-
-  return results;
-}
-
-function ebayHtmlLooksParseable(html) {
-  if (!html || typeof html !== 'string') return false;
-  if (html.includes('Pardon Our Interruption')) return false;
-  return (
-    html.includes('srp-results') ||
-    html.includes('s-item') ||
-    html.includes('s-card') ||
-    (html.includes('/itm/') && html.length > 8000)
-  );
-}
-
-async function scrapeEbayCheerio(query, limit) {
+  const basic = Buffer.from(`${APP_ID}:${CERT_ID}`).toString('base64');
+  let r;
   try {
-    const searchUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}&_ipg=${Math.min(limit, 200)}`;
-    const response = await axios.get(searchUrl, {
-      headers: {
-        'User-Agent': USER_AGENT,
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Cache-Control': 'no-cache',
-        'Sec-Ch-Ua': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
-        'Sec-Ch-Ua-Mobile': '?0',
-        'Sec-Ch-Ua-Platform': '"Windows"',
-        'Upgrade-Insecure-Requests': '1',
-        Referer: 'https://www.ebay.com/',
-      },
-      timeout: 12000,
-    });
-
-    const html = response.data;
-    if (!ebayHtmlLooksParseable(html)) {
-      return [];
-    }
-
-    return parseEbayHtml(html, limit);
+    r = await axios.post(
+      OAUTH_URL,
+      `grant_type=client_credentials&scope=${encodeURIComponent(SCOPE)}`,
+      {
+        headers: {
+          Authorization: `Basic ${basic}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        timeout: 10000,
+        validateStatus: (s) => s < 500,
+      }
+    );
   } catch (err) {
-    console.error('[eBay] Cheerio error:', err.message);
-    return [];
+    console.error('[eBay] OAuth request failed:', err.message);
+    return null;
   }
+
+  if (r.status !== 200 || !r.data || !r.data.access_token) {
+    console.error('[eBay] OAuth got status', r.status, r.data && r.data.error_description);
+    return null;
+  }
+
+  cachedToken = r.data.access_token;
+  tokenExpiresAt = now + (r.data.expires_in || 7200) * 1000;
+  return cachedToken;
 }
 
-/** Prefer evaluate() — page.content() often throws if Chromium died (common with --single-process). */
-async function safeGetPageHtml(page) {
-  try {
-    const html = await page.evaluate(() => {
-      try {
-        return document.documentElement ? document.documentElement.outerHTML : '';
-      } catch {
-        return '';
-      }
-    });
-    if (html && html.length > 500) return html;
-  } catch {
-    /* fall through */
+function parseItem(raw) {
+  if (!raw) return null;
+
+  const title = (raw.title || '').toString().trim();
+  if (!title) return null;
+
+  const priceObj = raw.price || {};
+  const price = parseFloat(priceObj.value);
+  if (!Number.isFinite(price) || price <= 0) return null;
+  const currency = (priceObj.currency || 'USD').toUpperCase();
+  if (currency !== 'USD') return null;
+
+  const image =
+    (raw.image && raw.image.imageUrl) ||
+    (raw.thumbnailImages && raw.thumbnailImages[0] && raw.thumbnailImages[0].imageUrl) ||
+    null;
+  if (!image) return null;
+
+  const url = raw.itemWebUrl;
+  if (!url) return null;
+
+  const item = {
+    title: title.length > 200 ? title.slice(0, 200) : title,
+    price,
+    image,
+    url,
+    source: 'ebay',
+    _platformSearched: true,
+  };
+
+  // Optional metadata that helps downstream relevance ranking.
+  if (typeof raw.condition === 'string') item.condition = raw.condition;
+  if (raw.seller && typeof raw.seller.username === 'string') {
+    item.seller = raw.seller.username;
   }
-  return page.content();
-}
 
-async function scrapeEbayPlaywright(query, limit) {
-  const searchUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}&_ipg=${Math.min(limit, 200)}`;
-  const maxAttempts = 3;
-
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    let browser = null;
-    let context = null;
-    try {
-      browser = await chromium.launch({ headless: true, args: LAUNCH_ARGS, timeout: 25000 });
-
-      context = await browser.newContext({
-        userAgent: USER_AGENT,
-        viewport: { width: 1366, height: 768 },
-        locale: 'en-US',
-        javaScriptEnabled: true,
-      });
-
-      const page = await context.newPage();
-
-      await page.addInitScript(() => {
-        Object.defineProperty(navigator, 'webdriver', { get: () => false });
-      });
-
-      await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 28000 });
-
-      try {
-        await page.waitForSelector('ul.srp-results li.s-card, li.s-item, a[href*="/itm/"]', {
-          timeout: 8000,
-        });
-      } catch {
-        /* still try to read DOM */
-      }
-
-      await new Promise((r) => setTimeout(r, 900));
-
-      const html = await safeGetPageHtml(page);
-
-      await context.close().catch(() => {});
-      context = null;
-      await browser.close();
-      browser = null;
-
-      if (!ebayHtmlLooksParseable(html)) {
-        if (attempt < maxAttempts) {
-          console.warn(`[eBay] Playwright attempt ${attempt}: unparseable HTML, retrying...`);
-          await new Promise((r) => setTimeout(r, 2000));
-          continue;
-        }
-        return [];
-      }
-
-      const items = parseEbayHtml(html, limit);
-      if (items.length > 0) return items;
-      if (attempt < maxAttempts) {
-        console.warn(`[eBay] Playwright attempt ${attempt}: 0 items parsed, retrying...`);
-        await new Promise((r) => setTimeout(r, 2000));
-      }
-    } catch (err) {
-      if (context) await context.close().catch(() => {});
-      if (browser) await browser.close().catch(() => {});
-      context = null;
-      browser = null;
-      const isRetryable = /crashed|closed|disconnected|timeout|target/i.test(err.message);
-      if (isRetryable && attempt < maxAttempts) {
-        console.warn(`[eBay] Playwright attempt ${attempt} failed (${err.message}), retrying...`);
-        await new Promise((r) => setTimeout(r, 2500));
-        continue;
-      }
-      console.error('[eBay] Playwright error:', err.message);
-      return [];
+  // eBay surfaces a "marketingPrice" with the original price when an item is
+  // discounted. Surface that for the discount-tier UI.
+  const mp = raw.marketingPrice && raw.marketingPrice.originalPrice;
+  if (mp && mp.value) {
+    const orig = parseFloat(mp.value);
+    if (Number.isFinite(orig) && orig > price) {
+      item.originalPrice = orig;
+      item.discountPercent = Math.round(((orig - price) / orig) * 100);
     }
   }
-  return [];
+
+  return item;
 }
 
 async function scrapeEbay(query, limit = 10) {
   if (!query) return [];
 
-  const cheerioResults = await scrapeEbayCheerio(query, limit);
-  if (cheerioResults.length > 0) {
-    console.log(`[eBay] Cheerio returned ${cheerioResults.length} items`);
-    return cheerioResults;
+  if (!APP_ID || !CERT_ID) {
+    console.warn('[eBay] EBAY_APP_ID / EBAY_CERT_ID not set — returning []');
+    return [];
   }
 
-  const playwrightResults = await scrapeEbayPlaywright(query, limit);
-  if (playwrightResults.length > 0) {
-    console.log(`[eBay] Playwright fallback returned ${playwrightResults.length} items`);
-    return playwrightResults;
+  const token = await getAccessToken();
+  if (!token) return [];
+
+  const params = new URLSearchParams({
+    q: query,
+    limit: String(Math.min(Math.max(limit, 1), 50)),
+    // Filter to fashion + footwear category (Clothing, Shoes & Accessories =
+    // category 11450). Without this, queries like "carhartt" return car
+    // parts, etc. The fashion vertical also has the highest match rate.
+    category_ids: '11450',
+    // Prefer Buy It Now over auctions so the price is comparable to listings
+    // on the other platforms (which are all fixed-price).
+    filter: 'buyingOptions:{FIXED_PRICE}',
+    sort: 'price',
+  });
+
+  let r;
+  try {
+    r = await axios.get(`${BROWSE_URL}?${params.toString()}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        // Marketplace header is required for the Browse API.
+        'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
+      },
+      timeout: 15000,
+      validateStatus: (s) => s < 500,
+    });
+  } catch (err) {
+    console.error('[eBay] Browse API call failed:', err.message);
+    return [];
   }
 
-  return [];
+  if (r.status === 401) {
+    cachedToken = null;
+    tokenExpiresAt = 0;
+    console.warn('[eBay] 401 from Browse API — token cleared');
+    return [];
+  }
+  if (r.status !== 200 || !r.data) {
+    console.warn('[eBay] Browse API status', r.status, r.data && r.data.errors && r.data.errors[0]);
+    return [];
+  }
+
+  const itemSummaries = Array.isArray(r.data.itemSummaries) ? r.data.itemSummaries : [];
+  const results = [];
+  for (const raw of itemSummaries) {
+    if (results.length >= limit) break;
+    const parsed = parseItem(raw);
+    if (parsed) results.push(parsed);
+  }
+
+  if (results.length > 0) {
+    console.log(`[eBay] Browse API returned ${results.length} items (from ${itemSummaries.length})`);
+  }
+  return results;
 }
 
 module.exports = { scrapeEbay };

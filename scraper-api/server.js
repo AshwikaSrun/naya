@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const crypto = require('crypto');
 
 const { scrapeEbay } = require('./lib/ebayScraper');
 const { scrapeDepop } = require('./lib/depopScraper');
@@ -16,6 +17,7 @@ const apiAuth = require('./middleware/apiAuth');
 
 const app = express();
 app.use(cors());
+app.use(express.json({ limit: '256kb' }));
 
 const SCRAPER_TIMEOUT_MS = 25000;
 const PLAYWRIGHT_SCRAPER_TIMEOUT_MS = 38000; // eBay + Depop need more time for browser
@@ -52,6 +54,7 @@ const allPlatforms = [
   'depop',
   'poshmark',
   'vinted',
+  'etsy',
 ];
 
 // Campus-specific platforms — only included when the matching campus param is sent
@@ -59,9 +62,10 @@ const campusPlatforms = {
   purdue: ['boiler_vintage'],
 };
 
-// Etsy and Google Shopping are disabled — they block headless browsers from
-// cloud IPs. Re-enable once API keys or a residential proxy are set up.
-const disabledPlatforms = ['etsy', 'google_shopping'];
+// Google Shopping is disabled — blocks headless browsers from cloud IPs.
+// eBay and Etsy now use official APIs (EBAY_APP_ID/EBAY_CERT_ID, ETSY_API_KEY)
+// so they're back in `allPlatforms` above.
+const disabledPlatforms = ['google_shopping'];
 
 const scraperMap = {
   ebay: scrapeEbay,
@@ -97,6 +101,67 @@ function withTimeout(fn, name, timeoutMs) {
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', platforms: allPlatforms, uptime: process.uptime() });
+});
+
+// ── eBay Marketplace Account Deletion / Closure Notification endpoint ─────
+//
+// Required by eBay before they enable any production keyset (since 2022).
+// Two responsibilities:
+//
+//   GET  ?challenge_code=xxx
+//     eBay verifies endpoint ownership by sending a challenge_code. We
+//     respond with sha256(challengeCode + verificationToken + endpointURL)
+//     hex-encoded as { challengeResponse }.
+//
+//   POST { metadata, notification }
+//     eBay calls this when an eBay user deletes their account, telling us
+//     to purge any data we've stored about that user. naya doesn't store
+//     eBay user PII — we only fetch public listings via the Browse API —
+//     so we just acknowledge with 200 and log for audit.
+//
+// Required env vars on Railway:
+//   EBAY_MKT_NOTIF_TOKEN     32–80 alphanumeric. Pick anything random and
+//                            paste the SAME value in the eBay developer
+//                            UI's "Verification Token" field.
+//   EBAY_MKT_NOTIF_ENDPOINT  Full URL of THIS endpoint, e.g.
+//                            https://scraper-api-production-d197.up.railway.app/api/ebay/marketplace-notification
+//                            Must be exactly the same string you put in
+//                            the eBay UI's "Notification Endpoint URL".
+
+const EBAY_MKT_PATH = '/api/ebay/marketplace-notification';
+
+app.get(EBAY_MKT_PATH, (req, res) => {
+  const token = process.env.EBAY_MKT_NOTIF_TOKEN || '';
+  const endpoint = process.env.EBAY_MKT_NOTIF_ENDPOINT || '';
+  const challengeCode = req.query.challenge_code;
+
+  if (!challengeCode) {
+    return res.status(400).json({ error: 'challenge_code required' });
+  }
+  if (!token || !endpoint) {
+    return res.status(500).json({
+      error: 'EBAY_MKT_NOTIF_TOKEN and EBAY_MKT_NOTIF_ENDPOINT must be set',
+    });
+  }
+
+  // eBay's documented hash algorithm: sha256(challengeCode + token + endpoint)
+  const hash = crypto
+    .createHash('sha256')
+    .update(challengeCode)
+    .update(token)
+    .update(endpoint)
+    .digest('hex');
+
+  res.set('Content-Type', 'application/json');
+  res.json({ challengeResponse: hash });
+});
+
+app.post(EBAY_MKT_PATH, (req, res) => {
+  // We don't store any eBay user PII, so deletion notices require no action.
+  // Log for compliance audit and acknowledge.
+  const username = req.body && req.body.notification && req.body.notification.data && req.body.notification.data.username;
+  console.log('[eBay] marketplace deletion notification received', username ? `for user=${username}` : '(no username in payload)');
+  res.status(200).end();
 });
 
 app.get('/search', async (req, res) => {
@@ -167,7 +232,9 @@ app.get('/search', async (req, res) => {
           .catch((err) => { console.error(`[search] retail lookup failed: ${err.message}`); })
       : Promise.resolve();
 
-    const playwrightPlatforms = new Set(['ebay', 'depop']);
+    // eBay and Etsy moved to official APIs — pure HTTP now.
+    // Only Depop still needs a real browser to bypass its anti-bot.
+    const playwrightPlatforms = new Set(['depop']);
     const selected = allAvailable.filter((p) => selectedPlatforms.has(p) && scraperMap[p]);
     const httpPlatforms = selected.filter((p) => !playwrightPlatforms.has(p));
     // Depop first: eBay's Playwright fallback can be heavy on Railway memory; run Depop before eBay.
@@ -346,16 +413,15 @@ async function runLiveSearch(query, limit) {
   // Reuse the existing /search pipeline by calling it locally over HTTP.
   // Keeps the dedupe/rank/relevance logic in one place.
   //
-  // Platform selection rationale:
-  //   grailed, poshmark, vinted — HTTP-only, run in parallel, ~5-8s combined
-  //   depop                     — Playwright, ~30s budget, run sequentially
-  //   ebay                      — deliberately excluded: anti-bot returns 0
-  //                                from Railway's IP 100% of the time but
-  //                                still burns the full 38s Playwright slot
-  //                                sequentially after Depop. Skipping it
-  //                                halves worst-case latency (78s -> 40s).
+  // Platform selection (post-API-migration):
+  //   grailed, poshmark, vinted, ebay, etsy — HTTP-only, run in parallel
+  //   depop                                  — Playwright, sequential, ~30s
+  //
+  // The 5 HTTP scrapers each take ~1-5s and run concurrently, so the wall
+  // clock for them is bounded by the slowest one (~5s). Total worst-case
+  // budget: ~35s including Depop. Comfortably under the 50s abort window.
   const port = process.env.PORT || 3005;
-  const platforms = 'grailed,depop,poshmark,vinted';
+  const platforms = 'grailed,depop,poshmark,vinted,ebay,etsy';
   const url = `http://127.0.0.1:${port}/search?q=${encodeURIComponent(query)}&limit=${limit}&platform=${platforms}`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 50000);
@@ -510,7 +576,7 @@ app.listen(port, () => {
   console.log(`Scraper API listening on ${port}`);
   console.log(`Platforms: ${allPlatforms.join(', ')}`);
   console.log(`Per-scraper timeout: ${SCRAPER_TIMEOUT_MS}ms (Playwright: ${PLAYWRIGHT_SCRAPER_TIMEOUT_MS}ms)`);
-  console.log('Grailed: Algolia | Poshmark: Cheerio | eBay: Cheerio | Depop: Playwright');
+  console.log('Grailed: Algolia | Poshmark: Cheerio | Vinted: API | eBay: Browse API | Etsy: v3 API | Depop: Playwright');
 
   const { getSupabase } = require('./lib/supabaseClient');
   const sb = getSupabase();
