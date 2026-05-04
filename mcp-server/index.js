@@ -46,7 +46,7 @@ const CHECK_RESALE_PRICE = {
   description: [
     'Get real-time resale market pricing for a clothing, footwear, or fashion item.',
     'Returns the live median, p25/p75 percentiles, full price range, and a per-platform breakdown',
-    'across Grailed, Poshmark, and Depop (60+ listings on average).',
+    'across Grailed, Poshmark, Depop, and Vinted (typically 60+ listings per query).',
     '',
     'When you also pass a `price`, the response includes a `dealScore`:',
     '  • "good" — price is at or below p25 (great deal vs market)',
@@ -85,7 +85,7 @@ const FIND_CROSS_LISTINGS = {
   name: 'find_cross_listings',
   description: [
     'Find the same or similar item on a DIFFERENT resale platform than the one the user is currently viewing.',
-    'Returns up to 6 alternative listings from Grailed, Poshmark, and Depop, sorted cheapest first,',
+    'Returns up to 6 alternative listings from Grailed, Poshmark, Depop, and Vinted, sorted cheapest first,',
     'plus a count of how many are cheaper than the current listing price.',
     '',
     'Use this when a user has identified a specific listing and wants to know if there are better',
@@ -103,7 +103,7 @@ const FIND_CROSS_LISTINGS = {
       },
       source: {
         type: 'string',
-        enum: ['grailed', 'poshmark', 'depop', 'ebay'],
+        enum: ['grailed', 'poshmark', 'depop', 'vinted', 'ebay'],
         description:
           'The platform the user is currently viewing the listing on. This platform will be excluded from results.',
       },

@@ -6,6 +6,7 @@ const { scrapeDepop } = require('./lib/depopScraper');
 const { scrapePoshmark } = require('./lib/poshmarkScraper');
 const { scrapeEtsy } = require('./lib/etsyScraper');
 const { scrapeGrailed } = require('./lib/grailedScraper');
+const { scrapeVinted } = require('./lib/vintedScraper');
 const { scrapeGoogleShopping, lookupRetailPrices } = require('./lib/googleShoppingScraper');
 const { scrapeBoilerVintage } = require('./lib/boilerVintageScraper');
 const { filterByRelevance } = require('./lib/relevance');
@@ -50,6 +51,7 @@ const allPlatforms = [
   'grailed',
   'depop',
   'poshmark',
+  'vinted',
 ];
 
 // Campus-specific platforms — only included when the matching campus param is sent
@@ -66,6 +68,7 @@ const scraperMap = {
   grailed: scrapeGrailed,
   depop: scrapeDepop,
   poshmark: scrapePoshmark,
+  vinted: scrapeVinted,
   etsy: scrapeEtsy,
   google_shopping: scrapeGoogleShopping,
   boiler_vintage: scrapeBoilerVintage,
@@ -343,12 +346,16 @@ async function runLiveSearch(query, limit) {
   // Reuse the existing /search pipeline by calling it locally over HTTP.
   // Keeps the dedupe/rank/relevance logic in one place.
   //
-  // We deliberately skip eBay here: anti-bot returns 0 from Railway's IP
-  // 100% of the time, but it still consumes the full 38s Playwright budget
-  // sequentially after Depop. Excluding it halves the worst-case latency
-  // (78s -> 40s) and lets us stay under a sane abort window.
+  // Platform selection rationale:
+  //   grailed, poshmark, vinted — HTTP-only, run in parallel, ~5-8s combined
+  //   depop                     — Playwright, ~30s budget, run sequentially
+  //   ebay                      — deliberately excluded: anti-bot returns 0
+  //                                from Railway's IP 100% of the time but
+  //                                still burns the full 38s Playwright slot
+  //                                sequentially after Depop. Skipping it
+  //                                halves worst-case latency (78s -> 40s).
   const port = process.env.PORT || 3005;
-  const platforms = 'grailed,depop,poshmark';
+  const platforms = 'grailed,depop,poshmark,vinted';
   const url = `http://127.0.0.1:${port}/search?q=${encodeURIComponent(query)}&limit=${limit}&platform=${platforms}`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 50000);

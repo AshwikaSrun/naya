@@ -161,7 +161,7 @@ export default function AiApiPage() {
           </h1>
           <p className="mt-6 max-w-xl text-base leading-relaxed text-black/55">
             one endpoint. real-time medians, p25/p75, and a deal score across
-            ebay, grailed, depop, and poshmark. built for shopping apps,
+            grailed, poshmark, depop, and vinted. built for shopping apps,
             chrome extensions, inventory engines, and{' '}
             <a href="#mcp" className="underline decoration-black/20 underline-offset-4 hover:decoration-black">
               ai agents
@@ -414,7 +414,7 @@ export default function AiApiPage() {
                   <p className="text-[10px] uppercase tracking-[0.2em] text-black/35">claude</p>
                   <p className="mt-1 text-black/75">
                     that&apos;s priced above the market median. across grailed,
-                    depop, and poshmark right now the median is{' '}
+                    poshmark, depop, and vinted right now the median is{' '}
                     <span className="font-medium text-black">$285</span> with a
                     typical range of $240–$340. i&apos;d call this a{' '}
                     <span className="rounded bg-rose-50 px-1.5 py-0.5 text-[12px] text-rose-600">

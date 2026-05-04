@@ -2,7 +2,7 @@
 
 A [Model Context Protocol](https://modelcontextprotocol.io) server for the **naya** resale price intelligence API.
 
-Drop it into Claude Desktop, Cursor, Claude Code, or any MCP-compatible host and your AI agent gets two new tools: live secondhand price-check and cross-platform listing comparison across Grailed, Poshmark, and Depop.
+Drop it into Claude Desktop, Cursor, Claude Code, or any MCP-compatible host and your AI agent gets two new tools: live secondhand price-check and cross-platform listing comparison across Grailed, Poshmark, Depop, and Vinted.
 
 ```
 User:  "I'm looking at this Air Jordan 1 on Grailed for $340 — is that a good price?"
@@ -22,7 +22,7 @@ Two MCP tools:
 
 | Tool | What it does |
 |---|---|
-| `check_resale_price` | Real-time market median, p25/p75, full range, and a deal score (good / fair / high) when a listing price is supplied. Per-platform breakdown across Grailed, Poshmark, Depop. |
+| `check_resale_price` | Real-time market median, p25/p75, full range, and a deal score (good / fair / high) when a listing price is supplied. Per-platform breakdown across Grailed, Poshmark, Depop, Vinted. |
 | `find_cross_listings` | Up to 6 cheaper alternatives for the same item on a different platform than the one the user is currently looking at. |
 
 Both tools return both a human-readable summary and the raw JSON, so the agent can either narrate the result or do follow-up math (e.g., "what's the savings if I buy from Depop instead?").

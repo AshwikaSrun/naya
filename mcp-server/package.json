@@ -1,7 +1,7 @@
 {
   "name": "@nayalabs/mcp-server",
-  "version": "0.1.0",
-  "description": "Model Context Protocol server for the naya resale price intelligence API. Lets Claude, Cursor, and other AI agents check live secondhand market prices, p25/p75, deal scores, and cross-platform alternatives across Grailed, Poshmark, Depop.",
+  "version": "0.2.0",
+  "description": "Model Context Protocol server for the naya resale price intelligence API. Lets Claude, Cursor, and other AI agents check live secondhand market prices, p25/p75, deal scores, and cross-platform alternatives across Grailed, Poshmark, Depop, and Vinted.",
   "type": "module",
   "main": "index.js",
   "bin": {
