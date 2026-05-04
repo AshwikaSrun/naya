@@ -5,7 +5,7 @@
   "type": "module",
   "main": "index.js",
   "bin": {
-    "naya-mcp": "./index.js"
+    "naya-mcp": "index.js"
   },
   "files": [
     "index.js",
@@ -37,7 +37,7 @@
   "homepage": "https://nayaeditorial.shop/ai",
   "repository": {
     "type": "git",
-    "url": "https://github.com/AshwikaSrun/naya.git",
+    "url": "git+https://github.com/AshwikaSrun/naya.git",
     "directory": "mcp-server"
   },
   "author": "naya"
