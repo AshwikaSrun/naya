@@ -9,6 +9,7 @@
   },
   "files": [
     "index.js",
+    "lib.js",
     "README.md"
   ],
   "engines": {
@@ -16,6 +17,8 @@
   },
   "scripts": {
     "start": "node index.js",
+    "test": "node --test \"__tests__/*.test.js\"",
+    "test:watch": "node --test --watch \"__tests__/*.test.js\"",
     "inspect": "npx -y @modelcontextprotocol/inspector node index.js"
   },
   "dependencies": {

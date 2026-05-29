@@ -1,3 +1,18 @@
+/**
+ * naya scraper API — Express entrypoint.
+ *
+ * Responsibilities:
+ *   - Multi-platform search fan-out (HTTP scrapers in parallel,
+ *     Playwright scrapers sequentially to control memory).
+ *   - Per-scraper timeout + circuit breaker (fail fast when a platform
+ *     starts misbehaving so one bad scraper doesn't degrade every search).
+ *   - LRU caches for search responses and retail-reference lookups.
+ *   - Versioned B2B endpoints (/v1/*) gated by api-key middleware.
+ *   - Structured JSON access log + Prometheus /metrics exposition.
+ *   - Graceful SIGTERM/SIGINT shutdown that drains inflight requests
+ *     and closes the Chromium pool.
+ */
+
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
@@ -15,56 +30,65 @@ const { runPipeline, runGlobalPipeline } = require('./lib/dataPipeline');
 const { ingestSearchResults } = require('./lib/dataIngestion');
 const apiAuth = require('./middleware/apiAuth');
 
+const { percentile, median, buildPlatformBreakdown, dealScore } = require('./lib/stats');
+const { LRUCache } = require('./lib/lruCache');
+const { CircuitBreaker } = require('./lib/circuitBreaker');
+const { validate, str, num, oneOf } = require('./lib/validate');
+const {
+  log,
+  metrics,
+  registry,
+  requestContext,
+  accessLog,
+  errorEnvelope,
+} = require('./lib/observability');
+
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '256kb' }));
+app.use(requestContext);
+app.use(accessLog);
 
 const SCRAPER_TIMEOUT_MS = 25000;
-const PLAYWRIGHT_SCRAPER_TIMEOUT_MS = 38000; // eBay + Depop need more time for browser
+const PLAYWRIGHT_SCRAPER_TIMEOUT_MS = 38000;
 
-// ── In-memory cache ──
-const SEARCH_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-const RETAIL_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
-const searchCache = new Map();
-const retailCache = new Map();
+// ── caches ───────────────────────────────────────────────────────────────
 
-function getCached(cache, key, ttl) {
-  const entry = cache.get(key);
-  if (!entry) return null;
-  if (Date.now() - entry.ts > ttl) { cache.delete(key); return null; }
-  return entry.data;
+const searchCache = new LRUCache({
+  name: 'search',
+  max: 200,
+  ttlMs: 5 * 60 * 1000,
+});
+const retailCache = new LRUCache({
+  name: 'retail',
+  max: 500,
+  ttlMs: 30 * 60 * 1000,
+});
+
+function cacheGet(cache, key) {
+  const v = cache.get(key);
+  if (v === undefined) {
+    metrics.cacheMissesTotal.inc({ cache: cache.name });
+    return null;
+  }
+  metrics.cacheHitsTotal.inc({ cache: cache.name });
+  return v;
 }
 
-function setCache(cache, key, data) {
-  // Don't cache empty search results
-  if (data && data.results) {
-    const totalItems = Object.values(data.results).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
+function cacheSet(cache, key, value) {
+  // Don't cache empty search results — they're usually transient failures.
+  if (value && value.results) {
+    const totalItems = Object.values(value.results)
+      .reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
     if (totalItems === 0) return;
   }
-  cache.set(key, { data, ts: Date.now() });
-  if (cache.size > 200) {
-    const oldest = cache.keys().next().value;
-    cache.delete(oldest);
-  }
+  cache.set(key, value);
 }
 
-const allPlatforms = [
-  'ebay',
-  'grailed',
-  'depop',
-  'poshmark',
-  'vinted',
-  'etsy',
-];
+// ── platform registry ────────────────────────────────────────────────────
 
-// Campus-specific platforms — only included when the matching campus param is sent
-const campusPlatforms = {
-  purdue: ['boiler_vintage'],
-};
-
-// Google Shopping is disabled — blocks headless browsers from cloud IPs.
-// eBay and Etsy now use official APIs (EBAY_APP_ID/EBAY_CERT_ID, ETSY_API_KEY)
-// so they're back in `allPlatforms` above.
+const allPlatforms = ['ebay', 'grailed', 'depop', 'poshmark', 'vinted', 'etsy'];
+const campusPlatforms = { purdue: ['boiler_vintage'] };
 const disabledPlatforms = ['google_shopping'];
 
 const scraperMap = {
@@ -78,55 +102,102 @@ const scraperMap = {
   boiler_vintage: scrapeBoilerVintage,
 };
 
-function withTimeout(fn, name, timeoutMs) {
+// One breaker per platform. After 4 failures within a 60s window the
+// breaker opens for 30s; a single probe call closes it again.
+const breakers = {};
+for (const p of [...allPlatforms, ...Object.values(campusPlatforms).flat()]) {
+  breakers[p] = new CircuitBreaker({
+    name: p,
+    failureThreshold: 4,
+    windowMs: 60 * 1000,
+    cooldownMs: 30 * 1000,
+    halfOpenMaxCalls: 1,
+    onTransition: (name, from, to) => {
+      log.warn('breaker.transition', { scraper: name, from, to });
+      metrics.circuitBreakerState.inc({ scraper: name, state: to });
+    },
+  });
+}
+
+/**
+ * Wrap a scraper with:
+ *   1. Circuit-breaker fast-fail (returns [] if open).
+ *   2. Wall-clock timeout via Promise.race.
+ *   3. Latency + outcome metrics.
+ *
+ * Always resolves with an array, never throws — one bad scraper must not
+ * fail the whole search.
+ */
+function withResilience(fn, name, timeoutMs) {
+  const breaker = breakers[name];
+
   return async (...args) => {
+    if (breaker && !breaker.allow()) {
+      metrics.scraperRunsTotal.inc({ platform: name, outcome: 'breaker_open' });
+      log.warn('scraper.skipped_breaker_open', { scraper: name });
+      return [];
+    }
+
     const start = Date.now();
     try {
       const result = await Promise.race([
         fn(...args),
         new Promise((_, reject) =>
-          setTimeout(() => reject(new Error(`${name} timed out after ${timeoutMs}ms`)), timeoutMs)
+          setTimeout(
+            () => reject(Object.assign(new Error(`${name} timed out after ${timeoutMs}ms`), { code: 'timeout' })),
+            timeoutMs
+          )
         ),
       ]);
       const elapsed = Date.now() - start;
-      console.log(`[scraper] ${name} returned ${result.length} items in ${elapsed}ms`);
-      return result;
+      const arr = Array.isArray(result) ? result : [];
+      if (breaker) breaker.recordSuccess();
+      metrics.scraperRunsTotal.inc({ platform: name, outcome: 'ok' });
+      metrics.scraperDurationMs.observe({ platform: name }, elapsed);
+      metrics.scraperItems.observe({ platform: name }, arr.length);
+      log.info('scraper.ok', { scraper: name, items: arr.length, elapsed_ms: elapsed });
+      return arr;
     } catch (err) {
       const elapsed = Date.now() - start;
-      console.error(`[scraper] ${name} failed in ${elapsed}ms: ${err.message}`);
+      if (breaker) breaker.recordFailure();
+      const outcome = err.code === 'timeout' ? 'timeout' : 'error';
+      metrics.scraperRunsTotal.inc({ platform: name, outcome });
+      metrics.scraperDurationMs.observe({ platform: name }, elapsed);
+      log.error('scraper.failed', {
+        scraper: name,
+        outcome,
+        elapsed_ms: elapsed,
+        err: err.message,
+      });
       return [];
     }
   };
 }
 
+// ── routes ───────────────────────────────────────────────────────────────
+
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', platforms: allPlatforms, uptime: process.uptime() });
+  res.json({
+    status: 'ok',
+    platforms: allPlatforms,
+    uptime: process.uptime(),
+    breakers: Object.values(breakers).map((b) => b.snapshot()),
+    caches: {
+      search: { size: searchCache.size, hitRate: searchCache.hitRate(), stats: searchCache.stats },
+      retail: { size: retailCache.size, hitRate: retailCache.hitRate(), stats: retailCache.stats },
+    },
+  });
 });
 
-// ── eBay Marketplace Account Deletion / Closure Notification endpoint ─────
-//
-// Required by eBay before they enable any production keyset (since 2022).
-// Two responsibilities:
-//
-//   GET  ?challenge_code=xxx
-//     eBay verifies endpoint ownership by sending a challenge_code. We
-//     respond with sha256(challengeCode + verificationToken + endpointURL)
-//     hex-encoded as { challengeResponse }.
-//
-//   POST { metadata, notification }
-//     eBay calls this when an eBay user deletes their account, telling us
-//     to purge any data we've stored about that user. naya doesn't store
-//     eBay user PII — we only fetch public listings via the Browse API —
-//     so we just acknowledge with 200 and log for audit.
-//
-// Required env vars on Railway:
-//   EBAY_MKT_NOTIF_TOKEN     32–80 alphanumeric. Pick anything random and
-//                            paste the SAME value in the eBay developer
-//                            UI's "Verification Token" field.
-//   EBAY_MKT_NOTIF_ENDPOINT  Full URL of THIS endpoint, e.g.
-//                            https://scraper-api-production-d197.up.railway.app/api/ebay/marketplace-notification
-//                            Must be exactly the same string you put in
-//                            the eBay UI's "Notification Endpoint URL".
+app.get('/metrics', (_req, res) => {
+  res.type('text/plain; version=0.0.4').send(registry.render());
+});
+
+// ── eBay marketplace deletion notification ─────
+// Required by eBay before they enable any production keyset. Two
+// responsibilities: respond to the GET challenge handshake, and accept
+// POST notifications when an eBay user deletes their account (we store
+// no PII so we just ack with 200).
 
 const EBAY_MKT_PATH = '/api/ebay/marketplace-notification';
 
@@ -144,7 +215,6 @@ app.get(EBAY_MKT_PATH, (req, res) => {
     });
   }
 
-  // eBay's documented hash algorithm: sha256(challengeCode + token + endpoint)
   const hash = crypto
     .createHash('sha256')
     .update(challengeCode)
@@ -157,87 +227,85 @@ app.get(EBAY_MKT_PATH, (req, res) => {
 });
 
 app.post(EBAY_MKT_PATH, (req, res) => {
-  // We don't store any eBay user PII, so deletion notices require no action.
-  // Log for compliance audit and acknowledge.
-  const username = req.body && req.body.notification && req.body.notification.data && req.body.notification.data.username;
-  console.log('[eBay] marketplace deletion notification received', username ? `for user=${username}` : '(no username in payload)');
+  const username =
+    req.body && req.body.notification && req.body.notification.data && req.body.notification.data.username;
+  log.info('ebay.deletion_notification', { username: username || null });
   res.status(200).end();
 });
 
-app.get('/search', async (req, res) => {
+// ── main search ──────────────────────────────────────────────────────────
+
+const searchSchema = {
+  q:        str({ required: true, trim: true, max: 200 }),
+  limit:    num({ default: 10, min: 1, max: 50, integer: true, coerce: true }),
+  platform: str({ default: 'all', max: 200, trim: true }),
+  campus:   str({ required: false, max: 40, trim: true }),
+};
+
+app.get('/search', async (req, res, next) => {
   const requestStart = Date.now();
+  const { value: params, error: validationError } = validate(req.query, searchSchema);
+  if (validationError) return next(validationError);
+
   try {
-    const query = req.query.q;
-    const limit = parseInt(req.query.limit || '10', 10);
-    const platformParam = String(req.query.platform || 'all').toLowerCase();
+    const { q: query, limit: validLimit, platform: platformParam, campus: campusParam } = params;
 
-    if (!query) {
-      return res.status(400).json({ error: 'Query parameter "q" is required' });
-    }
-
-    const validLimit = Math.min(Math.max(limit, 1), 50);
-
-    // Build the effective platform list, including any campus-specific ones
-    const campusParam = (req.query.campus || '').toLowerCase();
-    const extraPlatforms = campusPlatforms[campusParam] || [];
+    const extraPlatforms = campusPlatforms[(campusParam || '').toLowerCase()] || [];
     const allAvailable = [...allPlatforms, ...extraPlatforms];
 
+    const platformLower = String(platformParam || 'all').toLowerCase();
     let platforms = allAvailable;
-    if (platformParam !== 'all' && platformParam !== 'both') {
-      platforms = platformParam
-        .split(',')
-        .map((value) => value.trim())
-        .filter(Boolean);
+    if (platformLower !== 'all' && platformLower !== 'both') {
+      platforms = platformLower.split(',').map((p) => p.trim()).filter(Boolean);
     }
 
     const invalidPlatforms = platforms.filter(
-      (value) => !allAvailable.includes(value) && !Object.values(campusPlatforms).flat().includes(value)
+      (v) => !allAvailable.includes(v) && !Object.values(campusPlatforms).flat().includes(v)
     );
     if (invalidPlatforms.length > 0) {
-      return res.status(400).json({
-        error:
-          'Invalid platform parameter. Use "all" or a comma-separated list of: ' +
-          allAvailable.join(', '),
-      });
+      const err = new Error(`Invalid platform: ${invalidPlatforms.join(', ')}. Use "all" or one of: ${allAvailable.join(', ')}`);
+      err.status = 400;
+      err.code = 'invalid_platform';
+      throw err;
     }
 
     const selectedPlatforms = new Set(platforms);
 
-    const cacheKey = `${query.toLowerCase().trim()}|${[...selectedPlatforms].sort().join(',')}|${validLimit}`;
+    const cacheKey = `${query.toLowerCase()}|${[...selectedPlatforms].sort().join(',')}|${validLimit}`;
 
-    console.log(`[search] q="${query}" limit=${validLimit} platforms=${[...selectedPlatforms].join(',')}`);
+    log.info('search.start', {
+      query,
+      limit: validLimit,
+      platforms: [...selectedPlatforms],
+    });
 
-    // Check search cache
-    const cached = getCached(searchCache, cacheKey, SEARCH_CACHE_TTL);
+    const cached = cacheGet(searchCache, cacheKey);
     if (cached) {
       const totalElapsed = Date.now() - requestStart;
-      console.log(`[search] CACHE HIT in ${totalElapsed}ms for q="${query}"`);
+      log.info('search.cache_hit', { query, elapsed_ms: totalElapsed });
       return res.json({ ...cached, meta: { ...cached.meta, elapsed_ms: totalElapsed, cached: true } });
     }
 
     const results = {};
     const timings = {};
 
-    // Check retail cache first, only look up if not cached
-    const retailCacheKey = query.toLowerCase().trim();
-    let retailData = getCached(retailCache, retailCacheKey, RETAIL_CACHE_TTL) || { prices: [], medianRetailPrice: null };
+    const retailCacheKey = query.toLowerCase();
+    let retailData =
+      cacheGet(retailCache, retailCacheKey) || { prices: [], medianRetailPrice: null };
     const needsRetail = !retailData.medianRetailPrice;
 
     const retailLookupPromise = needsRetail
       ? lookupRetailPrices(query, 10)
           .then((data) => {
             retailData = data;
-            setCache(retailCache, retailCacheKey, data);
+            cacheSet(retailCache, retailCacheKey, data);
           })
-          .catch((err) => { console.error(`[search] retail lookup failed: ${err.message}`); })
+          .catch((err) => log.warn('retail_lookup.failed', { err: err.message }))
       : Promise.resolve();
 
-    // eBay and Etsy moved to official APIs — pure HTTP now.
-    // Only Depop still needs a real browser to bypass its anti-bot.
     const playwrightPlatforms = new Set(['depop']);
     const selected = allAvailable.filter((p) => selectedPlatforms.has(p) && scraperMap[p]);
     const httpPlatforms = selected.filter((p) => !playwrightPlatforms.has(p));
-    // Depop first: eBay's Playwright fallback can be heavy on Railway memory; run Depop before eBay.
     const PW_ORDER = ['depop', 'ebay'];
     const pwPlatforms = selected
       .filter((p) => playwrightPlatforms.has(p))
@@ -249,24 +317,20 @@ app.get('/search', async (req, res) => {
 
     const runScraper = (name) => {
       const timeoutMs = playwrightPlatforms.has(name) ? PLAYWRIGHT_SCRAPER_TIMEOUT_MS : SCRAPER_TIMEOUT_MS;
-      const wrappedScraper = withTimeout(scraperMap[name], name, timeoutMs);
-      return wrappedScraper(query, validLimit).then((data) => {
+      const wrapped = withResilience(scraperMap[name], name, timeoutMs);
+      return wrapped(query, validLimit).then((data) => {
         results[name] = data;
         timings[name] = { count: data.length };
       });
     };
 
-    // Run HTTP scrapers (grailed, poshmark, boiler_vintage) in parallel
     const httpPromises = httpPlatforms.map(runScraper);
 
-    // Run Playwright scrapers (ebay, depop) sequentially to avoid memory pressure
     const runPlaywrightSequentially = async () => {
       for (let i = 0; i < pwPlatforms.length; i++) {
-        const name = pwPlatforms[i];
-        await runScraper(name);
-        // Let the previous browser fully release memory before launching the next Playwright scraper
+        await runScraper(pwPlatforms[i]);
         if (i < pwPlatforms.length - 1) {
-          // Let Chromium fully exit + free RAM before the next Playwright scraper (eBay after Depop).
+          // Let Chromium free its RAM before launching the next browser.
           await new Promise((r) => setTimeout(r, 2500));
         }
       }
@@ -277,11 +341,7 @@ app.get('/search', async (req, res) => {
       new Promise((resolve) => setTimeout(resolve, 5000)),
     ]);
 
-    await Promise.all([
-      ...httpPromises,
-      runPlaywrightSequentially(),
-      retailWithTimeout,
-    ]);
+    await Promise.all([...httpPromises, runPlaywrightSequentially(), retailWithTimeout]);
 
     for (const p of allAvailable) {
       if (!results[p]) results[p] = [];
@@ -291,15 +351,15 @@ app.get('/search', async (req, res) => {
     const cleaned = runPipeline(results, query);
     const finalResults = runGlobalPipeline(cleaned, query);
 
-    const median = retailData.medianRetailPrice;
-    if (median && median > 0) {
+    const retailMedian = retailData.medianRetailPrice;
+    if (retailMedian && retailMedian > 0) {
       for (const p of allAvailable) {
         finalResults[p] = (finalResults[p] || []).map((item) => {
-          if (!item.originalPrice && median > item.price) {
+          if (!item.originalPrice && retailMedian > item.price) {
             return {
               ...item,
-              originalPrice: median,
-              discountPercent: Math.round(((median - item.price) / median) * 100),
+              originalPrice: retailMedian,
+              discountPercent: Math.round(((retailMedian - item.price) / retailMedian) * 100),
             };
           }
           return item;
@@ -308,7 +368,12 @@ app.get('/search', async (req, res) => {
     }
 
     const totalElapsed = Date.now() - requestStart;
-    console.log(`[search] completed in ${totalElapsed}ms | ${JSON.stringify(timings)} | retailMedian=${median}`);
+    log.info('search.complete', {
+      query,
+      elapsed_ms: totalElapsed,
+      timings,
+      retail_median: retailMedian,
+    });
 
     const responseBody = {
       query,
@@ -319,37 +384,41 @@ app.get('/search', async (req, res) => {
         elapsed_ms: totalElapsed,
         timings,
         retailReference: {
-          medianRetailPrice: median,
+          medianRetailPrice: retailMedian,
           sampleCount: retailData.prices.length,
         },
       },
     };
 
-    setCache(searchCache, cacheKey, responseBody);
+    cacheSet(searchCache, cacheKey, responseBody);
 
-    // Fire-and-forget: persist data to Supabase for analytics
-    const campusSlug = req.query.campus || null;
-    ingestSearchResults(query, finalResults, campusSlug).catch(() => {});
+    // Fire-and-forget analytics ingest. Never blocks the response.
+    const campusSlug = campusParam || null;
+    ingestSearchResults(query, finalResults, campusSlug).catch((err) => {
+      log.warn('ingest.failed', { err: err.message });
+    });
 
     return res.json(responseBody);
-  } catch (error) {
-    const totalElapsed = Date.now() - requestStart;
-    console.error(`[search] fatal error after ${totalElapsed}ms:`, error);
-    return res.status(500).json({ error: 'Failed to search products' });
+  } catch (err) {
+    return next(err);
   }
 });
 
-app.get('/retail-lookup', async (req, res) => {
+// ── retail lookup ────────────────────────────────────────────────────────
+
+const retailSchema = {
+  q:     str({ required: true, trim: true, max: 200 }),
+  limit: num({ default: 10, min: 1, max: 30, integer: true, coerce: true }),
+};
+
+app.get('/retail-lookup', async (req, res, next) => {
   const start = Date.now();
+  const { value: params, error: validationError } = validate(req.query, retailSchema);
+  if (validationError) return next(validationError);
+
   try {
-    const query = req.query.q;
-    const limit = Math.min(Math.max(parseInt(req.query.limit || '10', 10), 1), 30);
-
-    if (!query) {
-      return res.status(400).json({ error: 'Query parameter "q" is required' });
-    }
-
-    console.log(`[retail-lookup] q="${query}" limit=${limit}`);
+    const { q: query, limit } = params;
+    log.info('retail_lookup.start', { query, limit });
 
     const result = await Promise.race([
       lookupRetailPrices(query, limit),
@@ -359,67 +428,35 @@ app.get('/retail-lookup', async (req, res) => {
     ]);
 
     const elapsed = Date.now() - start;
-    console.log(`[retail-lookup] completed in ${elapsed}ms | ${result.prices.length} prices, median=${result.medianRetailPrice}`);
-
-    return res.json({
+    log.info('retail_lookup.complete', {
       query,
-      ...result,
-      meta: { elapsed_ms: elapsed },
+      elapsed_ms: elapsed,
+      prices: result.prices.length,
+      median: result.medianRetailPrice,
     });
+
+    return res.json({ query, ...result, meta: { elapsed_ms: elapsed } });
   } catch (err) {
     const elapsed = Date.now() - start;
-    console.error(`[retail-lookup] failed in ${elapsed}ms: ${err.message}`);
-    return res.json({ query: req.query.q, prices: [], medianRetailPrice: null, meta: { elapsed_ms: elapsed, error: err.message } });
+    log.warn('retail_lookup.failed', { err: err.message, elapsed_ms: elapsed });
+    return res.json({
+      query: req.query.q,
+      prices: [],
+      medianRetailPrice: null,
+      meta: { elapsed_ms: elapsed, error: err.message },
+    });
   }
 });
 
-// ── B2B / v1 API ──────────────────────────────────────────────────────────
+// ── B2B / v1 API ─────────────────────────────────────────────────────────
 //
-// /api/price-check + /api/cross-listings are the unprotected handlers used by
-// the consumer Next.js layer. /v1/price-check + /v1/cross-listings are the
-// B2B-versioned aliases, gated by apiAuth (key check + monthly rate limit +
-// fire-and-forget usage logging).
-
-function percentile(sortedAsc, p) {
-  if (sortedAsc.length === 0) return null;
-  if (sortedAsc.length === 1) return sortedAsc[0];
-  const idx = (sortedAsc.length - 1) * p;
-  const lo = Math.floor(idx);
-  const hi = Math.ceil(idx);
-  if (lo === hi) return sortedAsc[lo];
-  return sortedAsc[lo] + (sortedAsc[hi] - sortedAsc[lo]) * (idx - lo);
-}
-
-function median(sortedAsc) {
-  return percentile(sortedAsc, 0.5);
-}
-
-function buildPlatformBreakdown(items) {
-  const groups = {};
-  for (const item of items) {
-    const src = item.source || 'unknown';
-    if (!groups[src]) groups[src] = [];
-    groups[src].push(item.price);
-  }
-  const out = {};
-  for (const [src, prices] of Object.entries(groups)) {
-    prices.sort((a, b) => a - b);
-    out[src] = { median: median(prices), count: prices.length };
-  }
-  return out;
-}
+// /api/price-check + /api/cross-listings are the unprotected handlers the
+// consumer Next.js layer hits. /v1/price-check + /v1/cross-listings are
+// the versioned aliases gated by apiAuth (key validation + monthly rate
+// limit + fire-and-forget usage logging).
 
 async function runLiveSearch(query, limit) {
-  // Reuse the existing /search pipeline by calling it locally over HTTP.
-  // Keeps the dedupe/rank/relevance logic in one place.
-  //
-  // Platform selection (post-API-migration):
-  //   grailed, poshmark, vinted, ebay, etsy — HTTP-only, run in parallel
-  //   depop                                  — Playwright, sequential, ~30s
-  //
-  // The 5 HTTP scrapers each take ~1-5s and run concurrently, so the wall
-  // clock for them is bounded by the slowest one (~5s). Total worst-case
-  // budget: ~35s including Depop. Comfortably under the 50s abort window.
+  // Reuses /search end-to-end so dedupe/rank/relevance live in one place.
   const port = process.env.PORT || 3005;
   const platforms = 'grailed,depop,poshmark,vinted,ebay,etsy';
   const url = `http://127.0.0.1:${port}/search?q=${encodeURIComponent(query)}&limit=${limit}&platform=${platforms}`;
@@ -429,33 +466,30 @@ async function runLiveSearch(query, limit) {
     const res = await fetch(url, { signal: controller.signal });
     if (!res.ok) return null;
     return await res.json();
-  } catch {
+  } catch (err) {
+    log.warn('runLiveSearch.failed', { err: err.message });
     return null;
   } finally {
     clearTimeout(timer);
   }
 }
 
-async function priceCheckHandler(req, res) {
-  const query = typeof req.query.q === 'string' ? req.query.q.trim() : '';
-  if (!query) {
-    return res.status(400).json({ error: 'Query parameter "q" is required' });
-  }
-  const userPrice = parseFloat(req.query.price);
+const priceCheckSchema = {
+  q:     str({ required: true, trim: true, max: 200 }),
+  price: num({ required: false, min: 0, max: 100000, coerce: true }),
+};
+
+async function priceCheckHandler(req, res, next) {
+  const { value: params, error: validationError } = validate(req.query, priceCheckSchema);
+  if (validationError) return next(validationError);
+  const { q: query, price: userPrice } = params;
   const hasUserPrice = Number.isFinite(userPrice) && userPrice > 0;
 
   const body = await runLiveSearch(query, 25);
   if (!body || !body.results) {
     return res.json({
-      query,
-      medianPrice: null,
-      p25: null,
-      p75: null,
-      count: 0,
-      priceRange: null,
-      byPlatform: {},
-      dealScore: 'fair',
-      _source: 'none',
+      query, medianPrice: null, p25: null, p75: null, count: 0,
+      priceRange: null, byPlatform: {}, dealScore: 'fair', _source: 'none',
     });
   }
 
@@ -472,15 +506,8 @@ async function priceCheckHandler(req, res) {
 
   if (allItems.length === 0) {
     return res.json({
-      query,
-      medianPrice: null,
-      p25: null,
-      p75: null,
-      count: 0,
-      priceRange: null,
-      byPlatform: {},
-      dealScore: 'fair',
-      _source: 'live',
+      query, medianPrice: null, p25: null, p75: null, count: 0,
+      priceRange: null, byPlatform: {}, dealScore: 'fair', _source: 'live',
     });
   }
 
@@ -488,16 +515,6 @@ async function priceCheckHandler(req, res) {
   const med = median(prices);
   const p25 = percentile(prices, 0.25);
   const p75 = percentile(prices, 0.75);
-
-  let dealScore;
-  if (hasUserPrice) {
-    if (userPrice <= p25) dealScore = 'good';
-    else if (userPrice <= p75) dealScore = 'fair';
-    else dealScore = 'high';
-  } else {
-    // No specific listing price — we're reporting the market, not judging it.
-    dealScore = 'fair';
-  }
 
   return res.json({
     query,
@@ -508,20 +525,21 @@ async function priceCheckHandler(req, res) {
     priceRange: { min: prices[0], max: prices[prices.length - 1] },
     byPlatform: buildPlatformBreakdown(allItems),
     userPrice: hasUserPrice ? userPrice : null,
-    dealScore,
+    dealScore: hasUserPrice ? dealScore(userPrice, p25, p75) : 'fair',
     _source: 'live',
   });
 }
 
-async function crossListingsHandler(req, res) {
-  const query = typeof req.query.q === 'string' ? req.query.q.trim() : '';
-  if (!query) {
-    return res.status(400).json({ error: 'Query parameter "q" is required' });
-  }
-  const currentSource = (typeof req.query.source === 'string' ? req.query.source : '')
-    .toLowerCase()
-    .trim();
-  const currentPrice = parseFloat(req.query.price);
+const crossListingsSchema = {
+  q:      str({ required: true, trim: true, max: 200 }),
+  source: oneOf(['grailed', 'poshmark', 'depop', 'vinted', 'ebay', 'etsy', 'boiler_vintage'], { required: false }),
+  price:  num({ required: false, min: 0, max: 100000, coerce: true }),
+};
+
+async function crossListingsHandler(req, res, next) {
+  const { value: params, error: validationError } = validate(req.query, crossListingsSchema);
+  if (validationError) return next(validationError);
+  const { q: query, source: currentSource, price: currentPrice } = params;
   const hasCurrentPrice = Number.isFinite(currentPrice) && currentPrice > 0;
 
   const body = await runLiveSearch(query, 15);
@@ -532,7 +550,7 @@ async function crossListingsHandler(req, res) {
   const listings = [];
   for (const [platform, items] of Object.entries(body.results)) {
     if (!Array.isArray(items)) continue;
-    if (platform.toLowerCase() === currentSource) continue;
+    if (platform === currentSource) continue;
     for (const item of items) {
       const p = typeof item.price === 'number' ? item.price : parseFloat(item.price);
       if (!Number.isFinite(p) || p <= 0) continue;
@@ -559,26 +577,75 @@ async function crossListingsHandler(req, res) {
   });
 }
 
-// Consumer (unprotected) — used by the Next.js layer if it ever wants to skip
-// its own /api/price-check route and go straight to Express.
 app.get('/api/price-check', priceCheckHandler);
 app.get('/api/cross-listings', crossListingsHandler);
 
-// B2B (apiAuth-protected) — versioned aliases for external customers.
 app.get('/v1/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 app.get('/v1/price-check', apiAuth, priceCheckHandler);
 app.get('/v1/cross-listings', apiAuth, crossListingsHandler);
 
+// Final error handler — must be last middleware.
+app.use(errorEnvelope);
+
+// ── boot + graceful shutdown ─────────────────────────────────────────────
+
 const port = process.env.PORT || 3005;
-app.listen(port, () => {
-  console.log(`Scraper API listening on ${port}`);
-  console.log(`Platforms: ${allPlatforms.join(', ')}`);
-  console.log(`Per-scraper timeout: ${SCRAPER_TIMEOUT_MS}ms (Playwright: ${PLAYWRIGHT_SCRAPER_TIMEOUT_MS}ms)`);
-  console.log('Grailed: Algolia | Poshmark: Cheerio | Vinted: API | eBay: Browse API | Etsy: v3 API | Depop: Playwright');
+const server = app.listen(port, () => {
+  log.info('startup', {
+    port,
+    platforms: allPlatforms,
+    scraper_timeout_ms: SCRAPER_TIMEOUT_MS,
+    playwright_timeout_ms: PLAYWRIGHT_SCRAPER_TIMEOUT_MS,
+  });
 
   const { getSupabase } = require('./lib/supabaseClient');
-  const sb = getSupabase();
-  console.log(`[supabase] ${sb ? 'connected' : 'NOT configured — set SUPABASE_URL + SUPABASE_SERVICE_KEY'}`);
+  log.info('supabase.status', { connected: !!getSupabase() });
 });
+
+const SHUTDOWN_GRACE_MS = 15000;
+let shuttingDown = false;
+
+async function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  log.info('shutdown.begin', { signal });
+
+  const forceExit = setTimeout(() => {
+    log.error('shutdown.force_exit', { signal });
+    process.exit(1);
+  }, SHUTDOWN_GRACE_MS);
+  forceExit.unref();
+
+  // Stop accepting new connections; existing requests drain naturally.
+  server.close(async () => {
+    log.info('shutdown.http_closed');
+
+    try {
+      // Best-effort: tear down the browser pool if it was initialised.
+      const { playwrightManager } = require('./lib/playwrightManager');
+      const browsers = playwrightManager.browsers || [];
+      await Promise.all(
+        browsers.filter(Boolean).map((b) => b.close().catch(() => {}))
+      );
+      log.info('shutdown.pool_closed', { count: browsers.filter(Boolean).length });
+    } catch (err) {
+      log.warn('shutdown.pool_close_failed', { err: err.message });
+    }
+
+    log.info('shutdown.done');
+    process.exit(0);
+  });
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('uncaughtException', (err) => {
+  log.fatal('uncaughtException', { err: err.message, stack: err.stack });
+});
+process.on('unhandledRejection', (err) => {
+  log.error('unhandledRejection', { err: err && err.message ? err.message : String(err) });
+});
+
+module.exports = { app, server, shutdown };

@@ -5,6 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "test": "node --test lib/__tests__/",
+    "test:watch": "node --test --watch lib/__tests__/",
+    "bench:dedup": "node bench/dedup.js",
     "postinstall": "npx playwright install --with-deps"
   },
   "dependencies": {
