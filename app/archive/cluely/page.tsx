@@ -17,6 +17,12 @@ export const metadata: Metadata = {
       'Deadstock pieces from Cluely (est. 2024). Curated by naya editorial.',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Cluely — Vintage Archive',
+    description:
+      'Deadstock pieces from Cluely (est. 2024). Curated by naya editorial.',
+  },
   robots: { index: false, follow: false },
 };
 
