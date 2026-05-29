@@ -247,7 +247,7 @@ export default function NewFindsSection({ campus, onSearch }: Props) {
             {Array.from({ length: 8 }).map((_, i) => (
               <div
                 key={i}
-                className="aspect-[4/5] animate-pulse rounded-lg bg-black/[0.05]"
+                className="naya-skeleton aspect-[4/5] rounded-lg"
               />
             ))}
           </div>
@@ -359,7 +359,7 @@ export default function NewFindsSection({ campus, onSearch }: Props) {
                   className="block"
                   onClick={() => router.prefetch(productUrl)}
                 >
-                  <div className="relative aspect-[4/5] overflow-hidden rounded-lg bg-black/[0.04]">
+                  <div className="naya-lift relative aspect-[4/5] overflow-hidden rounded-lg bg-black/[0.04]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={displayImage}

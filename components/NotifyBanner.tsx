@@ -154,7 +154,7 @@ export default function NotifyBanner() {
           </div>
           <div className="flex-1">
             <p className="font-naya-serif text-base font-light text-text-primary">
-              {postInstall ? 'one more thing — get deal alerts' : 'get purdue deal alerts'}
+              {postInstall ? 'one more thing, get deal alerts' : 'get purdue deal alerts'}
             </p>
             <p className="mt-0.5 text-xs text-text-muted">
               {postInstall

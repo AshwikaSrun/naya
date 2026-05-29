@@ -122,7 +122,7 @@ export default function GetNayaBanner({ variant = 'full' }: GetNayaBannerProps) 
           <p className="font-naya-sans text-[10px] lowercase tracking-[0.2em] text-white/35">get the app</p>
           <h2 className="font-naya-serif mt-4 text-3xl font-light text-white">naya on your home screen.</h2>
           <p className="font-naya-sans mt-5 text-sm font-light leading-relaxed text-white/50">
-            one tap and naya lives on your home screen. instant price checks, deal alerts, and cross-platform search — all from your phone.
+            one tap and naya lives on your home screen. instant price checks, deal alerts, and cross-platform search, all from your phone.
           </p>
           <div className="mt-8 flex flex-col gap-3">
             <button
@@ -159,7 +159,7 @@ export default function GetNayaBanner({ variant = 'full' }: GetNayaBannerProps) 
               naya on every listing.
             </h2>
             <p className="font-naya-sans mt-5 text-sm font-light leading-relaxed text-white/50">
-              browse ebay, grailed, depop, or poshmark — naya&apos;s extension shows you the real market price, deal scores, and cheaper listings across all platforms. no extra tabs needed.
+              browse ebay, grailed, depop, or poshmark, and naya&apos;s extension shows you the real market price, deal scores, and cheaper listings across all platforms. no extra tabs needed.
             </p>
             <div className="mt-8 flex items-center gap-4">
               <a
@@ -253,7 +253,7 @@ function IOSInstructions({ onClose }: { onClose: () => void }) {
           </div>
           <div className="flex items-start gap-3">
             <span className="font-naya-sans flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black text-[10px] font-bold text-white">3</span>
-            <p className="font-naya-sans text-sm text-black/60">tap <strong>&quot;Add&quot;</strong> — naya is on your home screen</p>
+            <p className="font-naya-sans text-sm text-black/60">tap <strong>&quot;Add&quot;</strong> and naya is on your home screen</p>
           </div>
         </div>
         <button type="button" onClick={onClose} className="font-naya-sans mt-6 w-full rounded-full bg-black py-3.5 text-[11px] font-medium lowercase tracking-[0.08em] text-white transition-opacity hover:opacity-90">got it</button>

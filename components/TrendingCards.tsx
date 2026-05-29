@@ -71,7 +71,7 @@ export default function TrendingCards(props: {
           key={t.query}
           type="button"
           onClick={() => onPick(t.query)}
-          className="group relative overflow-hidden rounded-2xl border border-black/10 bg-white text-left transition-all hover:border-black/20 hover:shadow-soft"
+          className="naya-lift group relative overflow-hidden rounded-2xl border border-black/10 bg-white text-left transition-colors hover:border-black/20"
         >
           <div className="relative aspect-[4/3] w-full overflow-hidden bg-neutral-100">
             <img

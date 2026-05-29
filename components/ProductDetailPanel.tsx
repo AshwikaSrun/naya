@@ -222,7 +222,7 @@ export default function ProductDetailPanel({ product, onClose }: ProductDetailPa
               </p>
               {product.originalPrice && product.originalPrice > product.price ? (
                 <p className="mt-1 text-sm text-emerald-800">
-                  Typical retail: ${product.originalPrice.toFixed(0)}. You&apos;re paying ${product.price.toFixed(0)} —{' '}
+                  Typical retail: ${product.originalPrice.toFixed(0)}. You&apos;re paying ${product.price.toFixed(0)},{' '}
                   {product.discountPercent && product.discountPercent >= 50 ? (
                     <span className="font-semibold">great deal</span>
                   ) : product.discountPercent && product.discountPercent >= 30 ? (

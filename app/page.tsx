@@ -17,6 +17,7 @@ import CampusModeTeaser from '@/components/CampusModeTeaser';
 import StickyHeader from '@/components/StickyHeader';
 import EditorialHero from '@/components/EditorialHero';
 import BrandSpotlight from '@/components/BrandSpotlight';
+import Reveal from '@/components/Reveal';
 
 const NAV_LINKS = [
   { href: '/deals', label: 'deals' },
@@ -205,14 +206,18 @@ export default function Home() {
       />
 
       {/* ── New Finds Feed — the main "live marketplace" moment ── */}
-      <NewFindsSection onSearch={s.handleSearch} />
+      <Reveal>
+        <NewFindsSection onSearch={s.handleSearch} />
+      </Reveal>
 
       {/* ── Shop by Brand — editorial image grid ── */}
-      <BrandSpotlight />
+      <Reveal>
+        <BrandSpotlight />
+      </Reveal>
 
       {/* ── Trending picks (visual cards + live product row) ── */}
       {s.trendingSearches.length > 0 && (
-        <section className="bg-night-bg px-6 py-24 md:px-10 md:py-32">
+        <Reveal as="section" className="bg-night-bg px-6 py-24 md:px-10 md:py-32">
           <div className="mx-auto max-w-6xl">
             <div className="flex items-end justify-between gap-6">
               <div>
@@ -239,7 +244,7 @@ export default function Home() {
                   {previewProducts === null ? (
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
                       {Array.from({ length: 6 }).map((_, i) => (
-                        <div key={i} className="aspect-[4/5] animate-pulse rounded-lg bg-black/[0.05]" />
+                        <div key={i} className="naya-skeleton aspect-[4/5] rounded-lg" />
                       ))}
                     </div>
                   ) : (
@@ -249,17 +254,21 @@ export default function Home() {
               </>
             )}
           </div>
-        </section>
+        </Reveal>
       )}
 
       {/* ── Campus Mode (single moment, unified with teaser) ── */}
-      <CampusModeTeaser campuses={ALL_CAMPUSES} />
+      <Reveal>
+        <CampusModeTeaser campuses={ALL_CAMPUSES} />
+      </Reveal>
 
       {/* ── App / Extension — the single dark "moment" of the page ── */}
-      <GetNayaBanner variant="full" />
+      <Reveal>
+        <GetNayaBanner variant="full" />
+      </Reveal>
 
       {/* ── Stay in the Loop — continues the dark section ── */}
-      <section className="bg-[#0a0a0a] px-6 py-20 md:px-10 md:py-28">
+      <Reveal as="section" className="bg-[#0a0a0a] px-6 py-20 md:px-10 md:py-28">
         <div className="mx-auto max-w-md text-center">
           <p className="font-naya-sans text-[10px] uppercase tracking-[0.28em] text-white/45">stay in the loop</p>
           <h2 className="font-naya-serif mt-4 text-3xl font-light leading-[1.1] text-white md:text-4xl">
@@ -270,7 +279,7 @@ export default function Home() {
             <EmailSignup source="home_footer" />
           </div>
         </div>
-      </section>
+      </Reveal>
 
       {/* ── Footer ── */}
       <footer className="bg-night-bg px-6 py-14 md:px-10">

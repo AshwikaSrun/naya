@@ -187,7 +187,7 @@ export default function EditorialHero({
             )}
 
             <h1
-              className={`font-naya-serif text-[40px] font-light leading-[1.02] tracking-[-0.01em] sm:text-5xl md:text-6xl lg:text-[68px] ${textMain}`}
+              className={`naya-enter naya-enter-1 font-naya-serif text-[40px] font-light leading-[1.02] tracking-[-0.01em] sm:text-5xl md:text-6xl lg:text-[68px] ${textMain}`}
             >
               the entire resale market.{' '}
               <span className={`italic ${hasPhoto ? 'text-white/90' : 'text-black/80'}`}>
@@ -196,13 +196,13 @@ export default function EditorialHero({
             </h1>
 
             <p
-              className={`font-naya-sans mt-5 max-w-md text-[15px] leading-relaxed md:text-base ${textMuted}`}
+              className={`naya-enter naya-enter-2 font-naya-sans mt-5 max-w-md text-[15px] leading-relaxed md:text-base ${textMuted}`}
             >
-              eBay, Grailed, Depop, Poshmark — searched together, scored for quality, and
-              de-duped. Real vintage, real prices.
+              eBay, Grailed, Depop, and Poshmark, searched together, scored for quality,
+              and de-duped. Real vintage, real prices.
             </p>
 
-            <div className="mt-7 md:mt-8">
+            <div className="naya-enter naya-enter-3 mt-7 md:mt-8">
               <CommandSearchBar
                 onSearch={onSearch}
                 value={searchValue}
@@ -216,7 +216,7 @@ export default function EditorialHero({
             </div>
 
             {topChips.length > 0 && (
-              <div className="mt-5 flex flex-wrap gap-2">
+              <div className="naya-enter naya-enter-4 mt-5 flex flex-wrap gap-2">
                 <span
                   className={`font-naya-sans self-center text-[10px] uppercase tracking-[0.24em] ${textFaint}`}
                 >
@@ -227,7 +227,7 @@ export default function EditorialHero({
                     key={t.query}
                     type="button"
                     onClick={() => onSearch(t.query)}
-                    className={`font-naya-sans rounded-full border px-3.5 py-1.5 text-[11px] lowercase tracking-[0.04em] transition-all ${chipBg}`}
+                    className={`font-naya-sans rounded-full border px-3.5 py-1.5 text-[11px] lowercase tracking-[0.04em] transition-all duration-300 hover:-translate-y-0.5 ${chipBg}`}
                   >
                     {t.label}
                   </button>

@@ -69,6 +69,87 @@ body {
   overflow: hidden;
 }
 
+/* ── Motion system ──────────────────────────────────────────────────────────
+   A small, cohesive set of primitives used across the site to make it feel
+   alive and considered: scroll-reveal choreography, a gentle float, a sweep
+   shimmer for skeletons, and a reusable hover "lift". All gated behind
+   prefers-reduced-motion so it stays accessible. */
+
+html {
+  scroll-behavior: smooth;
+}
+
+@keyframes nayaFadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes nayaFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-7px); }
+}
+
+@keyframes nayaShimmer {
+  0%   { background-position: -180% 0; }
+  100% { background-position: 180% 0; }
+}
+
+/* Scroll reveal — element starts hidden, .is-visible plays the entrance. */
+.reveal {
+  opacity: 0;
+  will-change: opacity, transform;
+}
+.reveal.is-visible {
+  animation: nayaFadeUp 0.85s cubic-bezier(0.16, 0.84, 0.44, 1) forwards;
+}
+
+.naya-float {
+  animation: nayaFloat 6s ease-in-out infinite;
+}
+
+/* CSS-only entrance for above-the-fold content (no JS dependency, no blank
+   flash). Stagger with the numbered helpers. */
+.naya-enter {
+  animation: nayaFadeUp 0.9s cubic-bezier(0.16, 0.84, 0.44, 1) both;
+}
+.naya-enter-1 { animation-delay: 0.05s; }
+.naya-enter-2 { animation-delay: 0.14s; }
+.naya-enter-3 { animation-delay: 0.24s; }
+.naya-enter-4 { animation-delay: 0.34s; }
+.naya-enter-5 { animation-delay: 0.44s; }
+
+/* Reusable hover lift for cards and buttons. */
+.naya-lift {
+  transition: transform 0.4s cubic-bezier(0.16, 0.84, 0.44, 1),
+    box-shadow 0.4s cubic-bezier(0.16, 0.84, 0.44, 1);
+}
+.naya-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 22px 50px -24px rgba(40, 30, 15, 0.45);
+}
+
+/* Premium skeleton sweep for loading tiles. */
+.naya-skeleton {
+  background-image: linear-gradient(
+    100deg,
+    rgba(0, 0, 0, 0.045) 30%,
+    rgba(0, 0, 0, 0.08) 50%,
+    rgba(0, 0, 0, 0.045) 70%
+  );
+  background-size: 200% 100%;
+  animation: nayaShimmer 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .reveal { opacity: 1; }
+  .reveal.is-visible,
+  .naya-float,
+  .naya-skeleton,
+  .naya-enter { animation: none; }
+  .naya-lift:hover { transform: none; }
+}
+
 @keyframes marquee {
   0% {
     transform: translateX(0);

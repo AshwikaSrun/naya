@@ -73,7 +73,7 @@ export default function ComparePanel({ open, onClose }: ComparePanelProps) {
           {items.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <p className="text-sm text-black/50">Add items to compare across platforms</p>
-              <p className="mt-1 text-[11px] text-black/40">Same piece, different prices — find the best deal</p>
+              <p className="mt-1 text-[11px] text-black/40">Same piece, different prices. find the best deal</p>
             </div>
           ) : (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

@@ -58,7 +58,7 @@ export default function BrandSpotlight() {
                 key={brand.name}
                 type="button"
                 onClick={() => go(brand.query)}
-                className={`group relative overflow-hidden rounded-xl bg-black/5 ${
+                className={`naya-lift group relative overflow-hidden rounded-xl bg-black/5 ${
                   feature ? 'md:col-span-2' : ''
                 }`}
               >

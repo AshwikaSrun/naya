@@ -56,7 +56,7 @@ export default function DealDiscoveryNotifications({ variant = 'campus' }: Props
     try {
       const perm = await Notification.requestPermission();
       if (perm !== 'granted') {
-        setMessage('notifications are off — enable them in your browser settings to get alerts.');
+        setMessage('notifications are off. enable them in your browser settings to get alerts.');
         setLoading(false);
         return;
       }
@@ -99,7 +99,7 @@ export default function DealDiscoveryNotifications({ variant = 'campus' }: Props
 
       setSubscribed(true);
       setMessage(
-        "you're in — we'll send discovery pings: deals, campus style, and what boilermakers are wearing."
+        "you're in. we'll send discovery pings: deals, campus style, and what boilermakers are wearing."
       );
     } catch (e) {
       console.error(e);
@@ -144,10 +144,10 @@ export default function DealDiscoveryNotifications({ variant = 'campus' }: Props
 
   const subcopy =
     variant === 'deals'
-      ? 'once a day: a standout deal or campus-style find — sometimes straight from what purdue students are searching. tap to open in naya.'
+      ? 'once a day: a standout deal or campus-style find, sometimes straight from what purdue students are searching. tap to open in naya.'
       : variant === 'profile'
         ? 'check this deal out, see what boilermakers are wearing, and catch boiler vintage when it pops. one friendly ping a day from the installed app.'
-        : 'check this deal out, campus style finds, and what purdue students are into — one discovery notification a day. tap to open the listing.';
+        : 'check this deal out, campus style finds, and what purdue students are into. one discovery notification a day. tap to open the listing.';
 
   if (!supported) {
     if (process.env.NODE_ENV !== 'production') {
