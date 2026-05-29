@@ -9,10 +9,13 @@ import Link from 'next/link';
 // Fully self-contained — see page.tsx header for removal instructions.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Cluely's mark — a paper airplane inside a ring. Recreated as SVG so it can be
-// embroidered / printed / aged onto the archive pieces. The "send" plane path is
-// the same silhouette used in their product UI.
-const PLANE = 'M2 21 L23 12 L2 3 L2 10 L17 12 L2 14 Z';
+// Cluely's mark — a jet/airplane silhouette (swept wings + tail fins) inside a
+// thin ring, tilted nose-up-left, recreated as SVG so it can be embroidered /
+// printed / aged onto the archive pieces. Symmetric airplane drawn pointing up
+// in a 100×100 box; callers rotate it into the brand's tilt.
+const PLANE =
+  'M50 6 L56 38 L94 60 L94 68 L56 54 L57 80 L73 92 L73 97 L52 87 L50 89 L48 87 L27 97 L27 92 L43 80 L44 54 L6 68 L6 60 L44 38 Z';
+const PLANE_TILT = -38;
 
 type Palette = { body: string; accent: string; logo: string };
 
@@ -149,11 +152,16 @@ function CluelyMark({
   color?: string;
   ring?: boolean;
 }) {
+  // Plane is 100×100, center (50,50). Fit it to ~0.92 of the ring diameter and
+  // center it, then tilt to the brand angle.
+  const r = 29;
+  const s = (2 * r * 0.92) / 100;
+  const off = 32 - 50 * s;
   return (
     <svg viewBox="0 0 64 64" className={className} fill="none" aria-hidden>
-      {ring && <circle cx="32" cy="32" r="29" stroke={color} strokeWidth="2.4" />}
-      <g transform="rotate(-8 32 32)">
-        <g transform="translate(18 18) scale(1.18)" fill={color}>
+      {ring && <circle cx="32" cy="32" r={r} stroke={color} strokeWidth="2.6" />}
+      <g transform={`rotate(${PLANE_TILT} 32 32)`}>
+        <g transform={`translate(${off} ${off}) scale(${s})`} fill={color}>
           <path d={PLANE} />
         </g>
       </g>
@@ -175,14 +183,16 @@ function PlaneMark({
   color: string;
   ring?: boolean;
 }) {
-  const scale = (r * 1.5) / 24;
+  const s = (2 * r * 0.92) / 100;
+  const offX = cx - 50 * s;
+  const offY = cy - 50 * s;
   return (
     <g>
       {ring && (
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth={Math.max(0.8, r * 0.11)} />
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth={Math.max(0.9, r * 0.1)} />
       )}
-      <g transform={`rotate(-8 ${cx} ${cy})`}>
-        <g transform={`translate(${cx - r * 0.82}, ${cy - r * 0.66}) scale(${scale})`} fill={color}>
+      <g transform={`rotate(${PLANE_TILT} ${cx} ${cy})`}>
+        <g transform={`translate(${offX} ${offY}) scale(${s})`} fill={color}>
           <path d={PLANE} />
         </g>
       </g>
