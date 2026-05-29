@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import Link from 'next/link';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -9,19 +9,16 @@ import Link from 'next/link';
 // Self-contained. To remove: delete app/archive/ and public/archive/.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Cluely's mark — a tilted jet silhouette (swept wings + tail fins) inside a
-// thin ring. Symmetric airplane drawn pointing up in a 100×100 box; callers
-// rotate it into the brand tilt.
-const PLANE =
-  'M50 6 L56 38 L94 60 L94 68 L56 54 L57 80 L73 92 L73 97 L52 87 L50 89 L48 87 L27 97 L27 92 L43 80 L44 54 L6 68 L6 60 L44 38 Z';
-const PLANE_TILT = -38;
+// Cluely's mark — a Supreme-style box logo wordmark. No icon, just the word
+// "cluely" set in heavy oblique inside a red box. Scales with font-size so the
+// same component works as a tiny header chip, a garment print, or a hero mark.
 
 type LogoOverlay = {
   topPct: number;
   leftPct: number;
-  sizePct: number; // width as % of image width
-  color: string;
-  box?: boolean; // render as a box-logo chip
+  sizePct: number; // box-logo size, expressed as container-width units
+  color?: string;
+  box?: boolean;
   ring?: boolean;
 };
 
@@ -50,7 +47,7 @@ const ITEMS: Item[] = [
     badge: 'VINTAGE',
     fit: 'boxy · true to era',
     lore:
-      'Sourced from the personal collection of an early Cluely beta tester. Believed to be from the limited internal run distributed before the public launch in spring 2024. Heavy honest fade across the chest panel and consistent wash texture on the cuffs — exactly what you want from a piece this rare. Hood drawstrings intact.',
+      'Sourced from the personal collection of an early Cluely beta tester. Believed to be from the limited internal run distributed before the public launch in spring 2024. Heavy honest fade across the chest panel and consistent wash texture on the cuffs, exactly what you want from a piece this rare. Hood drawstrings intact.',
     image: '/archive/cluely/arch-hoodie.png',
     overlay: { topPct: 39, leftPct: 50, sizePct: 13, color: '#e7e1d2', ring: true },
   },
@@ -66,7 +63,7 @@ const ITEMS: Item[] = [
     lore:
       'From the rumored team-only logo drop that never reached retail. The off-white colorway shows the kind of soft yellowing that only happens with natural light exposure over time. Print sits crisp on the chest with no cracking. Tagged made in Los Angeles.',
     image: '/archive/cluely/arch-tee.png',
-    overlay: { topPct: 37, leftPct: 50, sizePct: 20, color: '#ffffff', box: true },
+    overlay: { topPct: 38, leftPct: 50, sizePct: 17 },
   },
   {
     id: 'stealth-zip',
@@ -164,6 +161,33 @@ function ArchiveStyles() {
       .arch-float { animation: archFloat 6s ease-in-out infinite; }
       .arch-reveal { opacity:0; }
       .arch-reveal.is-visible { animation: archFadeUp .8s cubic-bezier(.16,.84,.44,1) forwards; }
+
+      /* Supreme-style heavy oblique. Futura where available (mac), graceful
+         fallbacks elsewhere. Used by the box logo and the tagline. */
+      .cluely-heavy {
+        font-family: 'Futura', 'Futura PT', 'Century Gothic', 'Twentieth Century',
+          'Trebuchet MS', 'DM Sans', sans-serif;
+        font-weight: 800;
+        font-style: italic;
+        letter-spacing: -0.025em;
+      }
+      .cluely-box {
+        display: inline-block;
+        background: #cf0a18;
+        color: #fff;
+        font-family: 'Futura', 'Futura PT', 'Century Gothic', 'Twentieth Century',
+          'Trebuchet MS', 'DM Sans', sans-serif;
+        font-weight: 800;
+        font-style: italic;
+        letter-spacing: -0.035em;
+        line-height: 0.92;
+        padding: 0.1em 0.22em 0.16em;
+        border-radius: 0.05em;
+        -webkit-box-decoration-break: clone;
+        box-decoration-break: clone;
+        white-space: nowrap;
+      }
+
       @media (prefers-reduced-motion: reduce) {
         .arch-float, .arch-reveal.is-visible { animation: none; }
         .arch-reveal { opacity:1; }
@@ -207,49 +231,35 @@ function Reveal({ children, className = '', delay = 0 }: { children: ReactNode; 
   );
 }
 
-// ─── Cluely mark ─────────────────────────────────────────────────────────────
+// ─── Cluely box logo (the wordmark — no icon, just "cluely") ──────────────────
 
-function CluelyMark({ className = '', color = 'currentColor', ring = true }: { className?: string; color?: string; ring?: boolean }) {
-  const r = 29;
-  const s = (2 * r * 0.92) / 100;
-  const off = 32 - 50 * s;
+function CluelyBox({
+  className = '',
+  style,
+}: {
+  className?: string;
+  style?: CSSProperties;
+}) {
   return (
-    <svg viewBox="0 0 64 64" className={className} fill="none" aria-hidden>
-      {ring && <circle cx="32" cy="32" r={r} stroke={color} strokeWidth="2.6" />}
-      <g transform={`rotate(${PLANE_TILT} 32 32)`}>
-        <g transform={`translate(${off} ${off}) scale(${s})`} fill={color}>
-          <path d={PLANE} />
-        </g>
-      </g>
-    </svg>
+    <span className={`cluely-box ${className}`} style={style}>
+      cluely
+    </span>
   );
 }
 
-// ─── Product logo overlay (printed/embroidered onto the photo) ───────────────
+// ─── Product logo overlay (box logo printed onto the photo) ──────────────────
 
 function LogoOverlayMark({ overlay }: { overlay: LogoOverlay }) {
-  if (overlay.box) {
-    return (
-      <div
-        className="pointer-events-none absolute z-10 flex -translate-x-1/2 -translate-y-1/2 items-center gap-[0.4em] rounded-[3px] bg-[#c8102e] px-[0.55em] py-[0.32em] shadow-sm"
-        style={{ top: `${overlay.topPct}%`, left: `${overlay.leftPct}%`, width: `${overlay.sizePct}%` }}
-      >
-        <CluelyMark className="h-auto w-[26%] shrink-0" color="#ffffff" />
-        <span
-          className="font-naya-serif italic leading-none text-white"
-          style={{ fontSize: 'clamp(9px, 1.7vw, 17px)' }}
-        >
-          cluely
-        </span>
-      </div>
-    );
-  }
   return (
     <div
-      className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2 opacity-90"
-      style={{ top: `${overlay.topPct}%`, left: `${overlay.leftPct}%`, width: `${overlay.sizePct}%` }}
+      className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_2px_6px_rgba(0,0,0,0.28)]"
+      style={{
+        top: `${overlay.topPct}%`,
+        left: `${overlay.leftPct}%`,
+        fontSize: `${overlay.sizePct * 0.62}cqw`,
+      }}
     >
-      <CluelyMark className="h-auto w-full" color={overlay.color} ring={overlay.ring} />
+      <CluelyBox />
     </div>
   );
 }
@@ -267,9 +277,9 @@ function SimpleHeader() {
           <Link href="/" className="transition-colors hover:text-black">
             ← back to shop
           </Link>
-          <span className="hidden items-center gap-1.5 sm:flex">
-            <CluelyMark className="h-3.5 w-3.5 text-black/45" />
-            cluely archive
+          <span className="hidden items-center gap-2 sm:flex">
+            <CluelyBox className="text-[11px]" />
+            <span>archive</span>
           </span>
         </div>
       </div>
@@ -290,33 +300,36 @@ function ArchiveHero() {
         </Reveal>
 
         <Reveal delay={80}>
-          <div className="mt-6 flex items-center gap-5 md:gap-8">
-            <CluelyMark className="arch-float h-16 w-16 shrink-0 text-black md:h-24 md:w-24" />
-            <h1 className="font-naya-serif text-7xl font-light leading-[0.88] tracking-[-0.03em] text-black md:text-9xl lg:text-[10rem]">
-              Cluely.
-            </h1>
+          <div className="mt-7">
+            <CluelyBox className="arch-float text-[58px] sm:text-[84px] md:text-[120px] lg:text-[150px]" />
           </div>
         </Reveal>
 
         <Reveal delay={160}>
-          <p className="font-naya-serif mt-5 text-2xl font-light italic text-black/65 md:text-4xl">
-            a vintage archive.
+          <h1 className="cluely-heavy mt-9 text-5xl leading-[0.92] text-black sm:text-6xl md:text-8xl lg:text-[7.5rem]">
+            the next supreme.
+          </h1>
+        </Reveal>
+
+        <Reveal delay={220}>
+          <p className="font-naya-serif mt-6 text-xl font-light italic text-black/55 md:text-3xl">
+            a vintage archive of the merch they never made.
           </p>
         </Reveal>
 
-        <Reveal delay={240}>
+        <Reveal delay={300}>
           <div className="mt-12 flex flex-wrap items-center gap-x-5 gap-y-2 font-naya-sans text-[11px] uppercase tracking-[0.22em] text-black/55">
             <span>Est. 2024</span>
-            <span className="text-black/20">·</span>
+            <span className="text-[#cf0a18]">·</span>
             <span>5 pieces</span>
-            <span className="text-black/20">·</span>
+            <span className="text-[#cf0a18]">·</span>
             <span>New York</span>
-            <span className="text-black/20">·</span>
+            <span className="text-[#cf0a18]">·</span>
             <span>curated by naya editorial</span>
           </div>
         </Reveal>
 
-        <Reveal delay={320}>
+        <Reveal delay={360}>
           <p className="font-naya-sans mt-10 max-w-2xl text-[15px] leading-relaxed text-black/60">
             A small but significant collection of early-era Cluely pieces, sourced from
             private collections and former insiders. All items authenticated to the best
@@ -340,13 +353,13 @@ function CuratorNote() {
           </p>
           <p className="font-naya-serif mt-6 text-xl font-light leading-[1.5] text-black/80 md:text-3xl md:leading-[1.45]">
             Cluely spent its first year becoming one of the most-talked-about companies in
-            New York and — true to form — never released a single piece of merch. What
+            New York and, true to form, never released a single piece of merch. What
             follows is the archive that <span className="italic">should have existed</span>:
             deadstock and lightly-worn artifacts from the pre-IPO era, authenticated and
             catalogued by naya editorial.
           </p>
           <p className="font-naya-sans mt-7 text-[12px] uppercase tracking-[0.2em] text-black/40">
-            — the archive desk
+            the archive desk
           </p>
         </Reveal>
       </div>
@@ -387,9 +400,8 @@ function CampaignPoster() {
           </svg>
 
           <div className="relative px-7 py-20 text-center md:px-12 md:py-28 lg:py-32">
-            <div className="mb-7 flex items-center justify-center gap-2">
-              <CluelyMark className="h-7 w-7 text-white" />
-              <span className="font-naya-sans text-[11px] uppercase tracking-[0.34em] text-white/85">Cluely</span>
+            <div className="mb-7 flex items-center justify-center">
+              <CluelyBox className="text-[20px] md:text-[26px]" />
             </div>
             <h3 className="font-naya-serif mx-auto max-w-2xl text-3xl font-light leading-[1.1] tracking-[-0.01em] text-white drop-shadow-sm md:text-6xl">
               every wardrobe can use a little more <span className="italic">intelligence.</span>
@@ -441,7 +453,7 @@ function ItemRow({ item, index, onOpen }: { item: Item; index: number; onOpen: (
             {item.year} · one of one
           </p>
           <h2 className="font-naya-serif mt-4 text-3xl font-light leading-[1.05] tracking-[-0.005em] text-black md:text-4xl lg:text-[2.7rem]">
-            {item.title} <span className="italic text-black/55">— {item.sub.toLowerCase()}.</span>
+            {item.title}, <span className="italic text-black/55">{item.sub.toLowerCase()}.</span>
           </h2>
 
           <dl className="font-naya-sans mt-7 grid grid-cols-2 gap-x-6 gap-y-2.5 text-[11px] uppercase tracking-[0.18em] text-black/55 sm:max-w-md">
@@ -502,11 +514,11 @@ function ProductImage({ item, rounded = 'rounded-2xl' }: { item: Item; rounded?:
     <div
       className={`relative overflow-hidden ${rounded} shadow-[0_12px_40px_-18px_rgba(40,30,15,0.4)] transition-shadow duration-500 group-hover:shadow-[0_26px_70px_-22px_rgba(40,30,15,0.55)]`}
     >
-      <span className="font-naya-sans absolute left-3 top-3 z-20 rounded-sm bg-black px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-[0.16em] text-white shadow-sm">
+      <span className="font-naya-sans absolute left-3 top-3 z-20 rounded-[2px] bg-[#cf0a18] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white shadow-sm">
         {item.badge}
       </span>
 
-      <div className="relative aspect-[4/3] w-full bg-[#ece4d2]">
+      <div className="relative aspect-[4/3] w-full bg-[#ece4d2] [container-type:inline-size]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={item.image}
@@ -567,7 +579,7 @@ function Lightbox({ item, onClose }: { item: Item | null; onClose: () => void })
         </button>
 
         <div className="relative bg-[#ece4d2]">
-          <div className="group relative h-64 w-full md:h-full">
+          <div className="group relative h-64 w-full [container-type:inline-size] md:h-full">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={item.image} alt={`${item.title} — ${item.sub}`} className="h-full w-full object-cover" />
             {item.overlay && <LogoOverlayMark overlay={item.overlay} />}
@@ -576,7 +588,7 @@ function Lightbox({ item, onClose }: { item: Item | null; onClose: () => void })
 
         <div className="flex flex-col justify-center overflow-y-auto p-7 md:p-10">
           <div className="flex items-center gap-2">
-            <span className="font-naya-sans rounded-sm bg-black px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-[0.16em] text-white">
+            <span className="font-naya-sans rounded-[2px] bg-[#cf0a18] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white">
               {item.badge}
             </span>
             <span className="font-naya-sans text-[10px] uppercase tracking-[0.22em] text-black/45">
@@ -585,7 +597,7 @@ function Lightbox({ item, onClose }: { item: Item | null; onClose: () => void })
           </div>
 
           <h2 className="font-naya-serif mt-4 text-3xl font-light leading-[1.08] tracking-[-0.005em] text-black md:text-4xl">
-            {item.title} <span className="italic text-black/55">— {item.sub.toLowerCase()}.</span>
+            {item.title}, <span className="italic text-black/55">{item.sub.toLowerCase()}.</span>
           </h2>
 
           <dl className="font-naya-sans mt-6 grid grid-cols-2 gap-x-6 gap-y-2.5 text-[11px] uppercase tracking-[0.18em] text-black/55">
@@ -614,9 +626,8 @@ function CareLabel() {
     <section className="mx-auto max-w-6xl px-6 pb-10 md:px-10">
       <Reveal>
         <div className="mx-auto max-w-sm rounded-sm border border-black/15 bg-[#f4efe3] px-6 py-6 shadow-[0_2px_8px_-5px_rgba(0,0,0,0.3)]">
-          <div className="mb-3 flex items-center justify-center gap-1.5">
-            <CluelyMark className="h-3.5 w-3.5 text-black/70" />
-            <span className="font-naya-sans text-[9px] uppercase tracking-[0.34em] text-black/60">Cluely</span>
+          <div className="mb-3 flex items-center justify-center">
+            <CluelyBox className="text-[12px]" />
           </div>
           <div className="space-y-1.5 text-center font-naya-sans text-[9px] uppercase tracking-[0.22em] text-black/55">
             <p>100% combed cotton · made in los angeles</p>

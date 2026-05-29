@@ -8,20 +8,20 @@ import type { Metadata } from 'next';
 import Archive from './Archive';
 
 export const metadata: Metadata = {
-  title: 'Cluely — Vintage Archive · naya',
+  title: 'Cluely · The Next Supreme · naya',
   description:
-    'The merch Cluely never made, archived as vintage. A naya editorial deadstock collection. Est. 2024 · New York.',
+    'Cluely, the next Supreme. A vintage archive of the merch they never made. Curated by naya editorial. Est. 2024 · New York.',
   openGraph: {
-    title: 'Cluely — Vintage Archive',
+    title: 'Cluely · The Next Supreme',
     description:
-      'The merch Cluely never made, archived as vintage. Curated by naya editorial. Est. 2024 · New York.',
+      'A vintage archive of the merch Cluely never made. Curated by naya editorial. Est. 2024 · New York.',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Cluely — Vintage Archive',
+    title: 'Cluely · The Next Supreme',
     description:
-      'The merch Cluely never made, archived as vintage. Curated by naya editorial.',
+      'A vintage archive of the merch Cluely never made. Curated by naya editorial.',
   },
   robots: { index: false, follow: false },
 };
