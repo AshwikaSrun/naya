@@ -10,18 +10,18 @@ import Archive from './Archive';
 export const metadata: Metadata = {
   title: 'Cluely — Vintage Archive · naya',
   description:
-    'Deadstock pieces from Cluely (est. 2024). A naya editorial archive. New York.',
+    'The merch Cluely never made, archived as vintage. A naya editorial deadstock collection. Est. 2024 · New York.',
   openGraph: {
     title: 'Cluely — Vintage Archive',
     description:
-      'Deadstock pieces from Cluely (est. 2024). Curated by naya editorial.',
+      'The merch Cluely never made, archived as vintage. Curated by naya editorial. Est. 2024 · New York.',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Cluely — Vintage Archive',
     description:
-      'Deadstock pieces from Cluely (est. 2024). Curated by naya editorial.',
+      'The merch Cluely never made, archived as vintage. Curated by naya editorial.',
   },
   robots: { index: false, follow: false },
 };
