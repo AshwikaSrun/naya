@@ -10,6 +10,7 @@ const { scrapeGrailed } = require('./lib/grailedScraper');
 const { scrapeVinted } = require('./lib/vintedScraper');
 const { scrapeGoogleShopping, lookupRetailPrices } = require('./lib/googleShoppingScraper');
 const { scrapeBoilerVintage } = require('./lib/boilerVintageScraper');
+const { scrapeBeyondRetro, scrapePechugaVintage } = require('./lib/shopifyScraper');
 const { filterByRelevance } = require('./lib/relevance');
 const { runPipeline, runGlobalPipeline } = require('./lib/dataPipeline');
 const { ingestSearchResults } = require('./lib/dataIngestion');
@@ -55,6 +56,11 @@ const allPlatforms = [
   'poshmark',
   'vinted',
   'etsy',
+  // Shopify-backed boutique vintage stores. Added 2026-05-29 to compensate
+  // for eBay/Etsy returning 0 (env vars not set yet) and Depop's recurring
+  // Playwright flakes. All HTTP-only, no Chromium pressure, no API keys.
+  'beyond_retro',
+  'pechuga_vintage',
 ];
 
 // Campus-specific platforms — only included when the matching campus param is sent
@@ -76,6 +82,8 @@ const scraperMap = {
   etsy: scrapeEtsy,
   google_shopping: scrapeGoogleShopping,
   boiler_vintage: scrapeBoilerVintage,
+  beyond_retro: scrapeBeyondRetro,
+  pechuga_vintage: scrapePechugaVintage,
 };
 
 function withTimeout(fn, name, timeoutMs) {
