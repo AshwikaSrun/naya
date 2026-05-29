@@ -7,13 +7,25 @@ export const fetchCache = 'force-no-store';
 const BACKEND_URL = 'https://scraper-api-production-d197.up.railway.app';
 
 const apiCache = new Map();
-const API_CACHE_TTL = 2 * 60 * 1000; // 2 minutes
+const API_CACHE_TTL = 2 * 60 * 1000; // 2 minutes — fresh-cache window
+// Stale-while-error window: keep last-good response usable for ~30 min so a
+// Railway backend burp (502s, OOM restarts, deploy gaps) doesn't immediately
+// turn the search page into an empty/broken UI for warm Vercel instances.
+const STALE_TTL = 30 * 60 * 1000;
 
 function getApiCached(key) {
   const entry = apiCache.get(key);
   if (!entry) return null;
-  if (Date.now() - entry.ts > API_CACHE_TTL) { apiCache.delete(key); return null; }
+  if (Date.now() - entry.ts > API_CACHE_TTL) return null; // expired-fresh, keep for stale lookup
   return entry.data;
+}
+
+function getApiStale(key) {
+  const entry = apiCache.get(key);
+  if (!entry) return null;
+  const ageMs = Date.now() - entry.ts;
+  if (ageMs > STALE_TTL) { apiCache.delete(key); return null; }
+  return { data: entry.data, ageMs };
 }
 
 function setApiCache(key, data) {
@@ -82,6 +94,23 @@ export async function GET(request) {
   } catch (proxyErr) {
     console.error(`[search] Railway proxy failed for q="${query}": ${proxyErr.message}`);
 
+    // Tier 1: serve last-good result for this exact key, even if past its
+    // fresh-cache window. Almost always the right thing during a backend
+    // outage — same query, same recent data, just minutes old.
+    const stale = getApiStale(cacheKey);
+    if (stale) {
+      const staleBody = { ...stale.data, _stale: true, _staleAgeMs: stale.ageMs };
+      return Response.json(staleBody, {
+        status: 200,
+        headers: { 'Cache-Control': 'no-store, max-age=0', 'X-Cache': 'STALE' },
+      });
+    }
+
+    // Tier 2: try the in-process eBay scrape. Note: from Vercel cloud IPs
+    // eBay returns 403 ~100% of the time (this is exactly why the Railway
+    // backend was migrated to the official Browse API in 4898dae). We keep
+    // this path so a self-hosted/local Vercel run still degrades gracefully,
+    // but in production it almost always returns []. Better than a 502.
     try {
       const validLimit = Math.min(Math.max(limit, 1), 50);
       const ebayResults = await scrapeEbay(query, validLimit).catch(() => []);

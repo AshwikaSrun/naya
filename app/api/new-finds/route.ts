@@ -4,6 +4,35 @@ export const fetchCache = 'force-no-store';
 
 const BACKEND_URL = 'https://scraper-api-production-d197.up.railway.app';
 
+// Stale-while-error cache. Keyed by `${preset}|${campus}`. When Railway
+// returns 5xx, the hero feed serves the last good payload instead of an
+// empty page so the site stays useful through a backend outage.
+// 30 min is long enough to ride out a typical Railway restart/redeploy
+// without showing users empty results.
+interface FeedSnapshot {
+  body: { items: unknown[]; preset: string; fetchedAt: number };
+  ts: number;
+}
+const feedSnapshots = new Map<string, FeedSnapshot>();
+const FEED_STALE_TTL_MS = 30 * 60 * 1000;
+
+function saveSnapshot(key: string, body: FeedSnapshot['body']) {
+  if (!body || !Array.isArray(body.items) || body.items.length === 0) return;
+  feedSnapshots.set(key, { body, ts: Date.now() });
+  if (feedSnapshots.size > 50) {
+    const oldest = feedSnapshots.keys().next().value;
+    if (oldest !== undefined) feedSnapshots.delete(oldest);
+  }
+}
+
+function loadStaleSnapshot(key: string): { body: FeedSnapshot['body']; ageMs: number } | null {
+  const snap = feedSnapshots.get(key);
+  if (!snap) return null;
+  const ageMs = Date.now() - snap.ts;
+  if (ageMs > FEED_STALE_TTL_MS) { feedSnapshots.delete(key); return null; }
+  return { body: snap.body, ageMs };
+}
+
 interface RawProduct {
   title: string;
   price: number;
@@ -216,6 +245,7 @@ export async function GET(request: Request) {
   const campus = searchParams.get('campus');
 
   const backendUrl = (process.env.SCRAPER_BACKEND_URL || BACKEND_URL).replace(/\/$/, '');
+  const snapshotKey = `${preset}|${campus || ''}`;
 
   let queries = PRESET_QUERIES[preset] || PRESET_QUERIES.default;
 
@@ -352,12 +382,38 @@ export async function GET(request: Request) {
       discoveredAt: now - (i * 2 + Math.floor(Math.random() * 4)) * 60 * 1000,
     }));
 
-    return Response.json(
-      { items, preset, fetchedAt: now },
-      { headers: { 'Cache-Control': 'no-store, max-age=0' } }
-    );
+    const responseBody = { items, preset, fetchedAt: now };
+
+    // Save a stale-while-error snapshot if we actually got items, so the
+    // next request during a backend outage can fall back to this payload
+    // instead of returning an empty feed.
+    if (items.length > 0) saveSnapshot(snapshotKey, responseBody);
+    // Also serve stale-fallback if every backend fetch failed and we ended
+    // up with zero items, before returning an empty feed.
+    if (items.length === 0) {
+      const stale = loadStaleSnapshot(snapshotKey);
+      if (stale) {
+        return Response.json(
+          { ...stale.body, _stale: true, _staleAgeMs: stale.ageMs, fetchedAt: now },
+          { headers: { 'Cache-Control': 'no-store, max-age=0', 'X-Cache': 'STALE' } }
+        );
+      }
+    }
+
+    return Response.json(responseBody, {
+      headers: { 'Cache-Control': 'no-store, max-age=0' },
+    });
   } catch (err) {
     console.error('[new-finds] Error:', err);
+    // Hard failure (network blew up, all fetches rejected). Serve the most
+    // recent good snapshot if we have one — better than an empty feed.
+    const stale = loadStaleSnapshot(snapshotKey);
+    if (stale) {
+      return Response.json(
+        { ...stale.body, _stale: true, _staleAgeMs: stale.ageMs, fetchedAt: Date.now() },
+        { status: 200, headers: { 'Cache-Control': 'no-store, max-age=0', 'X-Cache': 'STALE' } }
+      );
+    }
     return Response.json({ items: [], preset, fetchedAt: Date.now(), error: 'temporarily unavailable' }, { status: 200 });
   }
 }
