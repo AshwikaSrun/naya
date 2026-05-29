@@ -168,11 +168,11 @@ export default function EditorialHero({
           )}
 
           <div
-            className={`relative flex min-h-[480px] flex-col justify-center md:min-h-[560px] lg:min-h-[620px] ${
+            className={`relative flex min-h-[520px] flex-col justify-center md:min-h-[640px] lg:min-h-[700px] ${
               hasPhoto ? 'p-8 md:p-12 lg:p-14' : 'py-6'
             }`}
           >
-            {kicker && (
+            {kicker ? (
               <div className="mb-6 inline-flex items-center gap-2">
                 <span
                   className="h-1.5 w-1.5 rounded-full"
@@ -184,10 +184,30 @@ export default function EditorialHero({
                   {kicker}
                 </p>
               </div>
+            ) : (
+              <div className="naya-enter naya-enter-1 mb-7 inline-flex w-fit items-center gap-2.5">
+                <span className="relative flex h-2 w-2">
+                  <span
+                    className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-40 ${
+                      hasPhoto ? 'bg-white' : 'bg-black'
+                    }`}
+                  />
+                  <span
+                    className={`relative inline-flex h-2 w-2 rounded-full ${
+                      hasPhoto ? 'bg-white' : 'bg-black'
+                    }`}
+                  />
+                </span>
+                <p
+                  className={`font-naya-sans text-[10px] uppercase tracking-[0.3em] ${textFaint}`}
+                >
+                  live vintage index · 4 marketplaces
+                </p>
+              </div>
             )}
 
             <h1
-              className={`naya-enter naya-enter-1 font-naya-serif text-[40px] font-light leading-[1.02] tracking-[-0.01em] sm:text-5xl md:text-6xl lg:text-[68px] ${textMain}`}
+              className={`naya-enter naya-enter-2 font-naya-serif text-balance text-[44px] font-light leading-[0.98] tracking-[-0.02em] sm:text-6xl md:text-7xl lg:text-[88px] ${textMain}`}
             >
               the entire resale market.{' '}
               <span className={`italic ${hasPhoto ? 'text-white/90' : 'text-black/80'}`}>
@@ -196,13 +216,13 @@ export default function EditorialHero({
             </h1>
 
             <p
-              className={`naya-enter naya-enter-2 font-naya-sans mt-5 max-w-md text-[15px] leading-relaxed md:text-base ${textMuted}`}
+              className={`naya-enter naya-enter-3 font-naya-sans mt-6 max-w-md text-[15px] leading-relaxed md:text-base ${textMuted}`}
             >
               eBay, Grailed, Depop, and Poshmark, searched together, scored for quality,
               and de-duped. Real vintage, real prices.
             </p>
 
-            <div className="naya-enter naya-enter-3 mt-7 md:mt-8">
+            <div className="naya-enter naya-enter-4 mt-7 md:mt-8">
               <CommandSearchBar
                 onSearch={onSearch}
                 value={searchValue}
@@ -216,7 +236,7 @@ export default function EditorialHero({
             </div>
 
             {topChips.length > 0 && (
-              <div className="naya-enter naya-enter-4 mt-5 flex flex-wrap gap-2">
+              <div className="naya-enter naya-enter-5 mt-5 flex flex-wrap gap-2">
                 <span
                   className={`font-naya-sans self-center text-[10px] uppercase tracking-[0.24em] ${textFaint}`}
                 >
@@ -253,7 +273,7 @@ export default function EditorialHero({
         </div>
 
         {/* ── Right: artsy mixed-span collage — sits on cream ── */}
-        <div className="relative min-w-0">
+        <div className="naya-enter naya-enter-3 relative min-w-0">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="relative flex h-2 w-2">
@@ -272,14 +292,14 @@ export default function EditorialHero({
             </Link>
           </div>
 
-          <div className="grid aspect-square grid-cols-3 grid-rows-3 gap-2 sm:gap-2.5">
+          <div className="grid aspect-square grid-cols-3 grid-rows-3 gap-2.5 sm:gap-3">
             {collageItems.slice(0, 5).map((p, i) => {
               const span = spans[i] ?? 'col-span-1 row-span-1';
               if (!p) {
                 return (
                   <div
                     key={i}
-                    className={`${span} min-h-0 animate-pulse rounded-lg bg-black/[0.06]`}
+                    className={`${span} naya-skeleton min-h-0 rounded-xl`}
                   />
                 );
               }
@@ -292,7 +312,7 @@ export default function EditorialHero({
                   href={prod.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`${span} group relative block min-h-0 min-w-0 overflow-hidden rounded-lg bg-black/[0.04]`}
+                  className={`${span} naya-lift group relative block min-h-0 min-w-0 overflow-hidden rounded-xl bg-black/[0.04] ring-1 ring-black/5`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
