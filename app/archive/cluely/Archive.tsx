@@ -173,7 +173,7 @@ function ArchiveStyles() {
       }
       .cluely-box {
         display: inline-block;
-        background: #cf0a18;
+        background: #16245c;
         color: #fff;
         font-family: 'Futura', 'Futura PT', 'Century Gothic', 'Twentieth Century',
           'Trebuchet MS', 'DM Sans', sans-serif;
@@ -307,24 +307,24 @@ function ArchiveHero() {
 
         <Reveal delay={160}>
           <h1 className="cluely-heavy mt-9 text-5xl leading-[0.92] text-black sm:text-6xl md:text-8xl lg:text-[7.5rem]">
-            the next supreme.
+            the merch they never made.
           </h1>
         </Reveal>
 
         <Reveal delay={220}>
           <p className="font-naya-serif mt-6 text-xl font-light italic text-black/55 md:text-3xl">
-            a vintage archive of the merch they never made.
+            cluely, the next supreme.
           </p>
         </Reveal>
 
         <Reveal delay={300}>
           <div className="mt-12 flex flex-wrap items-center gap-x-5 gap-y-2 font-naya-sans text-[11px] uppercase tracking-[0.22em] text-black/55">
             <span>Est. 2024</span>
-            <span className="text-[#cf0a18]">·</span>
+            <span className="text-[#16245c]">·</span>
             <span>5 pieces</span>
-            <span className="text-[#cf0a18]">·</span>
+            <span className="text-[#16245c]">·</span>
             <span>New York</span>
-            <span className="text-[#cf0a18]">·</span>
+            <span className="text-[#16245c]">·</span>
             <span>curated by naya editorial</span>
           </div>
         </Reveal>
@@ -514,7 +514,7 @@ function ProductImage({ item, rounded = 'rounded-2xl' }: { item: Item; rounded?:
     <div
       className={`relative overflow-hidden ${rounded} shadow-[0_12px_40px_-18px_rgba(40,30,15,0.4)] transition-shadow duration-500 group-hover:shadow-[0_26px_70px_-22px_rgba(40,30,15,0.55)]`}
     >
-      <span className="font-naya-sans absolute left-3 top-3 z-20 rounded-[2px] bg-[#cf0a18] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white shadow-sm">
+      <span className="font-naya-sans absolute left-3 top-3 z-20 rounded-[2px] bg-[#16245c] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white shadow-sm">
         {item.badge}
       </span>
 
@@ -588,7 +588,7 @@ function Lightbox({ item, onClose }: { item: Item | null; onClose: () => void })
 
         <div className="flex flex-col justify-center overflow-y-auto p-7 md:p-10">
           <div className="flex items-center gap-2">
-            <span className="font-naya-sans rounded-[2px] bg-[#cf0a18] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white">
+            <span className="font-naya-sans rounded-[2px] bg-[#16245c] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white">
               {item.badge}
             </span>
             <span className="font-naya-sans text-[10px] uppercase tracking-[0.22em] text-black/45">
