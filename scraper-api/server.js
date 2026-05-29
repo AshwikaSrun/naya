@@ -223,7 +223,19 @@ app.get('/search', async (req, res) => {
     let retailData = getCached(retailCache, retailCacheKey, RETAIL_CACHE_TTL) || { prices: [], medianRetailPrice: null };
     const needsRetail = !retailData.medianRetailPrice;
 
-    const retailLookupPromise = needsRetail
+    // ── Per-request retail lookup is gated behind ENABLE_RETAIL_LOOKUP ──
+    // Why: lookupRetailPrices() launches Chromium via Google Shopping. On
+    // Railway Hobby containers the kernel runs out of PIDs/memory when
+    // multiple Chromiums boot in parallel (one per Depop scrape + one per
+    // retail lookup × N concurrent requests), producing EAGAIN errors and
+    // eventually wedging the HTTP server. Production logs showed this path
+    // failing with `spawn ... EAGAIN` on every request while returning
+    // retailMedian=null anyway, so it was burning Chromium budget for zero
+    // user value. Default OFF. Flip ENABLE_RETAIL_LOOKUP=1 once the
+    // container has more headroom or once Playwright launches go through
+    // a global semaphore.
+    const retailEnabled = process.env.ENABLE_RETAIL_LOOKUP === '1';
+    const retailLookupPromise = retailEnabled && needsRetail
       ? lookupRetailPrices(query, 10)
           .then((data) => {
             retailData = data;
@@ -340,6 +352,11 @@ app.get('/search', async (req, res) => {
 });
 
 app.get('/retail-lookup', async (req, res) => {
+  // Mirrors the per-search gate. Direct hits to this endpoint can also
+  // OOM/EAGAIN the container; require explicit opt-in to use it.
+  if (process.env.ENABLE_RETAIL_LOOKUP !== '1') {
+    return res.json({ query: req.query.q, prices: [], medianRetailPrice: null, meta: { disabled: true } });
+  }
   const start = Date.now();
   try {
     const query = req.query.q;
