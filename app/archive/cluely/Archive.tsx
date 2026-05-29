@@ -118,7 +118,6 @@ export default function Archive() {
       <ArchiveStyles />
       <SimpleHeader />
       <ArchiveHero />
-      <CuratorNote />
       <CampaignPoster />
 
       <section className="mx-auto max-w-6xl px-6 pb-10 pt-24 md:px-10 md:pb-16 md:pt-32">
@@ -334,32 +333,6 @@ function ArchiveHero() {
             A small but significant collection of early-era Cluely pieces, sourced from
             private collections and former insiders. All items authenticated to the best
             of our knowledge. Sales by direct offer.
-          </p>
-        </Reveal>
-      </div>
-    </section>
-  );
-}
-
-// ─── Curator's note ──────────────────────────────────────────────────────────
-
-function CuratorNote() {
-  return (
-    <section className="border-b border-black/5 bg-white/40">
-      <div className="mx-auto max-w-3xl px-6 py-20 md:px-10 md:py-28">
-        <Reveal>
-          <p className="font-naya-sans text-[10px] uppercase tracking-[0.28em] text-black/45">
-            curator&apos;s note
-          </p>
-          <p className="font-naya-serif mt-6 text-xl font-light leading-[1.5] text-black/80 md:text-3xl md:leading-[1.45]">
-            Cluely spent its first year becoming one of the most-talked-about companies in
-            New York and, true to form, never released a single piece of merch. What
-            follows is the archive that <span className="italic">should have existed</span>:
-            deadstock and lightly-worn artifacts from the pre-IPO era, authenticated and
-            catalogued by naya editorial.
-          </p>
-          <p className="font-naya-sans mt-7 text-[12px] uppercase tracking-[0.2em] text-black/40">
-            the archive desk
           </p>
         </Reveal>
       </div>
