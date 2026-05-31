@@ -11,7 +11,7 @@ export const maxDuration = 15;
 // the client silently falls back to the deterministic parser (lib/searchIntent).
 // ─────────────────────────────────────────────────────────────────────────────
 
-const MODEL = 'gemini-2.0-flash';
+const MODEL = 'gemini-2.5-flash';
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
 const SYSTEM = `You convert a shopper's natural-language request on naya, a vintage and secondhand fashion search engine, into a structured search spec.
@@ -151,6 +151,9 @@ export async function GET(req: NextRequest) {
           temperature: 0,
           responseMimeType: 'application/json',
           responseSchema: SCHEMA,
+          // 2.5-flash "thinks" by default; for structured extraction that just
+          // adds latency and tokens, so turn it off.
+          thinkingConfig: { thinkingBudget: 0 },
         },
       }),
     });
