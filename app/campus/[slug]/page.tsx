@@ -204,7 +204,7 @@ function CampusLanding({ campus }: { campus: CampusConfig }) {
 
         {!s.loading && s.results && (
           <div className="mx-auto max-w-7xl px-6 pt-6">
-            <ResultsGrid results={s.results} filters={s.filters} onSearch={s.handleSearch} relatedSearches={campus.defaultTrending} />
+            <ResultsGrid results={s.results} filters={s.filters} onSearch={s.handleSearch} relatedSearches={campus.defaultTrending} intent={s.searchIntent} />
           </div>
         )}
 

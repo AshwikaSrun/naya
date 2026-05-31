@@ -174,7 +174,7 @@ export default function Home() {
 
         {!s.loading && s.results && (
           <div className="mx-auto max-w-7xl px-6 pt-6">
-            <ResultsGrid results={s.results} filters={s.filters} onSearch={s.handleSearch} relatedSearches={DEFAULT_TRENDING} />
+            <ResultsGrid results={s.results} filters={s.filters} onSearch={s.handleSearch} relatedSearches={DEFAULT_TRENDING} intent={s.searchIntent} />
           </div>
         )}
 

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { TrendingItem } from '@/lib/campuses';
 import { parseSearchIntent } from '@/lib/searchIntent';
-import { fetchRemoteIntent, understoodChips } from '@/lib/remoteIntent';
+import { fetchRemoteIntent, understoodChips, type RemoteIntent } from '@/lib/remoteIntent';
 
 export interface Product {
   title: string;
@@ -74,6 +74,7 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
   const [searchInput, setSearchInput] = useState('');
   const [results, setResults] = useState<SearchResults | null>(null);
   const [understood, setUnderstood] = useState<string[]>([]);
+  const [searchIntent, setSearchIntent] = useState<RemoteIntent | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [platformStatus, setPlatformStatus] = useState<PlatformStatus>(initialPlatformStatus);
@@ -409,6 +410,16 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
     }));
     setUnderstood([]);
     const baseQuery = intent.cleanedQuery || searchQuery;
+    // Seed a ranking intent from the deterministic parse so "best match" can
+    // re-rank immediately, even before (or without) the LLM.
+    setSearchIntent({
+      marketplaceQuery: baseQuery,
+      ...(intent.filters.minPrice !== undefined ? { priceMin: intent.filters.minPrice } : {}),
+      ...(intent.filters.maxPrice !== undefined ? { priceMax: intent.filters.maxPrice } : {}),
+      ...(intent.filters.brands?.length ? { brands: intent.filters.brands } : {}),
+      ...(intent.filters.colors?.length ? { colors: intent.filters.colors } : {}),
+      ...(intent.filters.tags?.length ? { vibe: intent.filters.tags } : {}),
+    });
     runSearch(baseQuery, platformOverride);
 
     // 2) Background NLP refinement (Gemini). Never blocks the first results.
@@ -427,6 +438,7 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
         ...(remote.condition && remote.condition !== 'any' ? { condition: remote.condition } : {}),
       }));
       setUnderstood(understoodChips(remote));
+      setSearchIntent(remote);
       const better = (remote.marketplaceQuery || '').trim();
       if (better && better.toLowerCase() !== baseQuery.trim().toLowerCase()) {
         runSearch(better, platformOverride);
@@ -455,6 +467,7 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
     setResults(null);
     setQuery('');
     setUnderstood([]);
+    setSearchIntent(null);
   };
 
   return {
@@ -464,6 +477,7 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
     setSearchInput,
     results,
     understood,
+    searchIntent,
     loading,
     error,
     handleSearch,

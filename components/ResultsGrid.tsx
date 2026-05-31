@@ -5,6 +5,8 @@ import ProductCard from './ProductCard';
 import ProductDetailPanel from './ProductDetailPanel';
 import PriceIndexBadge from './PriceIndexBadge';
 import GetNayaBanner from './GetNayaBanner';
+import { rankProducts } from '@/lib/rankProducts';
+import type { RemoteIntent } from '@/lib/remoteIntent';
 
 interface Product {
   title: string;
@@ -53,6 +55,7 @@ interface ResultsGridProps {
   };
   onSearch?: (query: string) => void;
   relatedSearches?: RelatedSearch[];
+  intent?: RemoteIntent | null;
 }
 
 type SourceFilter = 'all' | 'ebay' | 'grailed' | 'depop' | 'poshmark' | 'boiler_vintage';
@@ -77,7 +80,7 @@ function interleave(arrays: Product[][]): Product[] {
   return result;
 }
 
-export default function ResultsGrid({ results, filters, onSearch, relatedSearches = DEFAULT_RELATED }: ResultsGridProps) {
+export default function ResultsGrid({ results, filters, onSearch, relatedSearches = DEFAULT_RELATED, intent = null }: ResultsGridProps) {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [page, setPage] = useState(1);
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
@@ -140,10 +143,13 @@ export default function ResultsGrid({ results, filters, onSearch, relatedSearche
       products = [...products].sort((a, b) => b.price - a.price);
     } else if (sortBy === 'discount') {
       products = [...products].sort((a, b) => (b.discountPercent ?? 0) - (a.discountPercent ?? 0));
+    } else if (sortBy === 'mixed' && intent) {
+      // "best match": re-rank the interleaved results against the parsed intent.
+      products = rankProducts(products, intent);
     }
 
     return products;
-  }, [platformArrays, sourceFilter, filters, sortBy, minDiscount]);
+  }, [platformArrays, sourceFilter, filters, sortBy, minDiscount, intent]);
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / perPage));
   const saferPage = Math.min(page, totalPages);
