@@ -123,6 +123,22 @@ export default function Home() {
             </svg>
             {s.shareCopied ? 'link copied!' : 'share these finds'}
           </button>
+
+          {s.understood.length > 0 && (
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+              <span className="font-naya-sans text-[10px] uppercase tracking-[0.22em] text-black/35">
+                understood
+              </span>
+              {s.understood.map((chip) => (
+                <span
+                  key={chip}
+                  className="font-naya-sans rounded-full border border-black/10 bg-white px-3 py-1 text-[11px] lowercase tracking-[0.02em] text-black/65"
+                >
+                  {chip}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         {s.loading && (

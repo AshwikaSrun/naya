@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { TrendingItem } from '@/lib/campuses';
 import { parseSearchIntent } from '@/lib/searchIntent';
+import { fetchRemoteIntent, understoodChips } from '@/lib/remoteIntent';
 
 export interface Product {
   title: string;
@@ -72,12 +73,14 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
   const [query, setQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [results, setResults] = useState<SearchResults | null>(null);
+  const [understood, setUnderstood] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [platformStatus, setPlatformStatus] = useState<PlatformStatus>(initialPlatformStatus);
   const didHydrateSearch = useRef(false);
   const searchAbortRef = useRef<AbortController | null>(null);
   const backfillAbortRef = useRef<AbortController | null>(null);
+  const intentAbortRef = useRef<AbortController | null>(null);
   const limit = FULL_LIMIT;
   const [platform] = useState<'all' | Platform>('all');
 
@@ -395,15 +398,40 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
     platformOverride?: 'all' | Platform
   ) => {
     if (!searchQuery.trim()) return;
+
+    // 1) Instant deterministic parse — gets results on screen with zero added
+    //    latency, and works even if the NLP route is down or has no key.
     const intent = parseSearchIntent(searchQuery);
-    // Apply intent-derived price constraints to UI filters
     setFilters((prev) => ({
       ...prev,
       minPrice: intent.filters.minPrice !== undefined ? String(intent.filters.minPrice) : prev.minPrice,
       maxPrice: intent.filters.maxPrice !== undefined ? String(intent.filters.maxPrice) : prev.maxPrice,
     }));
-    // Search using the cleaned query so marketplaces get higher-signal terms
-    runSearch(intent.cleanedQuery || searchQuery, platformOverride);
+    setUnderstood([]);
+    const baseQuery = intent.cleanedQuery || searchQuery;
+    runSearch(baseQuery, platformOverride);
+
+    // 2) Background NLP refinement (Gemini). Never blocks the first results.
+    //    On success it tightens filters from the full sentence and, if it
+    //    produces a materially better marketplace query, re-runs the search.
+    if (intentAbortRef.current) intentAbortRef.current.abort();
+    const abort = new AbortController();
+    intentAbortRef.current = abort;
+    fetchRemoteIntent(searchQuery, abort.signal).then((remote) => {
+      if (!remote || abort.signal.aborted) return;
+      setFilters((prev) => ({
+        ...prev,
+        ...(remote.priceMin !== undefined ? { minPrice: String(remote.priceMin) } : {}),
+        ...(remote.priceMax !== undefined ? { maxPrice: String(remote.priceMax) } : {}),
+        ...(remote.sizes && remote.sizes.length ? { size: remote.sizes[0] } : {}),
+        ...(remote.condition && remote.condition !== 'any' ? { condition: remote.condition } : {}),
+      }));
+      setUnderstood(understoodChips(remote));
+      const better = (remote.marketplaceQuery || '').trim();
+      if (better && better.toLowerCase() !== baseQuery.trim().toLowerCase()) {
+        runSearch(better, platformOverride);
+      }
+    });
   };
 
   const handleShareSearch = async () => {
@@ -426,6 +454,7 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
   const clearResults = () => {
     setResults(null);
     setQuery('');
+    setUnderstood([]);
   };
 
   return {
@@ -434,6 +463,7 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
     searchInput,
     setSearchInput,
     results,
+    understood,
     loading,
     error,
     handleSearch,
