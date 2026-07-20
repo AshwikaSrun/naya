@@ -53,8 +53,9 @@ export async function POST(req: NextRequest) {
 
       if (paymentIntentId) {
         await stripe.refunds.create({ payment_intent: paymentIntentId });
-      } else if (latestInvoice && typeof latestInvoice !== 'string' && latestInvoice.id) {
-        await stripe.refunds.create({ invoice: latestInvoice.id });
+      } else {
+        // No charge/PI on the latest invoice yet (trial / $0). Still cancel.
+        console.warn('[subscription/refund] no payment_intent on latest invoice; canceling only');
       }
 
       await stripe.subscriptions.cancel(sub.stripe_subscription_id);

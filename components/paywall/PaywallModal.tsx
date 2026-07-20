@@ -62,10 +62,10 @@ function PaywallModalClerk(props: Props) {
       {...props}
       signedIn={!!isSignedIn}
       authLoaded={isLoaded}
-      onSignUp={() =>
-        openSignUp?.({ forceRedirectUrl: '/onboarding' }) ||
-        openSignIn?.({ forceRedirectUrl: '/onboarding' })
-      }
+      onSignUp={() => {
+        if (openSignUp) openSignUp({ forceRedirectUrl: '/onboarding' });
+        else openSignIn?.({ forceRedirectUrl: '/onboarding' });
+      }}
       onContinue={() => {
         props.onClose();
         router.push('/onboarding');
