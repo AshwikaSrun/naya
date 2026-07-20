@@ -364,7 +364,7 @@ export default function NewFindsSection({ campus, onSearch }: Props) {
                     <img
                       src={displayImage}
                       alt={item.title}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.05]"
+                      className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
                       loading="lazy"
                       onError={(e) => {
                         if (displayImage !== item.image) e.currentTarget.src = item.image;

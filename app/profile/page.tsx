@@ -5,6 +5,7 @@ import Link from 'next/link';
 import ProductCard from '@/components/ProductCard';
 import DealDiscoveryNotifications from '@/components/DealDiscoveryNotifications';
 import MobileNav from '@/components/MobileNav';
+import RefundEligibleBanner from '@/components/paywall/RefundEligibleBanner';
 
 interface Product {
   title: string;
@@ -84,6 +85,8 @@ export default function ProfilePage() {
             saved items and preferences
           </p>
         </header>
+
+        <RefundEligibleBanner />
 
         <section className="mb-12 grid gap-6 rounded-2xl border border-black/8 bg-[#faf9f7] p-8 md:grid-cols-4">
           <div>

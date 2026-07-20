@@ -92,7 +92,7 @@ export default function ProductCard({ product, onSelect }: ProductCardProps) {
           src={imageSrc}
           alt={product.title}
           fill
-          className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+          className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
           unoptimized
           onError={() => {

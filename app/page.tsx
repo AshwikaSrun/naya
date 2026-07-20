@@ -1,30 +1,30 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import BottomSearchBar from '@/components/BottomSearchBar';
 import ResultsGrid from '@/components/ResultsGrid';
 import CartPanel from '@/components/CartPanel';
 import { useNayaSearch } from '@/lib/useNayaSearch';
-import GetNayaBanner from '@/components/GetNayaBanner';
-import EmailSignup from '@/components/EmailSignup';
-import NewFindsSection from '@/components/NewFindsSection';
-import CampusProductGrid from '@/components/CampusProductGrid';
-import { ALL_CAMPUSES } from '@/lib/campuses';
 import MobileNav from '@/components/MobileNav';
-import TrendingCards from '@/components/TrendingCards';
-import CampusModeTeaser from '@/components/CampusModeTeaser';
 import StickyHeader from '@/components/StickyHeader';
-import EditorialHero from '@/components/EditorialHero';
+import AgentHero from '@/components/AgentHero';
+import FeatureShowcase from '@/components/FeatureShowcase';
 import BrandSpotlight from '@/components/BrandSpotlight';
-import Reveal from '@/components/Reveal';
+import EditorsPicks from '@/components/EditorsPicks';
+import FeaturedEdit from '@/components/FeaturedEdit';
+import Collections from '@/components/Collections';
+import NewsletterSection from '@/components/NewsletterSection';
+import ClosingCta from '@/components/ClosingCta';
+import PhiaFooter from '@/components/PhiaFooter';
+import UnlockStylePrompt from '@/components/paywall/UnlockStylePrompt';
+import NayaAuth from '@/components/auth/NayaAuth';
 
 const NAV_LINKS = [
-  { href: '/deals', label: 'deals' },
-  { href: '/college', label: 'campus' },
-  { href: '/insights', label: 'insights' },
+  { href: '/finds', label: 'shop' },
   { href: '/app', label: 'concierge' },
-  { href: '/profile', label: 'profile' },
+  { href: '/editorial', label: 'newsletter' },
+  { href: '/pricing', label: 'pricing' },
+  { href: '/college', label: 'campus' },
 ];
 
 const DEFAULT_TRENDING = [
@@ -37,36 +37,8 @@ const DEFAULT_TRENDING = [
   { label: 'isabel marrant', query: 'isabel marant vintage' },
 ];
 
-type PreviewProduct = {
-  title: string;
-  price: number;
-  originalPrice?: number;
-  discountPercent?: number;
-  image: string;
-  url: string;
-  source: 'ebay' | 'grailed' | 'depop' | 'poshmark' | 'boiler_vintage';
-};
-
 export default function Home() {
   const s = useNayaSearch(DEFAULT_TRENDING);
-  const [previewProducts, setPreviewProducts] = useState<PreviewProduct[] | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/new-finds?preset=default')
-      .then((r) => r.json())
-      .then((data) => {
-        if (cancelled) return;
-        const raw = (data.items || []) as (PreviewProduct & { source?: string })[];
-        const mapped = raw.map((p) => ({
-          ...p,
-          source: (['ebay', 'grailed', 'depop', 'poshmark', 'boiler_vintage'].includes(p.source || '') ? p.source : 'ebay') as PreviewProduct['source'],
-        }));
-        setPreviewProducts(mapped);
-      })
-      .catch(() => { if (!cancelled) setPreviewProducts([]); });
-    return () => { cancelled = true; };
-  }, []);
 
   /* ================================================================
      RESULTS MODE
@@ -76,8 +48,9 @@ export default function Home() {
       <div className="min-h-screen bg-white pb-32">
         <header className="sticky top-0 z-40 border-b border-black/5 bg-white">
           <div className="mx-auto flex max-w-7xl items-center gap-3 px-6 py-3">
-            <Link href="/" className="font-naya-serif shrink-0 text-2xl font-light lowercase tracking-[0.12em] text-black" onClick={() => s.clearResults()}>
-              naya
+            <Link href="/" className="flex shrink-0 items-center gap-1.5 text-black" onClick={() => s.clearResults()}>
+              <span className="font-naya-serif text-2xl font-light lowercase tracking-[0.12em]">naya</span>
+              <span className="font-naya-sans translate-y-[-0.4em] rounded-full bg-black/[0.06] px-1.5 py-0.5 text-[8px] font-medium uppercase tracking-[0.18em] text-black/55">beta</span>
             </Link>
             <form
               className="relative flex min-w-0 flex-1 items-center"
@@ -102,6 +75,9 @@ export default function Home() {
                   </Link>
                 ))}
               </nav>
+              <div className="hidden md:block">
+                <NayaAuth tone="dark" showSignUp={false} />
+              </div>
               <button type="button" onClick={() => s.setCartOpen(true)} className="relative flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-black/5" aria-label="Open cart">
                 <svg className="h-5 w-5 text-black/60" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
@@ -191,10 +167,10 @@ export default function Home() {
   }
 
   /* ================================================================
-     HERO MODE — landing page
+     HERO MODE — landing page (phia-style editorial)
      ================================================================ */
   return (
-    <div className="min-h-screen bg-night-bg">
+    <div className="min-h-screen bg-[#f7f4ee]">
       <StickyHeader
         navLinks={NAV_LINKS}
         cartCount={s.cartCount}
@@ -205,119 +181,47 @@ export default function Home() {
         trending={s.trendingSearches.length ? s.trendingSearches : DEFAULT_TRENDING}
         saved={s.savedSearches}
         recentlyViewed={s.recentlyViewed}
-        overHero={false}
+        overHero={true}
+        heroTone="dark"
       />
 
-      <EditorialHero
+      <UnlockStylePrompt />
+
+      <AgentHero
         onSearch={s.handleSearch}
         searchValue={s.searchInput}
         onSearchValueChange={s.setSearchInput}
         trending={s.trendingSearches.length ? s.trendingSearches : DEFAULT_TRENDING}
         saved={s.savedSearches}
         recentlyViewed={s.recentlyViewed}
-        ctaLabel="shop your campus"
-        ctaHref="/college"
-        findsEndpoint="/api/new-finds?preset=curated"
-        backgroundImage="/brands/browser.png"
+        backgroundImage="/editorial/hero-editorial.png"
       />
 
-      {/* ── New Finds Feed — the main "live marketplace" moment ── */}
-      <Reveal>
-        <NewFindsSection onSearch={s.handleSearch} />
-      </Reveal>
+      {/* Dark feature blocks with floating cards */}
+      <FeatureShowcase />
 
-      {/* ── Shop by Brand — editorial image grid ── */}
-      <Reveal>
-        <BrandSpotlight />
-      </Reveal>
+      {/* Explore brands — editorial masonry */}
+      <BrandSpotlight />
 
-      {/* ── Trending picks (visual cards + live product row) ── */}
-      {s.trendingSearches.length > 0 && (
-        <Reveal as="section" className="bg-night-bg px-6 py-24 md:px-10 md:py-32">
-          <div className="mx-auto max-w-6xl">
-            <div className="flex items-end justify-between gap-6">
-              <div>
-                <p className="font-naya-sans text-[10px] uppercase tracking-[0.28em] text-black/50">this week</p>
-                <h2 className="font-naya-serif mt-3 text-4xl font-light leading-[1.05] tracking-[-0.01em] text-black md:text-6xl">
-                  trending <span className="italic text-black/75">right now.</span>
-                </h2>
-              </div>
-              <Link href="/finds" className="font-naya-sans hidden text-[10px] uppercase tracking-[0.22em] text-black/50 transition-colors hover:text-black md:inline-block">
-                view all →
-              </Link>
-            </div>
-            <TrendingCards
-              trends={s.trendingSearches}
-              onPick={s.handleSearch}
-              previewProducts={previewProducts}
-              contextLabel="this week"
-            />
+      {/* Editor's picks — 3 large cards */}
+      <EditorsPicks />
 
-            {(previewProducts === null || previewProducts.length > 0) && (
-              <>
-                <p className="font-naya-sans mt-16 text-[10px] uppercase tracking-[0.28em] text-black/50">picked for you</p>
-                <div className="mt-5">
-                  {previewProducts === null ? (
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-                      {Array.from({ length: 6 }).map((_, i) => (
-                        <div key={i} className="naya-skeleton aspect-[4/5] rounded-lg" />
-                      ))}
-                    </div>
-                  ) : (
-                    <CampusProductGrid products={previewProducts.slice(0, 6)} columns={6} />
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        </Reveal>
-      )}
+      {/* Featured edit — horizontal carousel of live finds */}
+      <FeaturedEdit />
 
-      {/* ── Campus Mode (single moment, unified with teaser) ── */}
-      <Reveal>
-        <CampusModeTeaser campuses={ALL_CAMPUSES} />
-      </Reveal>
+      {/* Save your favorite finds — collections */}
+      <Collections />
 
-      {/* ── App / Extension — the single dark "moment" of the page ── */}
-      <Reveal>
-        <GetNayaBanner variant="full" />
-      </Reveal>
+      {/* Newsletter — phia-style signup + featured guide */}
+      <NewsletterSection />
 
-      {/* ── Stay in the Loop — continues the dark section ── */}
-      <Reveal as="section" className="bg-[#0a0a0a] px-6 py-20 md:px-10 md:py-28">
-        <div className="mx-auto max-w-md text-center">
-          <p className="font-naya-sans text-[10px] uppercase tracking-[0.28em] text-white/45">stay in the loop</p>
-          <h2 className="font-naya-serif mt-4 text-3xl font-light leading-[1.1] text-white md:text-4xl">
-            get notified about <span className="italic">new drops</span> &amp; deals.
-          </h2>
-          <p className="font-naya-sans mt-3 text-xs text-white/45">no spam. just the good stuff.</p>
-          <div className="mt-7">
-            <EmailSignup source="home_footer" />
-          </div>
-        </div>
-      </Reveal>
+      {/* Closing CTA */}
+      <ClosingCta />
 
-      {/* ── Footer ── */}
-      <footer className="bg-night-bg px-6 py-14 md:px-10">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-4">
-            <span className="font-naya-serif text-lg font-light lowercase tracking-[0.12em] text-text-primary">naya</span>
-            <span className="text-[10px] text-text-muted">&copy; 2026</span>
-          </div>
-          <div className="flex flex-wrap gap-6 text-[10px] uppercase tracking-[0.2em] text-text-muted">
-            <Link href="/editorial" className="transition-colors hover:text-text-primary">editorial</Link>
-            <Link href="/brands" className="transition-colors hover:text-text-primary">brands</Link>
-            <Link href="/privacy" className="transition-colors hover:text-text-primary">privacy</Link>
-            <Link href="/terms" className="transition-colors hover:text-text-primary">terms</Link>
-            <a href="mailto:nayaeditorialshop@gmail.com" className="transition-colors hover:text-text-primary">contact</a>
-          </div>
-        </div>
-      </footer>
+      {/* Footer */}
+      <PhiaFooter />
 
-      {/* ── Sticky mobile app banner ── */}
-      <GetNayaBanner variant="sticky" />
-
-      {/* ── Cart panel ── */}
+      {/* Cart panel */}
       <CartPanel open={s.cartOpen} onClose={() => s.setCartOpen(false)} />
     </div>
   );

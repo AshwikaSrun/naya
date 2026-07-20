@@ -2,11 +2,18 @@
 
 import { useState, useEffect } from 'react';
 
-export default function EmailSignup({ source = 'footer' }: { source?: string }) {
+export default function EmailSignup({
+  source = 'footer',
+  variant = 'dark',
+}: {
+  source?: string;
+  variant?: 'dark' | 'light';
+}) {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [alreadySigned, setAlreadySigned] = useState(false);
+  const isLight = variant === 'light';
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.localStorage.getItem('naya-user-email')) {
@@ -46,7 +53,9 @@ export default function EmailSignup({ source = 'footer' }: { source?: string }) 
   if (submitted) {
     return (
       <div className="text-center">
-        <p className="font-naya-sans text-sm text-white/70">welcome to naya. you&apos;re in.</p>
+        <p className={`font-naya-sans text-sm ${isLight ? 'text-black/60' : 'text-white/70'}`}>
+          welcome to naya. you&apos;re in.
+        </p>
       </div>
     );
   }
@@ -62,12 +71,18 @@ export default function EmailSignup({ source = 'footer' }: { source?: string }) 
         autoComplete="email"
         autoCapitalize="none"
         inputMode="email"
-        className="font-naya-sans min-w-0 flex-1 rounded-full border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-white/30 focus:outline-none"
+        className={`font-naya-sans min-w-0 flex-1 rounded-full border px-4 py-2.5 text-sm focus:outline-none ${
+          isLight
+            ? 'border-black/10 bg-transparent text-black placeholder:text-black/30 focus:border-black/30'
+            : 'border-white/15 bg-white/5 text-white placeholder:text-white/30 focus:border-white/30'
+        }`}
       />
       <button
         type="submit"
         disabled={loading || !email.trim()}
-        className="shrink-0 rounded-full bg-white px-5 py-2.5 text-[10px] font-medium lowercase tracking-[0.1em] text-black transition-opacity hover:opacity-90 disabled:opacity-40"
+        className={`shrink-0 rounded-full px-5 py-2.5 text-[10px] font-medium lowercase tracking-[0.1em] transition-opacity hover:opacity-90 disabled:opacity-40 ${
+          isLight ? 'bg-black text-white' : 'bg-white text-black'
+        }`}
       >
         {loading ? '...' : 'join'}
       </button>

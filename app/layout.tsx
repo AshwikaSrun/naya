@@ -1,10 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import SmoothScroll from "@/components/SmoothScroll";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import InstallPrompt from "@/components/InstallPrompt";
 import NotifyBanner from "@/components/NotifyBanner";
 import FeedbackWidget from "@/components/FeedbackWidget";
+import AuthProvider from "@/components/auth/AuthProvider";
+import AccountRecorder from "@/components/auth/AccountRecorder";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -60,16 +63,20 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300;1,9..40,400&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300;1,9..144,400&family=Inter:wght@400;500&display=swap"
           rel="stylesheet"
         />
       </head>
       <body className="antialiased">
-        {children}
-        <ServiceWorkerRegistration />
-        <InstallPrompt />
-        <NotifyBanner />
-        <FeedbackWidget />
+        <AuthProvider>
+          <SmoothScroll />
+          <AccountRecorder />
+          {children}
+          <ServiceWorkerRegistration />
+          <InstallPrompt />
+          <NotifyBanner />
+          <FeedbackWidget />
+        </AuthProvider>
         <Analytics />
         <SpeedInsights />
       </body>

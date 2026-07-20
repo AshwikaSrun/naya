@@ -2,13 +2,16 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import NayaAuth from './auth/NayaAuth';
 
 const LINKS = [
-  { href: '/deals', label: 'deals' },
-  { href: '/college', label: 'campus' },
-  { href: '/editorial', label: 'editorial' },
-  { href: '/brands', label: 'brands' },
+  { href: '/for-you', label: 'for you' },
+  { href: '/finds', label: 'shop' },
   { href: '/app', label: 'concierge' },
+  { href: '/editorial', label: 'newsletter' },
+  { href: '/pricing', label: 'pricing' },
+  { href: '/college', label: 'campus' },
+  { href: '/brands', label: 'brands' },
   { href: '/profile', label: 'profile' },
 ];
 
@@ -63,10 +66,11 @@ export default function MobileNav({ color = 'dark' }: { color?: 'dark' | 'light'
                 </Link>
               ))}
             </div>
-            <div className="mt-auto border-t border-black/5 px-6 py-6">
+            <div className="mt-auto flex items-center justify-between border-t border-black/5 px-6 py-6">
               <p className="text-[10px] lowercase tracking-[0.12em] text-black/30">
-                search second-hand, simplified
+                your AI vintage stylist
               </p>
+              <NayaAuth tone="dark" showSignUp={false} />
             </div>
           </nav>
         </div>

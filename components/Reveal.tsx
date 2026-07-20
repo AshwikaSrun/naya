@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 
 /**
  * Scroll-reveal wrapper. Children fade and rise into view once, the first time
@@ -9,15 +9,26 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
  * `delay` staggers siblings for a choreographed feel. `as` lets callers keep
  * semantic markup (e.g. a <section>) without an extra wrapper div.
  */
+type RevealVariant = 'up' | 'left' | 'right' | 'scale';
+
+const VARIANT_CLASS: Record<RevealVariant, string> = {
+  up: '',
+  left: 'reveal--left',
+  right: 'reveal--right',
+  scale: 'reveal--scale',
+};
+
 export default function Reveal({
   children,
   className = '',
   delay = 0,
+  variant = 'up',
   as: Tag = 'div',
 }: {
   children: ReactNode;
   className?: string;
   delay?: number;
+  variant?: RevealVariant;
   as?: 'div' | 'section' | 'li';
 }) {
   const ref = useRef<HTMLElement | null>(null);
@@ -35,7 +46,7 @@ export default function Reveal({
           }
         });
       },
-      { threshold: 0.12, rootMargin: '0px 0px -8% 0px' }
+      { threshold: 0.1, rootMargin: '0px 0px -100px 0px' }
     );
     io.observe(el);
     return () => io.disconnect();
@@ -45,8 +56,8 @@ export default function Reveal({
     <Tag
       // @ts-expect-error – ref type narrows per tag, all are HTMLElement
       ref={ref}
-      className={`reveal ${visible ? 'is-visible' : ''} ${className}`}
-      style={{ animationDelay: `${delay}ms` }}
+      className={`reveal ${VARIANT_CLASS[variant]} ${visible ? 'is-visible' : ''} ${className}`}
+      style={{ '--reveal-delay': `${delay}ms` } as CSSProperties}
     >
       {children}
     </Tag>

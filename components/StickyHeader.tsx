@@ -4,6 +4,7 @@ import { ReactNode, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import MobileNav from './MobileNav';
 import CommandSearchBar from './CommandSearchBar';
+import NayaAuth from './auth/NayaAuth';
 import type { Product } from '@/lib/useNayaSearch';
 
 type NavLink = { href: string; label: string };
@@ -22,6 +23,9 @@ type Props = {
   rightSlot?: ReactNode;
   /** Start transparent over a dark hero. Defaults to true. */
   overHero?: boolean;
+  /** Text tone while transparent over the hero. 'light' = white text (dark hero),
+   *  'dark' = ink text (light/cream hero). Defaults to 'light'. */
+  heroTone?: 'light' | 'dark';
   /** Homepage link — defaults to "/". */
   homeHref?: string;
 };
@@ -43,6 +47,7 @@ export default function StickyHeader({
   recentlyViewed,
   rightSlot,
   overHero = true,
+  heroTone = 'light',
   homeHref = '/',
 }: Props) {
   const [hidden, setHidden] = useState(false);
@@ -71,25 +76,36 @@ export default function StickyHeader({
     return () => window.removeEventListener('scroll', handle);
   }, [overHero]);
 
-  const textColor = solid ? 'text-black' : 'text-white';
-  const mutedText = solid ? 'text-black/60' : 'text-white/70';
-  const iconBtnHover = solid ? 'hover:bg-black/5' : 'hover:bg-white/10';
-  const iconStroke = solid ? 'text-black/70' : 'text-white/80';
+  // Over a light/cream hero we want ink text even while transparent.
+  const darkText = solid || heroTone === 'dark';
+  const textColor = darkText ? 'text-black' : 'text-white';
+  const mutedText = darkText ? 'text-black/60' : 'text-white/70';
+  const iconBtnHover = darkText ? 'hover:bg-black/5' : 'hover:bg-white/10';
+  const iconStroke = darkText ? 'text-black/70' : 'text-white/80';
   const borderClass = solid ? 'border-b border-black/5' : 'border-b border-transparent';
-  const bgClass = solid ? 'bg-white/92 backdrop-blur-md' : 'bg-transparent';
+  const bgClass = solid ? 'bg-[#f7f4ee]/85 backdrop-blur-md' : 'bg-transparent';
 
   return (
     <header
       className={`fixed inset-x-0 top-0 z-40 pt-[env(safe-area-inset-top)] transition-transform duration-300 ${hidden ? '-translate-y-full' : 'translate-y-0'}`}
     >
       <div className={`transition-colors duration-300 ${bgClass} ${borderClass}`}>
-        <div className="mx-auto flex max-w-7xl items-center gap-3 px-5 py-3 md:gap-6 md:px-10 md:py-3.5">
+        <div className="mx-auto flex max-w-7xl items-center gap-3 px-5 py-4 md:gap-6 md:px-10 md:py-5">
           {/* Logo */}
           <Link
             href={homeHref}
-            className={`font-naya-serif shrink-0 text-2xl font-light lowercase tracking-[0.15em] transition-colors md:text-3xl ${textColor}`}
+            className={`group flex shrink-0 items-center gap-2 transition-colors ${textColor}`}
           >
-            naya
+            <span className="font-naya-serif text-2xl font-light lowercase tracking-[0.15em] md:text-3xl">
+              naya
+            </span>
+            <span
+              className={`font-naya-sans translate-y-[-0.35em] rounded-full px-1.5 py-0.5 text-[8px] font-medium uppercase tracking-[0.18em] ${
+                darkText ? 'bg-black/[0.06] text-black/55' : 'bg-white/15 text-white/75'
+              }`}
+            >
+              beta
+            </span>
           </Link>
 
           {/* Inline compact search — fades in once solid */}
@@ -113,13 +129,13 @@ export default function StickyHeader({
 
           {/* Nav links */}
           <nav
-            className={`font-naya-sans hidden items-center gap-5 text-[10px] lowercase tracking-[0.15em] transition-colors lg:flex ${mutedText}`}
+            className={`font-naya-sans hidden items-center gap-7 text-[10px] lowercase tracking-[0.2em] transition-colors lg:flex ${mutedText}`}
           >
             {navLinks.map((l) => (
               <Link
                 key={l.href}
                 href={l.href}
-                className={`transition-colors ${solid ? 'hover:text-black' : 'hover:text-white'}`}
+                className={`transition-colors ${darkText ? 'hover:text-black' : 'hover:text-white'}`}
               >
                 {l.label}
               </Link>
@@ -128,6 +144,11 @@ export default function StickyHeader({
 
           {/* Right slot (e.g. campus badge/dropdown) */}
           {rightSlot}
+
+          {/* Auth */}
+          <div className="hidden md:block">
+            <NayaAuth tone={darkText ? 'dark' : 'light'} />
+          </div>
 
           {/* Cart */}
           <button
@@ -141,14 +162,14 @@ export default function StickyHeader({
             </svg>
             {cartCount > 0 && (
               <span
-                className={`absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold ${solid ? 'bg-black text-white' : 'bg-white text-black'}`}
+                className={`absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold ${darkText ? 'bg-black text-white' : 'bg-white text-black'}`}
               >
                 {cartCount}
               </span>
             )}
           </button>
 
-          <MobileNav color={solid ? 'dark' : 'light'} />
+          <MobileNav color={darkText ? 'dark' : 'light'} />
         </div>
       </div>
     </header>
