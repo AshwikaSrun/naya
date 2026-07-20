@@ -1,8 +1,20 @@
 {
   "crons": [
     {
-      "path": "/api/cron/tick",
+      "path": "/api/cron/purdue-deals",
+      "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/refresh-saved-searches",
       "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/rebuild-taste-profile",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/deliver-matches",
+      "schedule": "30 14 * * *"
     }
   ]
 }
