@@ -23,18 +23,36 @@ const NAV_LINKS = [
   { href: '/finds', label: 'shop' },
   { href: '/app', label: 'concierge' },
   { href: '/editorial', label: 'newsletter' },
-  { href: '/pricing', label: 'pricing' },
-  { href: '/college', label: 'campus' },
+  // Kept in the list but hidden for now (re-enable by flipping hidden).
+  { href: '/pricing', label: 'pricing', hidden: true },
+  { href: '/college', label: 'campus', hidden: true },
 ];
 
 const DEFAULT_TRENDING = [
-  { label: 'vintage carhartt jacket worn in', query: 'vintage carhartt jacket worn' },
-  { label: 'baggy denim faded levis 569', query: 'vintage levi 569 faded' },
-  { label: 'oversized hoodie washed vintage', query: 'oversized vintage hoodie washed' },
-  { label: 'graphic tee faded vintage clean', query: 'vintage graphic tee faded' },
-  { label: 'carhartt double knee pants faded', query: 'carhartt double knee faded' },
-  { label: 'distressed knit sweater oversized', query: 'oversized vintage knit sweater distressed' },
-  { label: 'isabel marrant', query: 'isabel marant vintage' },
+  {
+    label: 'worn-in carhartt detroit under $80, not stiff',
+    query: 'worn-in carhartt detroit jacket under $80 soft not stiff',
+  },
+  {
+    label: '90s baggy levis faded, not skinny',
+    query: '90s baggy levis 569 faded denim not skinny',
+  },
+  {
+    label: 'quiet luxury coat for a fall wedding',
+    query: 'quiet luxury wool coat fall wedding guest under $200',
+  },
+  {
+    label: 'gorpcore shell that isn\'t neon, size M',
+    query: 'gorpcore shell jacket muted colors size M not neon',
+  },
+  {
+    label: 'y2k graphic tee faded but clean',
+    query: 'y2k graphic tee faded vintage clean condition',
+  },
+  {
+    label: 'oversized black hoodie washed, under $45',
+    query: 'oversized washed black hoodie under $45 vintage',
+  },
 ];
 
 export default function Home() {
@@ -172,7 +190,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#f7f4ee]">
       <StickyHeader
-        navLinks={NAV_LINKS}
+        navLinks={NAV_LINKS.filter((l) => !l.hidden)}
         cartCount={s.cartCount}
         onCartClick={() => s.setCartOpen(true)}
         onSearch={s.handleSearch}
@@ -191,7 +209,7 @@ export default function Home() {
         onSearch={s.handleSearch}
         searchValue={s.searchInput}
         onSearchValueChange={s.setSearchInput}
-        trending={s.trendingSearches.length ? s.trendingSearches : DEFAULT_TRENDING}
+        trending={DEFAULT_TRENDING}
         saved={s.savedSearches}
         recentlyViewed={s.recentlyViewed}
         backgroundImage="/editorial/hero-editorial.png"

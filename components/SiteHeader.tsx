@@ -5,13 +5,14 @@ import Link from 'next/link';
 import MobileNav from './MobileNav';
 import NayaAuth from './auth/NayaAuth';
 
-type NavLink = { href: string; label: string };
+type NavLink = { href: string; label: string; hidden?: boolean };
 
 const DEFAULT_LINKS: NavLink[] = [
   { href: '/finds', label: 'shop' },
   { href: '/app', label: 'concierge' },
   { href: '/editorial', label: 'newsletter' },
-  { href: '/pricing', label: 'pricing' },
+  // Kept but hidden for now (re-enable by flipping hidden).
+  { href: '/pricing', label: 'pricing', hidden: true },
 ];
 
 /**
@@ -79,7 +80,7 @@ export default function SiteHeader({
           </Link>
 
           <nav className={`font-naya-sans hidden items-center gap-6 text-[11px] lowercase tracking-[0.15em] md:flex ${mutedText}`}>
-            {navLinks.map((l) => (
+            {navLinks.filter((l) => !l.hidden).map((l) => (
               <Link
                 key={l.href}
                 href={l.href}

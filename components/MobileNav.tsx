@@ -9,8 +9,9 @@ const LINKS = [
   { href: '/finds', label: 'shop' },
   { href: '/app', label: 'concierge' },
   { href: '/editorial', label: 'newsletter' },
-  { href: '/pricing', label: 'pricing' },
-  { href: '/college', label: 'campus' },
+  // Kept but hidden for now (re-enable by flipping hidden).
+  { href: '/pricing', label: 'pricing', hidden: true },
+  { href: '/college', label: 'campus', hidden: true },
   { href: '/brands', label: 'brands' },
   { href: '/profile', label: 'profile' },
 ];
@@ -60,7 +61,9 @@ export default function MobileNav({ color = 'dark' }: { color?: 'dark' | 'light'
                   key={link.href}
                   href={link.href}
                   onClick={() => setOpen(false)}
-                  className="rounded-xl px-4 py-3 font-naya-sans text-sm lowercase tracking-[0.08em] text-black/70 transition-colors hover:bg-black/[0.04] hover:text-black"
+                  className={`rounded-xl px-4 py-3 font-naya-sans text-sm lowercase tracking-[0.08em] text-black/70 transition-colors hover:bg-black/[0.04] hover:text-black ${
+                    link.hidden ? 'hidden' : ''
+                  }`}
                 >
                   {link.label}
                 </Link>
