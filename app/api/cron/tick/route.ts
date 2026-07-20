@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authorizeCron } from '@/lib/agent/cronAuth';
 
 export const dynamic = 'force-dynamic';
-/** Combined tick may scrape + score; keep the Vercel ceiling. */
 export const maxDuration = 300;
 
 const JOBS = [
@@ -22,42 +21,49 @@ function appOrigin(req: NextRequest): string {
 
 /**
  * GET /api/cron/tick
- * Single Hobby-plan cron entry: runs all four job routes in sequence with the
- * same CRON_SECRET. Individual routes stay callable for manual / Pro setups.
+ * Hobby plan: one cron slot. Each invocation runs exactly ONE job (rotated),
+ * so a tick stays as fast as the individual routes — never all four in a row.
+ *
+ * ?job=purdue_deals|refresh_saved_searches|rebuild_taste_profile|deliver_matches
+ * forces a specific job (for manual runs).
  */
 export async function GET(req: NextRequest) {
   if (!authorizeCron(req)) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   }
 
+  const forced = req.nextUrl.searchParams.get('job');
+  const forcedJob = JOBS.find((j) => j.key === forced);
+  const slot = Math.floor(Date.now() / (6 * 60 * 60 * 1000)) % JOBS.length;
+  const job = forcedJob ?? JOBS[slot];
+
   const secret = process.env.CRON_SECRET!.trim();
   const origin = appOrigin(req);
-  const headers = { Authorization: `Bearer ${secret}` };
 
-  const results: Record<string, { status: number; body: unknown }> = {};
-
-  for (const job of JOBS) {
+  try {
+    const res = await fetch(`${origin}${job.path}`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${secret}` },
+      cache: 'no-store',
+    });
+    let body: unknown = null;
     try {
-      const res = await fetch(`${origin}${job.path}`, {
-        method: 'GET',
-        headers,
-        cache: 'no-store',
-      });
-      let body: unknown = null;
-      try {
-        body = await res.json();
-      } catch {
-        body = { ok: false, error: 'non_json_response' };
-      }
-      results[job.key] = { status: res.status, body };
-    } catch (err) {
-      results[job.key] = {
-        status: 500,
-        body: { ok: false, error: err instanceof Error ? err.message : 'fetch_failed' },
-      };
+      body = await res.json();
+    } catch {
+      body = { ok: false, error: 'non_json_response' };
     }
+    return NextResponse.json(
+      { ok: res.ok, ran: job.key, status: res.status, body },
+      { status: res.ok ? 200 : 502 },
+    );
+  } catch (err) {
+    return NextResponse.json(
+      {
+        ok: false,
+        ran: job.key,
+        error: err instanceof Error ? err.message : 'fetch_failed',
+      },
+      { status: 500 },
+    );
   }
-
-  const failed = Object.values(results).some((r) => r.status >= 400);
-  return NextResponse.json({ ok: !failed, results }, { status: failed ? 207 : 200 });
 }
