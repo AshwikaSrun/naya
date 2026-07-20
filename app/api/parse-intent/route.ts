@@ -17,13 +17,19 @@ const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODE
 const SYSTEM = `You convert a shopper's natural-language request on naya, a vintage and secondhand fashion search engine, into a structured search spec.
 
 Rules:
-- "marketplaceQuery": the best high-signal keywords to search resale marketplaces (eBay, Grailed, Depop, Poshmark). Include brand + garment + key visual descriptors. NO price words, NO filler like "looking for" or "something". Keep it short and literal, like a power user's search.
+- "marketplaceQuery": the best high-signal keywords to search resale marketplaces (eBay, Grailed, Depop, Poshmark). Include brand + garment + key visual descriptors. NO price words, NO filler like "looking for" or "something", NO negations. Keep it short and literal, like a power user's search.
 - "priceMin"/"priceMax": integer USD bounds only if the user implies them ("under 100", "between 40 and 80", "cheap" => priceMax 60).
 - "sizes": clothing sizes if mentioned (e.g. "M", "32", "10").
 - "condition": "new", "used", or "any".
-- "brands", "colors", "categories": only what is clearly implied.
+- "brands": normalized brand names only ("the north face", not "tnf").
+- "colors": basic color names.
+- "categories": garment types normalized to singular common terms ("sweater", "jeans", "sneakers", "jacket"). Map slang/synonyms (jumper->sweater, trainers->sneakers, kicks->sneakers).
+- "materials": fabrics if mentioned ("leather", "wool", "denim", "corduroy").
 - "era": e.g. "90s", "y2k", "2000s" if implied.
-- "vibe": soft style tags for ranking (e.g. "blokecore", "quiet luxury", "skater", "coastal"), inferred from the request.
+- "fits": silhouette/fit descriptors ("oversized", "baggy", "slim", "cropped", "distressed").
+- "gender": "mens", "womens", "unisex", or "kids" only if clearly implied.
+- "vibe": soft style tags for ranking (e.g. "blokecore", "quiet luxury", "skater", "coastal", "gorpcore"), inferred from the request.
+- "exclude": attributes the shopper explicitly does NOT want ("no logo" => ["logo"], "not distressed" => ["distressed"]).
 Only include fields you are confident about. Be concise.`;
 
 const SCHEMA = {
@@ -37,8 +43,12 @@ const SCHEMA = {
     brands: { type: 'array', items: { type: 'string' } },
     colors: { type: 'array', items: { type: 'string' } },
     categories: { type: 'array', items: { type: 'string' } },
+    materials: { type: 'array', items: { type: 'string' } },
     era: { type: 'string' },
+    fits: { type: 'array', items: { type: 'string' } },
+    gender: { type: 'string', enum: ['mens', 'womens', 'unisex', 'kids'] },
     vibe: { type: 'array', items: { type: 'string' } },
+    exclude: { type: 'array', items: { type: 'string' } },
   },
   required: ['marketplaceQuery'],
 } as const;
@@ -52,8 +62,12 @@ type Intent = {
   brands?: string[];
   colors?: string[];
   categories?: string[];
+  materials?: string[];
   era?: string;
+  fits?: string[];
+  gender?: 'mens' | 'womens' | 'unisex' | 'kids';
   vibe?: string[];
+  exclude?: string[];
 };
 
 // Small in-memory cache (per warm serverless instance) keyed by normalized query.
@@ -91,6 +105,10 @@ function normalizeIntent(raw: unknown, fallbackQuery: string): Intent {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
   const condition =
     r.condition === 'new' || r.condition === 'used' ? r.condition : undefined;
+  const gender =
+    r.gender === 'mens' || r.gender === 'womens' || r.gender === 'unisex' || r.gender === 'kids'
+      ? r.gender
+      : undefined;
   const intent: Intent = {
     marketplaceQuery:
       typeof r.marketplaceQuery === 'string' && r.marketplaceQuery.trim()
@@ -103,8 +121,12 @@ function normalizeIntent(raw: unknown, fallbackQuery: string): Intent {
     brands: strArray(r.brands),
     colors: strArray(r.colors),
     categories: strArray(r.categories),
+    materials: strArray(r.materials),
     era: typeof r.era === 'string' && r.era.trim() ? r.era.trim() : undefined,
+    fits: strArray(r.fits),
+    gender,
     vibe: strArray(r.vibe),
+    exclude: strArray(r.exclude),
   };
   // Drop incoherent price ranges.
   if (

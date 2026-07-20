@@ -16,8 +16,13 @@ export type RemoteIntent = {
   brands?: string[];
   colors?: string[];
   categories?: string[];
+  materials?: string[];
   era?: string;
+  fits?: string[];
+  gender?: 'mens' | 'womens' | 'unisex' | 'kids';
   vibe?: string[];
+  /** Attributes the shopper explicitly does NOT want (e.g. "logo", "distressed"). */
+  exclude?: string[];
 };
 
 export async function fetchRemoteIntent(
@@ -46,11 +51,16 @@ export function understoodChips(intent: RemoteIntent): string[] {
   else if (intent.priceMax) chips.push(`under $${intent.priceMax}`);
   else if (intent.priceMin) chips.push(`over $${intent.priceMin}`);
   for (const b of intent.brands ?? []) chips.push(b);
+  if (intent.gender) chips.push(intent.gender);
   for (const c of intent.colors ?? []) chips.push(c);
+  for (const m of intent.materials ?? []) chips.push(m);
+  for (const cat of intent.categories ?? []) chips.push(cat);
+  for (const f of intent.fits ?? []) chips.push(f);
   if (intent.era) chips.push(intent.era);
   for (const v of intent.vibe ?? []) chips.push(v);
   for (const s of intent.sizes ?? []) chips.push(`size ${s}`);
   if (intent.condition && intent.condition !== 'any') chips.push(intent.condition);
+  for (const e of intent.exclude ?? []) chips.push(`no ${e}`);
   // De-dupe, keep it tidy.
-  return Array.from(new Set(chips.map((c) => c.toLowerCase()))).slice(0, 6);
+  return Array.from(new Set(chips.map((c) => c.toLowerCase()))).slice(0, 8);
 }

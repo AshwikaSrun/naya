@@ -69,6 +69,12 @@ export default function CommandSearchBar(props: {
     !!intent.filters.minPrice ||
     (intent.filters.colors?.length ?? 0) > 0 ||
     (intent.filters.brands?.length ?? 0) > 0 ||
+    (intent.filters.categories?.length ?? 0) > 0 ||
+    (intent.filters.materials?.length ?? 0) > 0 ||
+    !!intent.filters.era ||
+    !!intent.filters.gender ||
+    (intent.filters.fits?.length ?? 0) > 0 ||
+    (intent.filters.exclude?.length ?? 0) > 0 ||
     (intent.filters.modelNumbers?.length ?? 0) > 0;
 
   const baseSuggestions: Suggestion[] = useMemo(() => {
@@ -119,8 +125,14 @@ export default function CommandSearchBar(props: {
       const bits: string[] = [];
       if (intent.filters.maxPrice) bits.push(`under $${intent.filters.maxPrice}`);
       if (intent.filters.minPrice) bits.push(`over $${intent.filters.minPrice}`);
-      if (intent.filters.colors?.length) bits.push(intent.filters.colors.join(', '));
       if (intent.filters.brands?.length) bits.push(intent.filters.brands.join(', '));
+      if (intent.filters.gender) bits.push(intent.filters.gender);
+      if (intent.filters.colors?.length) bits.push(intent.filters.colors.join(', '));
+      if (intent.filters.materials?.length) bits.push(intent.filters.materials.join(', '));
+      if (intent.filters.categories?.length) bits.push(intent.filters.categories.join(', '));
+      if (intent.filters.fits?.length) bits.push(intent.filters.fits.join(', '));
+      if (intent.filters.era) bits.push(intent.filters.era);
+      if (intent.filters.exclude?.length) bits.push(`no ${intent.filters.exclude.join(', ')}`);
       if (intent.filters.modelNumbers?.length) bits.push(`model ${intent.filters.modelNumbers.join(', ')}`);
       out.push({
         id: buildId(['intent', intent.cleanedQuery]),

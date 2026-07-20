@@ -1,10 +1,36 @@
+import {
+  normalizeText,
+  tokenizeText,
+  uniq,
+  detectBrands,
+  detectCategories,
+  detectColors,
+  detectMaterials,
+  detectEra,
+  detectFits,
+  detectGender,
+  detectStyleTags,
+  detectSizes,
+  detectCondition,
+  detectExclusions,
+  FILLER_WORDS,
+} from './vocab';
+
+/**
+ * Instant, deterministic query understanding.
+ *
+ * Runs synchronously on every keystroke/search with zero latency and zero
+ * network — so search works even when the LLM route (app/api/parse-intent) is
+ * down or unconfigured. It extracts as much structured intent as possible from
+ * the raw query using the shared fashion vocabulary in lib/vocab.
+ */
 export type SearchIntent = {
   raw: string;
   normalized: string;
   tokens: string[];
   /**
-   * Text that should be sent to marketplace search.
-   * We strip out price constraints and a few operator words so the query stays "clean".
+   * Text that should be sent to marketplace search. Price constraints, filler
+   * words, and negated terms are stripped so the query stays high-signal.
    */
   cleanedQuery: string;
   filters: {
@@ -13,79 +39,23 @@ export type SearchIntent = {
     colors?: string[];
     brands?: string[];
     modelNumbers?: string[];
+    /** Soft style/fit tags (kept as `tags` for backwards-compatibility). */
     tags?: string[];
+    categories?: string[];
+    materials?: string[];
+    era?: string;
+    fits?: string[];
+    gender?: 'mens' | 'womens' | 'unisex' | 'kids';
+    sizes?: string[];
+    condition?: 'new' | 'used';
+    /** Attributes the shopper explicitly does NOT want. */
+    exclude?: string[];
   };
 };
 
-const COLOR_WORDS = [
-  'black', 'white', 'grey', 'gray', 'navy', 'blue', 'red', 'green', 'brown', 'tan', 'beige',
-  'cream', 'pink', 'purple', 'orange', 'yellow', 'olive', 'khaki',
-] as const;
-
-const TAG_WORDS = [
-  'y2k', 'vintage', 'washed', 'faded', 'distressed', 'oversized', 'baggy', 'cropped', 'zip', 'zip-up', 'zipup',
-  'cable', 'knit', 'workwear', 'streetwear',
-] as const;
-
-// Shared + lightweight list (we can expand later or source from a single canonical location)
-const BRAND_PHRASES = [
-  "ralph lauren",
-  "polo sport",
-  "the north face",
-  "new balance",
-  "l.l.bean",
-  "arc'teryx",
-  "doc martens",
-  "true religion",
-  "stone island",
-  "fear of god",
-  "louis vuitton",
-  "calvin klein",
-  "tommy hilfiger",
-  "banana republic",
-  "urban outfitters",
-  "brandy melville",
-  "american eagle",
-  "abercrombie",
-] as const;
-
-const BRAND_WORDS = [
-  'nike', 'adidas', 'jordan', 'carhartt', "levi's", 'levis', 'polo', 'ralph', 'lauren', 'champion',
-  'patagonia', 'columbia', 'dickies', 'uniqlo', 'gap', 'zara', 'supreme', 'stussy', 'gucci', 'prada',
-  'balenciaga', 'burberry', 'coach', 'diesel', 'ugg', 'asics', 'puma', 'reebok', 'converse', 'vans',
-] as const;
-
-function normalizeQuery(raw: string) {
-  return raw
-    .trim()
-    .replace(/[“”]/g, '"')
-    .replace(/[’]/g, "'")
-    .replace(/\s+/g, ' ')
-    .toLowerCase();
-}
-
-function tokenize(normalized: string) {
-  return normalized
-    .replace(/[^a-z0-9\s$.-]/g, ' ')
-    .split(/\s+/)
-    .filter(Boolean);
-}
-
-function uniq<T>(arr: T[]) {
-  return Array.from(new Set(arr));
-}
-
-function parsePrice(tokens: string[]) {
+function parsePrice(joined: string) {
   let maxPrice: number | undefined;
   let minPrice: number | undefined;
-
-  // Patterns:
-  // - under 50 / under $50
-  // - less than 50 / below 50 / under
-  // - <$50 / <=50
-  // - between 20 and 60
-  // - 20-60 (loose)
-  const joined = tokens.join(' ');
 
   const under =
     joined.match(/\b(under|below|lt|less)\s+(?:than\s+)?\$?(\d{1,4})\b/) ||
@@ -105,22 +75,23 @@ function parsePrice(tokens: string[]) {
     maxPrice = Number(between[2]);
   }
 
-  const range = joined.match(/\b\$?(\d{1,4})\s*-\s*\$?(\d{1,4})\b/);
+  const range = joined.match(/\$?(\d{1,4})\s*-\s*\$?(\d{1,4})\b/);
   if (range) {
     minPrice = Number(range[1]);
     maxPrice = Number(range[2]);
   }
 
-  if (maxPrice !== undefined && Number.isNaN(maxPrice)) maxPrice = undefined;
-  if (minPrice !== undefined && Number.isNaN(minPrice)) minPrice = undefined;
-  if (maxPrice !== undefined && maxPrice <= 0) maxPrice = undefined;
-  if (minPrice !== undefined && minPrice <= 0) minPrice = undefined;
+  // "cheap" / "affordable" implies a soft budget cap when no explicit one given.
+  if (maxPrice === undefined && /\b(cheap|affordable|budget)\b/.test(joined)) {
+    maxPrice = 60;
+  }
 
-  return { maxPrice, minPrice };
+  const clean = (n: number | undefined) =>
+    n !== undefined && (Number.isNaN(n) || n <= 0) ? undefined : n;
+  return { maxPrice: clean(maxPrice), minPrice: clean(minPrice) };
 }
 
 function parseModelNumbers(tokens: string[]) {
-  // e.g. 569, 550, 501, 2002r, 990v3
   const models: string[] = [];
   for (const t of tokens) {
     if (/^\d{3,4}$/.test(t)) models.push(t);
@@ -131,43 +102,34 @@ function parseModelNumbers(tokens: string[]) {
   return uniq(models);
 }
 
-function parseBrands(normalized: string, tokens: string[]) {
-  const brands: string[] = [];
-
-  for (const phrase of BRAND_PHRASES) {
-    if (normalized.includes(phrase)) brands.push(phrase);
-  }
-
-  for (const t of tokens) {
-    if ((BRAND_WORDS as readonly string[]).includes(t)) brands.push(t);
-  }
-
-  // Normalize common variants
-  return uniq(brands.map((b) => b.replace("levi's", 'levis')));
-}
-
-function parseColors(tokens: string[]) {
-  const colors = tokens.filter((t) => (COLOR_WORDS as readonly string[]).includes(t === 'gray' ? 'grey' : t));
-  return uniq(colors.map((c) => (c === 'gray' ? 'grey' : c)));
-}
-
-function parseTags(tokens: string[]) {
-  const tags = tokens.filter((t) => (TAG_WORDS as readonly string[]).includes(t));
-  return uniq(tags);
-}
-
-function buildCleanedQuery(tokens: string[], intent: { maxPrice?: number; minPrice?: number }) {
-  const drop = new Set([
-    'under', 'below', 'lt', 'less', 'than',
-    'over', 'above', 'gt', 'more',
-    'between', 'and', 'to',
-    '<', '>', '<=', '>=',
-    'cheap',
+function buildCleanedQuery(
+  tokens: string[],
+  opts: { hasPrice: boolean; exclude: string[]; sizes: string[] }
+): string {
+  const priceOps = new Set([
+    'under', 'below', 'lt', 'less', 'than', 'over', 'above', 'gt', 'more',
+    'between', 'and', 'to', '<', '>', '<=', '>=', 'cheap', 'affordable', 'budget',
   ]);
+  const negationOps = new Set(['no', 'not', 'without', 'non', 'anti', 'minus', 'except', 'excluding']);
+  const excludeSet = new Set(opts.exclude.map((e) => e.toLowerCase()));
+  const sizeSet = new Set(opts.sizes.map((s) => s.toLowerCase()));
 
+  let skipNext = false;
   const cleaned = tokens.filter((t) => {
-    if (drop.has(t)) return false;
-    if (/^\$?\d{1,4}$/.test(t) && (intent.maxPrice !== undefined || intent.minPrice !== undefined)) return false;
+    if (skipNext) {
+      // Drop the word right after a negation operator (the excluded attribute).
+      skipNext = false;
+      if (excludeSet.has(t)) return false;
+    }
+    if (negationOps.has(t)) {
+      skipNext = true;
+      return false;
+    }
+    if (priceOps.has(t)) return false;
+    if (FILLER_WORDS.has(t)) return false;
+    if (excludeSet.has(t)) return false;
+    if (sizeSet.has(t)) return false;
+    if (/^\$?\d{1,4}$/.test(t) && opts.hasPrice) return false;
     if (/^\d{1,4}-\d{1,4}$/.test(t)) return false;
     return true;
   });
@@ -176,15 +138,42 @@ function buildCleanedQuery(tokens: string[], intent: { maxPrice?: number; minPri
 }
 
 export function parseSearchIntent(raw: string): SearchIntent {
-  const normalized = normalizeQuery(raw);
-  const tokens = tokenize(normalized);
-  const { maxPrice, minPrice } = parsePrice(tokens);
-  const colors = parseColors(tokens);
-  const brands = parseBrands(normalized, tokens);
-  const modelNumbers = parseModelNumbers(tokens);
-  const tags = parseTags(tokens);
+  const normalized = normalizeText(raw);
+  const tokens = tokenizeText(normalized);
+  const joined = tokens.join(' ');
 
-  const cleanedQuery = buildCleanedQuery(tokens, { maxPrice, minPrice });
+  const { maxPrice, minPrice } = parsePrice(joined);
+  const colors = detectColors(normalized);
+  const brands = detectBrands(normalized);
+  const modelNumbers = parseModelNumbers(tokens);
+  const categories = detectCategories(normalized);
+  const materials = detectMaterials(tokens, normalized);
+  const era = detectEra(normalized);
+  const gender = detectGender(normalized);
+  const sizes = detectSizes(tokens, normalized);
+  const condition = detectCondition(normalized);
+  const exclude = detectExclusions(normalized);
+
+  // Excluded attributes must not double as positive signals ("not distressed"
+  // shouldn't also be a desired fit). Drop any detected attribute the shopper
+  // negated.
+  const excludeSet = new Set(exclude.map((e) => e.toLowerCase()));
+  const notExcluded = (list: string[]) =>
+    list.filter((v) => !v.toLowerCase().split(/\s+/).some((w) => excludeSet.has(w)));
+
+  const fits = notExcluded(detectFits(normalized));
+  const styleTags = notExcluded(detectStyleTags(normalized));
+  const filteredMaterials = notExcluded(materials);
+  const filteredColors = notExcluded(colors);
+
+  // Fits + style tags together form the soft "tags" list (back-compat name).
+  const tags = uniq([...fits, ...styleTags]);
+
+  const cleanedQuery = buildCleanedQuery(tokens, {
+    hasPrice: maxPrice !== undefined || minPrice !== undefined,
+    exclude,
+    sizes,
+  });
 
   return {
     raw,
@@ -194,11 +183,18 @@ export function parseSearchIntent(raw: string): SearchIntent {
     filters: {
       ...(maxPrice !== undefined ? { maxPrice } : {}),
       ...(minPrice !== undefined ? { minPrice } : {}),
-      ...(colors.length ? { colors } : {}),
+      ...(filteredColors.length ? { colors: filteredColors } : {}),
       ...(brands.length ? { brands } : {}),
       ...(modelNumbers.length ? { modelNumbers } : {}),
       ...(tags.length ? { tags } : {}),
+      ...(categories.length ? { categories } : {}),
+      ...(filteredMaterials.length ? { materials: filteredMaterials } : {}),
+      ...(era ? { era } : {}),
+      ...(fits.length ? { fits } : {}),
+      ...(gender ? { gender } : {}),
+      ...(sizes.length ? { sizes } : {}),
+      ...(condition ? { condition } : {}),
+      ...(exclude.length ? { exclude } : {}),
     },
   };
 }
-

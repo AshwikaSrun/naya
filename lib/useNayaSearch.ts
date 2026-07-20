@@ -407,19 +407,32 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
       ...prev,
       minPrice: intent.filters.minPrice !== undefined ? String(intent.filters.minPrice) : prev.minPrice,
       maxPrice: intent.filters.maxPrice !== undefined ? String(intent.filters.maxPrice) : prev.maxPrice,
+      size: intent.filters.sizes?.length ? intent.filters.sizes[0] : prev.size,
+      condition: intent.filters.condition ?? prev.condition,
     }));
-    setUnderstood([]);
     const baseQuery = intent.cleanedQuery || searchQuery;
     // Seed a ranking intent from the deterministic parse so "best match" can
     // re-rank immediately, even before (or without) the LLM.
-    setSearchIntent({
+    const seededIntent: RemoteIntent = {
       marketplaceQuery: baseQuery,
       ...(intent.filters.minPrice !== undefined ? { priceMin: intent.filters.minPrice } : {}),
       ...(intent.filters.maxPrice !== undefined ? { priceMax: intent.filters.maxPrice } : {}),
       ...(intent.filters.brands?.length ? { brands: intent.filters.brands } : {}),
       ...(intent.filters.colors?.length ? { colors: intent.filters.colors } : {}),
+      ...(intent.filters.categories?.length ? { categories: intent.filters.categories } : {}),
+      ...(intent.filters.materials?.length ? { materials: intent.filters.materials } : {}),
+      ...(intent.filters.era ? { era: intent.filters.era } : {}),
+      ...(intent.filters.fits?.length ? { fits: intent.filters.fits } : {}),
+      ...(intent.filters.gender ? { gender: intent.filters.gender } : {}),
+      ...(intent.filters.sizes?.length ? { sizes: intent.filters.sizes } : {}),
+      ...(intent.filters.condition ? { condition: intent.filters.condition } : {}),
       ...(intent.filters.tags?.length ? { vibe: intent.filters.tags } : {}),
-    });
+      ...(intent.filters.exclude?.length ? { exclude: intent.filters.exclude } : {}),
+    };
+    // Show what we understood instantly from the deterministic parse; the LLM
+    // may enrich this a moment later.
+    setUnderstood(understoodChips(seededIntent));
+    setSearchIntent(seededIntent);
     runSearch(baseQuery, platformOverride);
 
     // 2) Background NLP refinement (Gemini). Never blocks the first results.

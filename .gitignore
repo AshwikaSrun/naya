@@ -49,3 +49,27 @@ scraper-api/node_modules
 pitch-deck.html
 generate-pdf.mjs
 generate-pptx.mjs
+
+# local debug captures (scraper/API response snapshots, not app data)
+*.log
+/br.json
+/br-sample.json
+/fa.json
+/final.json
+/live.json
+/live-nf.json
+/naya-resp.json
+/nf.json
+/nf-resp.json
+/p-sample.json
+/pr.json
+/resp.json
+/sr.json
+/sr2.json
+/tmp.json
+/trr2.json
+/trr3.json
+/mc.html
+/trr.html
+/tu.html
+/vc.html

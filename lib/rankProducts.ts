@@ -1,13 +1,15 @@
 import type { RemoteIntent } from './remoteIntent';
+import { categorySynonyms, slotForCategory, detectSlots } from './vocab';
 
 /**
  * Semantic-ish re-ranking. Scores each listing against the parsed search intent
- * (brand, category, era, vibe, price, and query-token overlap) so the "best
- * match" sort surfaces the listings that actually fit what the shopper asked
- * for, not just whatever order the marketplaces returned.
+ * (brand, category, material, era, fit, vibe, price, exclusions, and query-token
+ * overlap) so the "best match" sort surfaces the listings that actually fit what
+ * the shopper asked for, not just whatever order the marketplaces returned.
  *
- * Heuristic and zero-cost (no embeddings/API). A good first pass; can be
- * upgraded to embedding cosine similarity later behind the same interface.
+ * Heuristic and zero-cost (no embeddings/API). Synonym- and category-aware: a
+ * search for "jumper" credits "sweater" listings, and a jeans search demotes
+ * listings that are clearly a different garment slot (e.g. a jacket).
  */
 
 type Rankable = {
@@ -46,8 +48,27 @@ export function scoreProduct(p: Rankable, intent: RemoteIntent): number {
     if (titleTokens.has(c.toLowerCase())) score += 1.5;
   }
 
+  // Categories: synonym-aware. Credit any synonym of the requested category.
+  const intentSlots = new Set<string>();
   for (const cat of intent.categories ?? []) {
-    if (title.includes(cat.toLowerCase())) score += 1.5;
+    const canonical = cat.toLowerCase();
+    const slot = slotForCategory(canonical);
+    if (slot) intentSlots.add(slot);
+    const syns = categorySynonyms(canonical);
+    if (syns.some((s) => title.includes(s))) score += 2;
+  }
+
+  // Category-conflict penalty: if the shopper asked for a specific garment slot
+  // and this listing is clearly a *different* slot, it's probably off-target.
+  if (intentSlots.size > 0) {
+    const listingSlots = detectSlots(title);
+    if (listingSlots.length > 0 && !listingSlots.some((s) => intentSlots.has(s))) {
+      score -= 3;
+    }
+  }
+
+  for (const m of intent.materials ?? []) {
+    if (title.includes(m.toLowerCase())) score += 1.25;
   }
 
   if (intent.era) {
@@ -56,9 +77,30 @@ export function scoreProduct(p: Rankable, intent: RemoteIntent): number {
     if (title.includes(era) || (digits && title.includes(digits))) score += 1;
   }
 
+  for (const f of intent.fits ?? []) {
+    if (tokenize(f).some((w) => w.length > 2 && title.includes(w))) score += 0.75;
+  }
+
+  if (intent.gender) {
+    const g = intent.gender;
+    const menWords = /\b(men|mens|man)\b/;
+    const womenWords = /\b(women|womens|woman|ladies)\b/;
+    if (g === 'mens' && womenWords.test(title)) score -= 1.5;
+    if (g === 'womens' && menWords.test(title) && !womenWords.test(title)) score -= 1.5;
+  }
+
   // Soft style tags (may be multi-word): credit any meaningful word match.
   for (const v of intent.vibe ?? []) {
     if (tokenize(v).some((w) => w.length > 2 && title.includes(w))) score += 1;
+  }
+
+  // Exclusions: the shopper explicitly said they don't want this — demote hard.
+  for (const e of intent.exclude ?? []) {
+    if (tokenize(e).some((w) => w.length > 2 && title.includes(w))) score -= 3;
+  }
+
+  if (intent.condition === 'new' && /\b(nwt|new with tags|deadstock|bnwt|unworn)\b/.test(title)) {
+    score += 1;
   }
 
   // Price fit: reward in-budget, penalize over budget proportionally.
