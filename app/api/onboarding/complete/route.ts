@@ -13,17 +13,36 @@ interface Body {
   enrich?: Partial<ParsedFilters>;
 }
 
-/** Build a marketplace query from taste profile when the user skipped the hunt field. */
-function seedQueryFromProfile(profile: TasteProfile | null): string | null {
-  if (!profile) return null;
-  const brand = profile.preferred_brands?.[0];
-  const style = profile.style_tags?.[0];
-  const category = profile.preferred_categories?.[0];
-  const era = profile.era_preference?.[0];
-  const parts = [brand, era, style, category].filter(Boolean) as string[];
-  if (!parts.length) return null;
-  // Prefer brand+category / brand+style so scrapers get a concrete listing query.
-  return parts.slice(0, 3).join(' ');
+/** Build one or more marketplace watches from the hunt field + preferred brands. */
+function seedQueriesFromProfile(
+  profile: TasteProfile | null,
+  huntQuery?: string,
+): string[] {
+  const out: string[] = [];
+  const hunt = (huntQuery || '').trim();
+  if (hunt) out.push(hunt);
+
+  const brands = (profile?.preferred_brands ?? [])
+    .map((b) => b.trim().toLowerCase())
+    .filter(Boolean)
+    .slice(0, 5);
+
+  for (const brand of brands) {
+    // Skip if the hunt query already covers this brand.
+    if (out.some((q) => q.toLowerCase().includes(brand))) continue;
+    out.push(brand);
+  }
+
+  // No brands and no hunt — fall back to style/category so first-pass still runs.
+  if (!out.length && profile) {
+    const style = profile.style_tags?.[0];
+    const category = profile.preferred_categories?.[0];
+    const era = profile.era_preference?.[0];
+    const parts = [era, style, category].filter(Boolean) as string[];
+    if (parts.length) out.push(parts.slice(0, 3).join(' '));
+  }
+
+  return out;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -91,19 +110,12 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
   const profile = profileRow as TasteProfile | null;
 
-  // Optional final saved search — or seed one from brands/styles so the first
-  // pass has something concrete to scrape. Matches only come from saved searches.
+  // Seed watches: explicit hunt query (if any) + up to 5 preferred brands.
+  // Matches only come from saved searches — one brand used to starve the feed.
   let savedSearchCreated = false;
-  let queryText = (body.saved_search || '').trim();
-  if (!queryText) {
-    const seeded = seedQueryFromProfile(profile);
-    if (seeded) {
-      queryText = seeded;
-      console.info('[onboarding/complete] seeded hunt query from profile:', seeded);
-    }
-  }
-
-  if (queryText && queryText.length <= 200) {
+  const queries = seedQueriesFromProfile(profile, body.saved_search);
+  for (const queryText of queries) {
+    if (!queryText || queryText.length > 200) continue;
     const parsed = parseSavedSearch(queryText, body.enrich);
     const { error: ssErr } = await db.from('user_saved_search').insert({
       user_id: userId,
@@ -112,16 +124,24 @@ export async function POST(req: NextRequest) {
       is_active: true,
     });
     if (ssErr) console.error('[onboarding/complete] saved_search:', ssErr.message);
-    else savedSearchCreated = true;
+    else {
+      savedSearchCreated = true;
+      console.info('[onboarding/complete] seeded watch:', queryText);
+    }
   }
 
   let matches = 0;
   if (savedSearchCreated) {
     try {
-      const res = await refreshUserSavedSearches(db, userId);
+      const res = await refreshUserSavedSearches(db, userId, {
+        threshold: 0.45,
+        maxSearches: 8,
+        limitPerSearch: 40,
+      });
       matches = res.matches;
       console.info('[onboarding/complete] first-pass', {
         userId,
+        watches: queries.length,
         processed: res.processed,
         matches: res.matches,
       });

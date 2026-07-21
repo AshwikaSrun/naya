@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { runAggregation } from '@/lib/agent/aggregation';
 import { scoreListing } from '@/lib/agent/scoring';
 import { listingIdFromUrl } from '@/lib/agent/listingId';
+import { parseSavedSearch } from '@/lib/agent/parseSavedSearch';
 import type { SavedSearch, TasteProfile } from '@/lib/agent/types';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -10,6 +11,8 @@ import type { SavedSearch, TasteProfile } from '@/lib/agent/types';
 // after onboarding) and available to any per-user path. The nightly cron uses
 // its own batched query for efficiency across all users.
 // ─────────────────────────────────────────────────────────────────────────────
+
+const MAX_BRAND_WATCHES = 5;
 
 function defaultProfile(userId: string): TasteProfile {
   return {
@@ -23,14 +26,65 @@ function defaultProfile(userId: string): TasteProfile {
   };
 }
 
+/**
+ * Ensure each preferred brand has an active saved search. Onboarding used to
+ * seed only brand[0], which made the feed look like "one brand, a few items".
+ * Called on every refresh so existing users pick this up without re-onboarding.
+ */
+async function ensureBrandWatches(
+  db: SupabaseClient,
+  userId: string,
+  profile: TasteProfile,
+): Promise<void> {
+  const brands = (profile.preferred_brands ?? [])
+    .map((b) => b.trim().toLowerCase())
+    .filter(Boolean)
+    .slice(0, MAX_BRAND_WATCHES);
+  if (!brands.length) return;
+
+  const { data: existing } = await db
+    .from('user_saved_search')
+    .select('query_text')
+    .eq('user_id', userId)
+    .eq('is_active', true);
+
+  const existingText = ((existing as { query_text: string }[] | null) ?? []).map((r) =>
+    (r.query_text || '').toLowerCase(),
+  );
+
+  for (const brand of brands) {
+    const covered = existingText.some((t) => t.includes(brand));
+    if (covered) continue;
+    const parsed = parseSavedSearch(brand);
+    const { error } = await db.from('user_saved_search').insert({
+      user_id: userId,
+      query_text: brand,
+      parsed_filters: { ...parsed, brands: [brand] },
+      is_active: true,
+    });
+    if (error) console.error('[agent/refreshUser] brand watch:', error.message);
+    else existingText.push(brand);
+  }
+}
+
 export async function refreshUserSavedSearches(
   db: SupabaseClient,
   userId: string,
   opts: { threshold?: number; maxSearches?: number; limitPerSearch?: number } = {},
 ): Promise<{ processed: number; matches: number }> {
-  const threshold = opts.threshold ?? 0.6;
-  const maxSearches = opts.maxSearches ?? 5;
-  const limitPerSearch = opts.limitPerSearch ?? 30;
+  // 0.45 clears brand hits that used to die at 0.6 after style-tag dilution.
+  const threshold = opts.threshold ?? 0.45;
+  const maxSearches = opts.maxSearches ?? 8;
+  const limitPerSearch = opts.limitPerSearch ?? 40;
+
+  const { data: profileRow } = await db
+    .from('user_taste_profile')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+  const profile = (profileRow as TasteProfile) ?? defaultProfile(userId);
+
+  await ensureBrandWatches(db, userId, profile);
 
   const { data: searches } = await db
     .from('user_saved_search')
@@ -43,13 +97,6 @@ export async function refreshUserSavedSearches(
   const activeSearches = (searches as SavedSearch[]) ?? [];
   if (!activeSearches.length) return { processed: 0, matches: 0 };
 
-  const { data: profileRow } = await db
-    .from('user_taste_profile')
-    .select('*')
-    .eq('user_id', userId)
-    .maybeSingle();
-  const profile = (profileRow as TasteProfile) ?? defaultProfile(userId);
-
   const { data: dismissed } = await db
     .from('user_listing_interaction')
     .select('listing_id')
@@ -61,10 +108,17 @@ export async function refreshUserSavedSearches(
   const seen = new Set<string>();
   let matches = 0;
 
-  for (const search of activeSearches) {
-    const query = search.parsed_filters?.marketplaceQuery || search.query_text;
-    const listings = await runAggregation(query, limitPerSearch);
+  // Fan out brand watches in parallel — sequential 5× scrapes routinely hit the
+  // serverless timeout and left the feed stuck on one brand.
+  const batches = await Promise.all(
+    activeSearches.map(async (search) => {
+      const query = search.parsed_filters?.marketplaceQuery || search.query_text;
+      const listings = await runAggregation(query, limitPerSearch);
+      return { search, listings };
+    }),
+  );
 
+  for (const { search, listings } of batches) {
     for (const listing of listings) {
       const listingId = listingIdFromUrl(listing.url);
       if (dismissedSet.has(listingId) || seen.has(listingId)) continue;

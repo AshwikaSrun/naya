@@ -242,7 +242,14 @@ export function scoreListing(
     };
   });
 
-  const score = components.reduce((s, c) => s + c.contribution, 0);
+  let score = components.reduce((s, c) => s + c.contribution, 0);
+
+  // Marketplace titles rarely contain style tags ("workwear", "gorpcore"), so
+  // those zero components dilute a real brand hit below the delivery threshold.
+  // Floor strong brand matches so a liked brand still surfaces.
+  const brandComp = components.find((c) => c.key === 'brand');
+  if (brandComp && brandComp.value >= 1) score = Math.max(score, 0.72);
+  else if (brandComp && brandComp.value >= 0.6) score = Math.max(score, 0.55);
 
   return {
     score: Math.round(score * 1000) / 1000,
