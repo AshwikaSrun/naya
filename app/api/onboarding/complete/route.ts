@@ -13,19 +13,42 @@ interface Body {
   enrich?: Partial<ParsedFilters>;
 }
 
+/** Build a marketplace query from taste profile when the user skipped the hunt field. */
+function seedQueryFromProfile(profile: TasteProfile | null): string | null {
+  if (!profile) return null;
+  const brand = profile.preferred_brands?.[0];
+  const style = profile.style_tags?.[0];
+  const category = profile.preferred_categories?.[0];
+  const era = profile.era_preference?.[0];
+  const parts = [brand, era, style, category].filter(Boolean) as string[];
+  if (!parts.length) return null;
+  // Prefer brand+category / brand+style so scrapers get a concrete listing query.
+  return parts.slice(0, 3).join(' ');
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /api/onboarding/complete
 // Marks the profile onboarded, optionally turns the final "anything specific?"
 // answer into a user_saved_search (reusing the existing parse path), then runs
-// the synchronous first-pass scoring (the same /api/agent/run logic) so the feed
-// shows real agent_match rows immediately when there's enough signal. Always
-// returns redirect:/for-you — onboarding never blocks app access.
+// the synchronous first-pass scoring so the feed shows real agent_match rows.
+// Always returns redirect:/for-you on success — onboarding never blocks access
+// once the profile write succeeds.
 // ─────────────────────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   const userId = await resolveUserId(req);
-  if (!userId) return NextResponse.json({ error: 'no_user' }, { status: 401 });
+  if (!userId) {
+    console.error('[onboarding/complete] no_user');
+    return NextResponse.json({ ok: false, error: 'no_user' }, { status: 401 });
+  }
+
   const db = getAgentDb();
-  if (!db) return NextResponse.json({ ok: true, redirect: '/for-you', configured: false });
+  if (!db) {
+    console.error('[onboarding/complete] db_not_configured');
+    return NextResponse.json(
+      { ok: false, error: 'db_not_configured', configured: false, redirect: '/for-you' },
+      { status: 503 },
+    );
+  }
 
   let body: Body = {};
   try {
@@ -42,7 +65,13 @@ export async function POST(req: NextRequest) {
       { user_id: userId, onboarded: true, onboarded_at: now, updated_at: now },
       { onConflict: 'user_id' },
     );
-  if (upErr) console.error('[onboarding/complete] upsert:', upErr.message);
+  if (upErr) {
+    console.error('[onboarding/complete] upsert:', upErr.message);
+    return NextResponse.json(
+      { ok: false, error: 'db_error', detail: upErr.message, redirect: '/for-you' },
+      { status: 500 },
+    );
+  }
 
   // Keep the account tracking row in sync (best-effort; never blocks).
   await db
@@ -55,9 +84,25 @@ export async function POST(req: NextRequest) {
       if (error) console.error('[onboarding/complete] account sync:', error.message);
     });
 
-  // Optional final saved search.
+  const { data: profileRow } = await db
+    .from('user_taste_profile')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+  const profile = profileRow as TasteProfile | null;
+
+  // Optional final saved search — or seed one from brands/styles so the first
+  // pass has something concrete to scrape. Matches only come from saved searches.
   let savedSearchCreated = false;
-  const queryText = (body.saved_search || '').trim();
+  let queryText = (body.saved_search || '').trim();
+  if (!queryText) {
+    const seeded = seedQueryFromProfile(profile);
+    if (seeded) {
+      queryText = seeded;
+      console.info('[onboarding/complete] seeded hunt query from profile:', seeded);
+    }
+  }
+
   if (queryText && queryText.length <= 200) {
     const parsed = parseSavedSearch(queryText, body.enrich);
     const { error: ssErr } = await db.from('user_saved_search').insert({
@@ -70,29 +115,28 @@ export async function POST(req: NextRequest) {
     else savedSearchCreated = true;
   }
 
-  // Enough signal to score a first pass? refreshUserSavedSearches only produces
-  // matches when there are active saved searches to aggregate; run it if so.
   let matches = 0;
-  const { data: profileRow } = await db
-    .from('user_taste_profile')
-    .select('*')
-    .eq('user_id', userId)
-    .maybeSingle();
-  const profile = profileRow as TasteProfile | null;
-  const hasProfileSignal =
-    !!profile &&
-    ((profile.preferred_brands?.length ?? 0) > 0 ||
-      (profile.preferred_categories?.length ?? 0) > 0 ||
-      (profile.style_tags?.length ?? 0) > 0);
-
-  if (savedSearchCreated || hasProfileSignal) {
+  if (savedSearchCreated) {
     try {
       const res = await refreshUserSavedSearches(db, userId);
       matches = res.matches;
+      console.info('[onboarding/complete] first-pass', {
+        userId,
+        processed: res.processed,
+        matches: res.matches,
+      });
     } catch (err) {
       console.error('[onboarding/complete] first-pass run:', (err as Error).message);
     }
+  } else {
+    console.info('[onboarding/complete] skipped first-pass (no saved search)', { userId });
   }
 
-  return NextResponse.json({ ok: true, redirect: '/for-you', savedSearchCreated, matches });
+  return NextResponse.json({
+    ok: true,
+    redirect: '/for-you',
+    savedSearchCreated,
+    matches,
+    configured: true,
+  });
 }

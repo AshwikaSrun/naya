@@ -23,6 +23,7 @@ export default function ForYouClient() {
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [running, setRunning] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  const [dbConfigured, setDbConfigured] = useState(true);
 
   const loadFeed = useCallback(async () => {
     const { matches: rows, fallback: fb, paywalled: pw } = await getFeed();
@@ -38,13 +39,26 @@ export default function ForYouClient() {
 
   useEffect(() => {
     (async () => {
-      const status = await fetch('/api/subscription/status')
+      const { getAnonUserId } = await import('@/lib/agent/client');
+      const status = await fetch('/api/subscription/status', {
+        headers: { 'x-naya-uid': getAnonUserId() },
+        cache: 'no-store',
+      })
         .then((r) => r.json())
         .catch(() => null);
       const entitled = !!status?.active;
 
       const p = await getProfile();
       setProfile(p);
+      const configured = p?.configured !== false;
+      if (p && p.configured === false) setDbConfigured(false);
+
+      // Without a DB there is nothing to onboard into — show the feed shell +
+      // setup banner instead of infinitely replaying the quiz.
+      if (!configured) {
+        setView('feed');
+        return;
+      }
 
       if (entitled && (!p || !p.onboarded)) {
         setView('onboarding');
@@ -61,7 +75,20 @@ export default function ForYouClient() {
   }, [loadFeed]);
 
   const handleOnboarded = async () => {
-    setProfile((prev) => (prev ? { ...prev, onboarded: true } : prev));
+    setProfile((prev) =>
+      prev
+        ? { ...prev, onboarded: true }
+        : ({
+            user_id: 'local',
+            preferred_brands: [],
+            preferred_categories: [],
+            size_profile: {},
+            price_ceiling: null,
+            style_tags: [],
+            era_preference: [],
+            onboarded: true,
+          } as TasteProfile),
+    );
     try {
       await fetch('/api/subscription/funnel', {
         method: 'POST',
@@ -85,13 +112,28 @@ export default function ForYouClient() {
     const res = await runAgent();
     await loadFeed();
     setRunning(false);
-    if (res) {
-      setNote(
-        res.processed === 0
-          ? 'add a search below so the agent knows what to watch for.'
-          : `scanned ${res.processed} search${res.processed === 1 ? '' : 'es'}. ${res.matches} new match${res.matches === 1 ? '' : 'es'}.`,
-      );
+    if (!res) {
+      setNote('could not refresh right now.');
+      return;
     }
+    if (res.error === 'paywalled') {
+      setPaywallOpen(true);
+      return;
+    }
+    if (res.error === 'db_not_configured') {
+      setDbConfigured(false);
+      setNote('database not configured. add Supabase keys to .env.local and restart.');
+      return;
+    }
+    if (res.error) {
+      setNote('scan failed. try again in a moment.');
+      return;
+    }
+    setNote(
+      res.processed === 0
+        ? 'add a search below so the agent knows what to watch for.'
+        : `scanned ${res.processed} search${res.processed === 1 ? '' : 'es'}. ${res.matches} new match${res.matches === 1 ? '' : 'es'}.`,
+    );
   }, [loadFeed, paywalled]);
 
   const handleResolved = (listingId: string, feedback: 'liked' | 'dismissed') => {
@@ -165,6 +207,20 @@ export default function ForYouClient() {
                 >
                   Sign up to unlock
                 </button>
+              </div>
+            )}
+
+            {!dbConfigured && (
+              <div className="mb-8 rounded-[20px] border border-red-200 bg-red-50 p-6 md:p-8">
+                <p className="font-naya-serif text-xl font-light text-black">setup needed</p>
+                <p className="font-naya-sans mt-3 max-w-xl text-[14px] leading-relaxed text-black/60">
+                  Supabase keys are missing from <code className="text-[12px]">.env.local</code>, so
+                  the agent cannot save watches or matches. Paste{' '}
+                  <code className="text-[12px]">NEXT_PUBLIC_SUPABASE_URL</code> and{' '}
+                  <code className="text-[12px]">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> from your
+                  Supabase project settings, run <code className="text-[12px]">supabase-agent-schema.sql</code>{' '}
+                  in the SQL editor, then restart <code className="text-[12px]">npm run dev</code>.
+                </p>
               </div>
             )}
 

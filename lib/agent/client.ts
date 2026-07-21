@@ -108,32 +108,101 @@ export async function recordAccount(source: string, email?: string): Promise<voi
 }
 
 export async function saveOnboardingStep(patch: Partial<TasteProfile>): Promise<boolean> {
-  const res = await fetch('/api/onboarding/step', {
-    method: 'POST',
-    headers: headers(),
-    body: JSON.stringify(patch),
-  });
-  return res.ok;
+  try {
+    const res = await fetch('/api/onboarding/step', {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify(patch),
+    });
+    if (!res.ok) {
+      let reason = `http_${res.status}`;
+      try {
+        const data = await res.json();
+        if (typeof data.error === 'string') reason = data.error;
+      } catch {
+        /* ignore */
+      }
+      console.error('[naya] saveOnboardingStep failed:', reason);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('[naya] saveOnboardingStep network error:', err);
+    return false;
+  }
 }
 
 export async function completeOnboarding(
   savedSearch?: string,
-): Promise<{ ok: boolean; redirect: string; matches: number }> {
-  const res = await fetch('/api/onboarding/complete', {
-    method: 'POST',
-    headers: headers(),
-    body: JSON.stringify(savedSearch ? { saved_search: savedSearch } : {}),
-  });
-  if (!res.ok) return { ok: false, redirect: '/for-you', matches: 0 };
-  const data = await res.json();
-  return { ok: !!data.ok, redirect: data.redirect || '/for-you', matches: data.matches ?? 0 };
+): Promise<{
+  ok: boolean;
+  redirect: string;
+  matches: number;
+  error?: string;
+  configured?: boolean;
+  savedSearchCreated?: boolean;
+}> {
+  try {
+    const res = await fetch('/api/onboarding/complete', {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify(savedSearch ? { saved_search: savedSearch } : {}),
+    });
+    let data: Record<string, unknown> = {};
+    try {
+      data = await res.json();
+    } catch {
+      data = {};
+    }
+    if (!res.ok) {
+      const error =
+        typeof data.error === 'string' ? data.error : `http_${res.status}`;
+      console.error('[naya] completeOnboarding failed:', error, data);
+      return { ok: false, redirect: '/for-you', matches: 0, error };
+    }
+    const result = {
+      ok: data.ok !== false,
+      redirect: typeof data.redirect === 'string' ? data.redirect : '/for-you',
+      matches: typeof data.matches === 'number' ? data.matches : 0,
+      configured: data.configured !== false,
+      savedSearchCreated: !!data.savedSearchCreated,
+      ...(typeof data.error === 'string' ? { error: data.error } : {}),
+    };
+    if (!result.ok || result.error) {
+      console.error('[naya] completeOnboarding returned error:', result);
+    } else {
+      console.info('[naya] completeOnboarding ok', {
+        matches: result.matches,
+        savedSearchCreated: result.savedSearchCreated,
+      });
+    }
+    return result;
+  } catch (err) {
+    console.error('[naya] completeOnboarding network error:', err);
+    return {
+      ok: false,
+      redirect: '/for-you',
+      matches: 0,
+      error: 'network_error',
+    };
+  }
 }
 
-export async function getProfile(): Promise<TasteProfile | null> {
-  const res = await fetch('/api/agent/profile', { headers: headers(), cache: 'no-store' });
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data.profile ?? null;
+export async function getProfile(): Promise<(TasteProfile & { configured?: boolean }) | null> {
+  try {
+    const res = await fetch('/api/agent/profile', { headers: headers(), cache: 'no-store' });
+    if (!res.ok) {
+      console.error('[naya] getProfile failed:', res.status);
+      return null;
+    }
+    const data = await res.json();
+    const profile = (data.profile as TasteProfile | null) ?? null;
+    if (!profile) return null;
+    return { ...profile, configured: data.configured !== false };
+  } catch (err) {
+    console.error('[naya] getProfile network error:', err);
+    return null;
+  }
 }
 
 export async function saveProfile(profile: Partial<TasteProfile>): Promise<boolean> {
@@ -145,9 +214,11 @@ export async function saveProfile(profile: Partial<TasteProfile>): Promise<boole
   return res.ok;
 }
 
-export async function runAgent(): Promise<{ processed: number; matches: number } | null> {
+export async function runAgent(): Promise<{ processed: number; matches: number; error?: string } | null> {
   const res = await fetch('/api/agent/run', { method: 'POST', headers: headers() });
-  if (!res.ok) return null;
+  if (res.status === 402) return { processed: 0, matches: 0, error: 'paywalled' };
+  if (res.status === 503) return { processed: 0, matches: 0, error: 'db_not_configured' };
+  if (!res.ok) return { processed: 0, matches: 0, error: 'run_failed' };
   const data = await res.json();
   return { processed: data.processed ?? 0, matches: data.matches ?? 0 };
 }
@@ -174,15 +245,28 @@ export async function listSavedSearches(): Promise<SavedSearchRow[]> {
   return (data.savedSearches as SavedSearchRow[]) ?? [];
 }
 
-export async function createSavedSearch(queryText: string): Promise<SavedSearchRow | null> {
+export async function createSavedSearch(
+  queryText: string,
+): Promise<{ search: SavedSearchRow | null; error?: string; paywalled?: boolean }> {
   const res = await fetch('/api/agent/saved-search', {
     method: 'POST',
     headers: headers(),
     body: JSON.stringify({ query_text: queryText }),
   });
-  if (!res.ok) return null;
+  if (res.status === 402) return { search: null, paywalled: true, error: 'paywalled' };
+  if (res.status === 503) return { search: null, error: 'db_not_configured' };
+  if (!res.ok) {
+    let error = 'save_failed';
+    try {
+      const data = await res.json();
+      if (typeof data.error === 'string') error = data.error;
+    } catch {
+      /* ignore */
+    }
+    return { search: null, error };
+  }
   const data = await res.json();
-  return data.savedSearch ?? null;
+  return { search: data.savedSearch ?? null };
 }
 
 export async function deleteSavedSearch(id: number): Promise<boolean> {

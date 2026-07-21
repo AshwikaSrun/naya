@@ -178,6 +178,7 @@ export default function OnboardingFlow({ initial, onComplete }: Props) {
   });
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Screen state
   const [sizeTops, setSizeTops] = useState(initial?.size_profile?.tops ?? '');
@@ -258,10 +259,26 @@ export default function OnboardingFlow({ initial, onComplete }: Props) {
 
   const finish = async () => {
     setSaving(true);
+    setError(null);
     // Persist the final screen's data before completing.
     if (step <= 4) await autosave(step);
     const res = await completeOnboarding(hunting.trim() || undefined);
     setSaving(false);
+
+    if (!res.ok) {
+      const msg =
+        res.error === 'db_not_configured'
+          ? 'database isn’t configured yet — add Supabase keys and run supabase-agent-schema.sql, then try again.'
+          : res.error === 'no_user'
+            ? 'couldn’t identify your session. refresh and try again.'
+            : res.error === 'db_error'
+              ? 'couldn’t save your profile. run supabase-agent-schema.sql in Supabase, then try again.'
+              : 'something went wrong finishing setup. check the console and try again.';
+      console.error('[naya] onboarding finish blocked:', res);
+      setError(msg);
+      return;
+    }
+
     onComplete();
     if (res.redirect && typeof window !== 'undefined' && window.location.pathname !== res.redirect) {
       window.location.href = res.redirect;
@@ -271,9 +288,22 @@ export default function OnboardingFlow({ initial, onComplete }: Props) {
   // "I'll do this later" — leave immediately with whatever exists (empty ok).
   const skipAll = async () => {
     setSaving(true);
-    await completeOnboarding();
+    setError(null);
+    const res = await completeOnboarding();
     setSaving(false);
+    if (!res.ok) {
+      console.error('[naya] onboarding skip blocked:', res);
+      setError(
+        res.error === 'db_not_configured'
+          ? 'database isn’t configured yet — add Supabase keys and run supabase-agent-schema.sql.'
+          : 'couldn’t skip right now. try again.',
+      );
+      return;
+    }
     onComplete();
+    if (res.redirect && typeof window !== 'undefined' && window.location.pathname !== res.redirect) {
+      window.location.href = res.redirect;
+    }
   };
 
   const advance = step < 5 ? goNext : finish;
@@ -476,6 +506,11 @@ export default function OnboardingFlow({ initial, onComplete }: Props) {
           {primaryLabel}
         </button>
       </div>
+      {error && (
+        <p className="font-naya-sans mt-4 text-center text-[12px] leading-relaxed text-red-600/90">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

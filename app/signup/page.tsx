@@ -39,7 +39,18 @@ export default function SignupPage() {
             fallbackRedirectUrl="/onboarding"
           />
         ) : (
-          <FallbackSignup />
+          <>
+            <div className="mb-6 w-full rounded-2xl border border-amber-200/40 bg-amber-50/10 px-5 py-4 text-left backdrop-blur-sm">
+              <p className="font-naya-sans text-[12px] leading-relaxed text-white/75">
+                Clerk keys are empty in <span className="text-white">.env.local</span>. Paste{' '}
+                <span className="text-white">NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY</span> and{' '}
+                <span className="text-white">CLERK_SECRET_KEY</span> from the Clerk dashboard,
+                restart the dev server, then reload for the real signup form. Until then you can
+                continue with email only (needs Supabase configured too).
+              </p>
+            </div>
+            <FallbackSignup />
+          </>
         )}
       </div>
     </div>
@@ -50,14 +61,31 @@ function FallbackSignup() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const value = email.trim();
     if (!value || !value.includes('@')) return;
     setBusy(true);
-    await recordAccount('signup_page', value);
-    router.push('/onboarding');
+    setError(null);
+    try {
+      const res = await fetch('/api/account/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-naya-uid': `email_${value}` },
+        body: JSON.stringify({ source: 'signup_page', email: value }),
+      });
+      if (res.status === 503) {
+        setError('database not configured. add Supabase keys to .env.local and restart.');
+        setBusy(false);
+        return;
+      }
+      await recordAccount('signup_page', value);
+      router.push('/onboarding');
+    } catch {
+      setError('could not create account right now.');
+      setBusy(false);
+    }
   };
 
   return (
@@ -75,6 +103,7 @@ function FallbackSignup() {
         placeholder="you@email.com"
         className="font-naya-sans w-full border-b border-white/20 bg-transparent py-2 text-[14px] text-white placeholder:text-white/30 focus:border-white focus:outline-none"
       />
+      {error && <p className="font-naya-sans mt-3 text-[12px] text-red-300">{error}</p>}
       <button
         type="submit"
         disabled={busy}

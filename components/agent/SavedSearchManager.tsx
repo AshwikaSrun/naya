@@ -18,6 +18,7 @@ export default function SavedSearchManager({ onChanged, onPaywall }: Props) {
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const refresh = async () => {
     setSearches(await listSavedSearches());
@@ -34,14 +35,20 @@ export default function SavedSearchManager({ onChanged, onPaywall }: Props) {
     const q = input.trim();
     if (!q || busy) return;
     setBusy(true);
+    setError(null);
     const created = await createSavedSearch(q);
-    if (created) {
+    if (created.search) {
       setInput('');
       await refresh();
       onChanged?.();
-    } else {
-      // Likely paywalled (402) — open unlock modal.
+    } else if (created.paywalled) {
       onPaywall?.();
+    } else if (created.error === 'db_not_configured') {
+      setError('database not configured. add your Supabase keys to .env.local and restart the dev server.');
+    } else if (created.error === 'db_error') {
+      setError('could not save search. run supabase-agent-schema.sql in the Supabase SQL editor, then try again.');
+    } else {
+      setError('could not save that search. try again in a moment.');
     }
     setBusy(false);
   };
@@ -77,6 +84,10 @@ export default function SavedSearchManager({ onChanged, onPaywall }: Props) {
           {busy ? 'adding…' : 'watch'}
         </button>
       </div>
+
+      {error && (
+        <p className="font-naya-sans mt-3 text-[12px] leading-relaxed text-red-700/80">{error}</p>
+      )}
 
       {loaded && searches.length > 0 && (
         <div className="mt-4 flex flex-wrap gap-2">
