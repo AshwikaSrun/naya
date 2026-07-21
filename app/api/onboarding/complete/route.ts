@@ -3,6 +3,7 @@ import { getAgentDb } from '@/lib/agent/db';
 import { resolveUserId } from '@/lib/agent/userId';
 import { parseSavedSearch } from '@/lib/agent/parseSavedSearch';
 import { refreshUserSavedSearches } from '@/lib/agent/refreshUser';
+import { vibeWatchQueries } from '@/lib/agent/vibes';
 import type { ParsedFilters, TasteProfile } from '@/lib/agent/types';
 
 export const dynamic = 'force-dynamic';
@@ -13,7 +14,7 @@ interface Body {
   enrich?: Partial<ParsedFilters>;
 }
 
-/** Build one or more marketplace watches from the hunt field + preferred brands. */
+/** Build watches from hunt field + brands + vibes. */
 function seedQueriesFromProfile(
   profile: TasteProfile | null,
   huntQuery?: string,
@@ -28,12 +29,16 @@ function seedQueriesFromProfile(
     .slice(0, 5);
 
   for (const brand of brands) {
-    // Skip if the hunt query already covers this brand.
     if (out.some((q) => q.toLowerCase().includes(brand))) continue;
     out.push(brand);
   }
 
-  // No brands and no hunt — fall back to style/category so first-pass still runs.
+  for (const vibeQ of vibeWatchQueries(profile?.style_tags ?? [], 4)) {
+    const key = vibeQ.toLowerCase();
+    if (out.some((q) => q.toLowerCase().includes(key) || key.includes(q.toLowerCase()))) continue;
+    out.push(vibeQ);
+  }
+
   if (!out.length && profile) {
     const style = profile.style_tags?.[0];
     const category = profile.preferred_categories?.[0];
@@ -42,7 +47,7 @@ function seedQueriesFromProfile(
     if (parts.length) out.push(parts.slice(0, 3).join(' '));
   }
 
-  return out;
+  return out.slice(0, 10);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -320,19 +320,22 @@ export function detectGender(normalized: string): 'mens' | 'womens' | 'unisex' |
 
 export const STYLE_TAGS: Record<string, string[]> = {
   streetwear: ['streetwear', 'street style'],
-  workwear: ['workwear'],
-  gorpcore: ['gorpcore', 'gorp'],
-  blokecore: ['blokecore'],
-  y2k: ['y2k'],
-  grunge: ['grunge'],
-  preppy: ['preppy', 'prep', 'ivy', 'old money', 'quiet luxury'],
-  minimalist: ['minimalist', 'minimal', 'clean'],
-  coastal: ['coastal', 'coastal grandmother', 'coquette'],
-  skater: ['skater', 'skate'],
-  cottagecore: ['cottagecore'],
-  boho: ['boho', 'bohemian'],
-  athleisure: ['athleisure', 'gym', 'activewear'],
-  goth: ['goth', 'gothic', 'grungy'],
+  workwear: ['workwear', 'chore coat', 'detroit jacket'],
+  gorpcore: ['gorpcore', 'gorp', 'trail', 'hiking fleece'],
+  blokecore: ['blokecore', 'football jersey', 'soccer jersey'],
+  y2k: ['y2k', '2000s', 'baby tee', 'low rise'],
+  grunge: ['grunge', 'flannel', 'band tee'],
+  preppy: ['preppy', 'prep', 'ivy', 'old money', 'quiet luxury', 'cable knit'],
+  minimalist: ['minimalist', 'minimal', 'clean', 'capsule'],
+  coastal: ['coastal', 'coastal grandmother', 'coquette', 'linen set', 'boatneck'],
+  skater: ['skater', 'skate', 'baggy jeans'],
+  cottagecore: [
+    'cottagecore', 'cottage core', 'prairie', 'milkmaid', 'eyelet',
+    'puff sleeve', 'babydoll', 'floral midi', 'smocked',
+  ],
+  boho: ['boho', 'bohemian', 'crochet', 'peasant blouse'],
+  athleisure: ['athleisure', 'gym', 'activewear', 'yoga', 'tech fleece'],
+  goth: ['goth', 'gothic', 'grungy', 'velvet black', 'lace black'],
 };
 
 const STYLE_ENTRIES = Object.entries(STYLE_TAGS)

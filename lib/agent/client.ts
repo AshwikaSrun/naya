@@ -293,13 +293,23 @@ export interface FeedbackListing {
 export async function sendFeedback(
   feedback: 'liked' | 'dismissed',
   listing: FeedbackListing,
-): Promise<boolean> {
-  const res = await fetch('/api/agent/feedback', {
-    method: 'POST',
-    headers: headers(),
-    body: JSON.stringify({ feedback, listing }),
-  });
-  return res.ok;
+): Promise<{ ok: boolean; profile?: Partial<TasteProfile>; inferred_vibes?: string[] }> {
+  try {
+    const res = await fetch('/api/agent/feedback', {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify({ feedback, listing }),
+    });
+    if (!res.ok) return { ok: false };
+    const data = await res.json();
+    return {
+      ok: true,
+      profile: data.profile,
+      inferred_vibes: data.inferred_vibes,
+    };
+  } catch {
+    return { ok: false };
+  }
 }
 
 export async function trackInteraction(

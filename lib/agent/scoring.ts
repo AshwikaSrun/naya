@@ -33,12 +33,13 @@ import {
   sizeKeyForCategory,
   textSimilarity,
 } from './parse';
+import { vibeTerms } from './vibes';
 
 const BASE_WEIGHTS = {
-  brand: 0.25,
-  category: 0.15,
-  price: 0.15,
-  style: 0.25,
+  brand: 0.22,
+  category: 0.13,
+  price: 0.12,
+  style: 0.33, // vibes are the strongest taste signal when they match
   saved_search: 0.2,
 } as const;
 
@@ -111,33 +112,47 @@ function scorePrice(price: number, ceiling: number | null): { value: number; phr
   };
 }
 
-/** style + era overlap via keyword coverage of the listing text. */
+/** style + era overlap via keyword coverage — expands vibe aliases/proxies. */
 function scoreStyle(
   text: string,
   profile: TasteProfile,
   searchVibe: string[],
   searchEra: string | undefined,
 ): { value: number; phrase?: string } {
-  const styleTerms = [...profile.style_tags, ...searchVibe].map(normalize).filter(Boolean);
+  const styleTags = [...profile.style_tags, ...searchVibe].map(normalize).filter(Boolean);
   const eraTerms = [...profile.era_preference, ...(searchEra ? [searchEra] : [])]
     .map(normalize)
     .filter(Boolean);
-  const all = [...styleTerms, ...eraTerms];
+
+  // Expand each vibe into marketplace-visible proxies (prairie, linen, …).
+  const styleNeedles = styleTags.flatMap((tag) => vibeTerms(tag));
+  const all = uniqStrings([...styleNeedles, ...eraTerms]);
   if (all.length === 0) return { value: 0 };
 
-  const styleCov = styleTerms.length ? keywordCoverage(styleTerms, text) : 0;
+  const styleCov = styleNeedles.length ? keywordCoverage(styleNeedles, text) : 0;
   const eraCov = eraTerms.length ? keywordCoverage(eraTerms, text) : 0;
-  // Weight style and era by how many terms each contributed.
+  // Prefer style coverage when both exist; era is a soft boost.
   const value =
-    (styleCov * styleTerms.length + eraCov * eraTerms.length) / all.length;
+    styleNeedles.length && eraTerms.length
+      ? styleCov * 0.7 + eraCov * 0.3
+      : styleNeedles.length
+        ? styleCov
+        : eraCov;
 
   let phrase: string | undefined;
   if (value > 0) {
-    const hitStyle = profile.style_tags.find((t) => keywordCoverage([t], text) > 0);
-    if (hitStyle) phrase = `fits your ${hitStyle} taste`;
+    const hitStyle = profile.style_tags.find((t) =>
+      vibeTerms(t).some((term) => keywordCoverage([term], text) > 0),
+    );
+    if (hitStyle) phrase = `fits your ${hitStyle} vibe`;
     else if (eraCov > 0 && eraTerms[0]) phrase = `has that ${eraTerms[0]} feel`;
+    else if (searchVibe[0]) phrase = `matches your ${searchVibe[0]} taste`;
   }
-  return { value, phrase };
+  return { value: Math.min(1, value * 1.4), phrase }; // slight boost — vibes are sparse
+}
+
+function uniqStrings(arr: string[]): string[] {
+  return Array.from(new Set(arr.filter(Boolean)));
 }
 
 /** saved-search similarity: best keyword-overlap match across active searches. */
@@ -250,6 +265,11 @@ export function scoreListing(
   const brandComp = components.find((c) => c.key === 'brand');
   if (brandComp && brandComp.value >= 1) score = Math.max(score, 0.72);
   else if (brandComp && brandComp.value >= 0.6) score = Math.max(score, 0.55);
+
+  // Same idea for vibes — a clear cottagecore/preppy hit should surface.
+  const styleComp = components.find((c) => c.key === 'style');
+  if (styleComp && styleComp.value >= 0.45) score = Math.max(score, 0.68);
+  else if (styleComp && styleComp.value >= 0.25) score = Math.max(score, 0.52);
 
   return {
     score: Math.round(score * 1000) / 1000,

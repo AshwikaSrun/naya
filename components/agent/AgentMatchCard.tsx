@@ -4,32 +4,37 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { getDepopImageUrl, DEPOP_WIDTH_CARD } from '@/lib/depopImage';
 import { sendFeedback, trackInteraction, type AgentMatch, type FeedbackListing } from '@/lib/agent/client';
+import type { TasteProfile } from '@/lib/agent/types';
+import { inferVibesFromTitle } from '@/lib/agent/vibes';
 
 interface Props {
   match: AgentMatch;
   onResolved?: (listingId: string, feedback: 'liked' | 'dismissed') => void;
+  onTasteUpdated?: (profile: Partial<TasteProfile>) => void;
 }
 
 function toFeedbackListing(m: AgentMatch): FeedbackListing {
+  const title = m.listing_title ?? undefined;
   return {
     listing_id: m.listing_id,
     listing_url: m.listing_url,
-    listing_title: m.listing_title ?? undefined,
+    listing_title: title,
     brand: m.brand,
     item_type: m.item_type,
     price: m.price,
     image_url: m.image_url,
     source: m.source,
+    style_tags: inferVibesFromTitle(title),
   };
 }
 
-export default function AgentMatchCard({ match, onResolved }: Props) {
+export default function AgentMatchCard({ match, onResolved, onTasteUpdated }: Props) {
   const rawImage = match.image_url || '';
   const preferred =
     match.source === 'depop' ? getDepopImageUrl(rawImage, DEPOP_WIDTH_CARD) : rawImage;
   const [imageSrc, setImageSrc] = useState(preferred);
   const [busy, setBusy] = useState(false);
-  const [liked, setLiked] = useState(match.user_feedback === 'liked');
+  const [saved, setSaved] = useState(match.user_feedback === 'liked');
 
   const brandKicker = (match.brand || match.item_type || match.source || '').toString();
 
@@ -42,8 +47,9 @@ export default function AgentMatchCard({ match, onResolved }: Props) {
     e.stopPropagation();
     if (busy) return;
     setBusy(true);
-    if (feedback === 'liked') setLiked(true);
-    await sendFeedback(feedback, toFeedbackListing(match));
+    if (feedback === 'liked') setSaved(true);
+    const res = await sendFeedback(feedback, toFeedbackListing(match));
+    if (res.ok && res.profile && feedback === 'liked') onTasteUpdated?.(res.profile);
     setBusy(false);
     if (feedback === 'dismissed') onResolved?.(match.listing_id, feedback);
     else onResolved?.(match.listing_id, 'liked');
@@ -68,24 +74,27 @@ export default function AgentMatchCard({ match, onResolved }: Props) {
           <div className="flex h-full w-full items-center justify-center text-black/20">no image</div>
         )}
 
-        {/* Match score chip — or a "popular" tag for generic trending picks */}
         <div className="font-naya-sans absolute left-2.5 top-2.5 z-10 rounded-full bg-black/85 px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.12em] text-white backdrop-blur-sm">
           {match.trending ? 'popular' : `${Math.round(match.match_score * 100)}% match`}
         </div>
 
-        {/* Feedback controls */}
-        <div className="absolute right-2.5 top-2.5 z-10 flex flex-col gap-1.5 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+        {/* Save + dismiss — always visible on mobile, hover-reveal on desktop */}
+        <div className="absolute right-2.5 top-2.5 z-10 flex flex-col gap-1.5 opacity-100 transition-opacity duration-200 md:opacity-0 md:group-hover:opacity-100">
           <button
             type="button"
-            aria-label="Like this match"
+            aria-label={saved ? 'Saved' : 'Save this find'}
+            title={saved ? 'saved' : 'save'}
             onClick={(e) => handleFeedback('liked', e)}
-            className={`flex h-8 w-8 items-center justify-center rounded-full shadow-sm backdrop-blur-sm transition-all ${
-              liked ? 'bg-black text-white' : 'bg-white/95 text-black hover:bg-white'
+            className={`flex h-8 items-center justify-center gap-1 rounded-full px-2.5 shadow-sm backdrop-blur-sm transition-all ${
+              saved ? 'bg-black text-white' : 'bg-white/95 text-black hover:bg-white'
             }`}
           >
-            <svg className="h-3.5 w-3.5" fill={liked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 116.364 6.364L12 21.682l-7.682-7.318a4.5 4.5 0 010-6.364z" />
+            <svg className="h-3.5 w-3.5" fill={saved ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
             </svg>
+            <span className="font-naya-sans text-[9px] lowercase tracking-[0.08em]">
+              {saved ? 'saved' : 'save'}
+            </span>
           </button>
           <button
             type="button"

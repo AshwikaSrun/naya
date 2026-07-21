@@ -3,6 +3,7 @@ import { runAggregation } from '@/lib/agent/aggregation';
 import { scoreListing } from '@/lib/agent/scoring';
 import { listingIdFromUrl } from '@/lib/agent/listingId';
 import { parseSavedSearch } from '@/lib/agent/parseSavedSearch';
+import { vibeWatchQueries } from '@/lib/agent/vibes';
 import type { SavedSearch, TasteProfile } from '@/lib/agent/types';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -13,6 +14,7 @@ import type { SavedSearch, TasteProfile } from '@/lib/agent/types';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const MAX_BRAND_WATCHES = 5;
+const MAX_VIBE_WATCHES = 4;
 
 function defaultProfile(userId: string): TasteProfile {
   return {
@@ -67,6 +69,46 @@ async function ensureBrandWatches(
   }
 }
 
+/** Seed vibe watches (cottagecore → floral prairie dress, etc.). */
+async function ensureVibeWatches(
+  db: SupabaseClient,
+  userId: string,
+  profile: TasteProfile,
+): Promise<void> {
+  const queries = vibeWatchQueries(profile.style_tags ?? [], MAX_VIBE_WATCHES);
+  if (!queries.length) return;
+
+  const { data: existing } = await db
+    .from('user_saved_search')
+    .select('query_text')
+    .eq('user_id', userId)
+    .eq('is_active', true);
+
+  const existingText = ((existing as { query_text: string }[] | null) ?? []).map((r) =>
+    (r.query_text || '').toLowerCase(),
+  );
+
+  for (const queryText of queries) {
+    const key = queryText.toLowerCase();
+    // Skip if we already watch something overlapping this vibe query.
+    const covered = existingText.some(
+      (t) => t.includes(key) || key.includes(t) || key.split(/\s+/).slice(0, 2).every((w) => t.includes(w)),
+    );
+    if (covered) continue;
+    const parsed = parseSavedSearch(queryText);
+    // Attach vibe tags from profile so scoring treats this as a style watch.
+    const vibes = (profile.style_tags ?? []).slice(0, 3);
+    const { error } = await db.from('user_saved_search').insert({
+      user_id: userId,
+      query_text: queryText,
+      parsed_filters: { ...parsed, vibe: vibes.length ? vibes : parsed.vibe },
+      is_active: true,
+    });
+    if (error) console.error('[agent/refreshUser] vibe watch:', error.message);
+    else existingText.push(key);
+  }
+}
+
 export async function refreshUserSavedSearches(
   db: SupabaseClient,
   userId: string,
@@ -74,7 +116,7 @@ export async function refreshUserSavedSearches(
 ): Promise<{ processed: number; matches: number }> {
   // 0.45 clears brand hits that used to die at 0.6 after style-tag dilution.
   const threshold = opts.threshold ?? 0.45;
-  const maxSearches = opts.maxSearches ?? 8;
+  const maxSearches = opts.maxSearches ?? 10;
   const limitPerSearch = opts.limitPerSearch ?? 40;
 
   const { data: profileRow } = await db
@@ -85,6 +127,7 @@ export async function refreshUserSavedSearches(
   const profile = (profileRow as TasteProfile) ?? defaultProfile(userId);
 
   await ensureBrandWatches(db, userId, profile);
+  await ensureVibeWatches(db, userId, profile);
 
   const { data: searches } = await db
     .from('user_saved_search')

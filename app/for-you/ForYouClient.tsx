@@ -7,6 +7,7 @@ import MobileNav from '@/components/MobileNav';
 import OnboardingFlow from '@/components/agent/OnboardingFlow';
 import SavedSearchManager from '@/components/agent/SavedSearchManager';
 import AgentMatchCard from '@/components/agent/AgentMatchCard';
+import TasteProfileCard from '@/components/agent/TasteProfileCard';
 import PaywallModal from '@/components/paywall/PaywallModal';
 import { getFeed, getProfile, runAgent, type AgentMatch } from '@/lib/agent/client';
 import type { TasteProfile } from '@/lib/agent/types';
@@ -139,8 +140,19 @@ export default function ForYouClient() {
   const handleResolved = (listingId: string, feedback: 'liked' | 'dismissed') => {
     if (feedback === 'dismissed') {
       setMatches((prev) => prev.filter((m) => m.listing_id !== listingId));
+    } else {
+      setMatches((prev) =>
+        prev.map((m) => (m.listing_id === listingId ? { ...m, user_feedback: 'liked' } : m)),
+      );
     }
   };
+
+  const handleTasteUpdated = (patch: Partial<TasteProfile>) => {
+    setProfile((prev) => (prev ? { ...prev, ...patch } : ({ ...patch } as TasteProfile)));
+  };
+
+  const savedMatches = matches.filter((m) => m.user_feedback === 'liked');
+  const feedMatches = matches.filter((m) => m.user_feedback !== 'liked');
 
   return (
     <div className="min-h-screen bg-white">
@@ -224,6 +236,8 @@ export default function ForYouClient() {
               </div>
             )}
 
+            <TasteProfileCard profile={profile} savedCount={savedMatches.length} />
+
             <section className="mb-10 rounded-2xl border border-black/8 bg-[#faf9f7] p-6 md:p-8">
               <SavedSearchManager onChanged={handleRun} onPaywall={() => setPaywallOpen(true)} />
               <div className="mt-5 flex items-center gap-4">
@@ -245,25 +259,56 @@ export default function ForYouClient() {
               </div>
             </section>
 
-            {fallback && matches.length > 0 && (
+            {fallback && feedMatches.length > 0 && (
               <div className="font-naya-sans mb-6 rounded-xl border border-black/8 bg-[#faf9f7] px-5 py-3 text-center text-[12px] text-black/50">
                 {paywalled
                   ? 'popular on naya. unlock personalization for taste-matched picks.'
-                  : 'popular on naya while your agent learns your taste. add a search or some brands and these become personalized picks.'}
+                  : 'popular on naya while your agent learns your taste. save finds you love and these become personalized picks.'}
               </div>
             )}
 
-            {matches.length === 0 ? (
+            {savedMatches.length > 0 && (
+              <section className="mb-12">
+                <div className="mb-5 flex items-baseline justify-between">
+                  <h2 className="font-naya-serif text-2xl font-light text-black">saved.</h2>
+                  <p className="font-naya-sans text-[11px] lowercase tracking-[0.1em] text-black/35">
+                    teaching your agent
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
+                  {savedMatches.map((m) => (
+                    <AgentMatchCard
+                      key={`saved-${m.listing_id}`}
+                      match={m}
+                      onResolved={handleResolved}
+                      onTasteUpdated={handleTasteUpdated}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {feedMatches.length === 0 && savedMatches.length === 0 ? (
               <div className="font-naya-sans py-16 text-center text-sm text-black/35">
                 no matches yet. add a search above and hit refresh, and naya will start hunting.
               </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
-                {matches.map((m) => (
-                  <AgentMatchCard key={m.listing_id} match={m} onResolved={handleResolved} />
-                ))}
-              </div>
-            )}
+            ) : feedMatches.length > 0 ? (
+              <section>
+                {savedMatches.length > 0 && (
+                  <h2 className="font-naya-serif mb-5 text-2xl font-light text-black">for you.</h2>
+                )}
+                <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
+                  {feedMatches.map((m) => (
+                    <AgentMatchCard
+                      key={m.listing_id}
+                      match={m}
+                      onResolved={handleResolved}
+                      onTasteUpdated={handleTasteUpdated}
+                    />
+                  ))}
+                </div>
+              </section>
+            ) : null}
           </>
         )}
       </div>

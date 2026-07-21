@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { saveProfile } from '@/lib/agent/client';
 import type { TasteProfile } from '@/lib/agent/types';
+import { STYLE_TAGS } from '@/lib/vocab';
 
 const BRAND_OPTIONS = [
   'carhartt', 'levis', 'the north face', 'nike', 'adidas', 'polo ralph lauren',
@@ -14,10 +15,7 @@ const CATEGORY_OPTIONS = [
   'outerwear', 'denim', 'knitwear', 'hoodie', 'tops', 'pants', 'shoes', 'bags', 'dresses', 'skirts',
 ];
 
-const STYLE_OPTIONS = [
-  'workwear', 'y2k', 'minimalist', 'grunge', 'streetwear', 'vintage',
-  'preppy', 'gorpcore', 'quiet luxury', 'skater',
-];
+const STYLE_OPTIONS = Object.keys(STYLE_TAGS);
 
 const ERA_OPTIONS = ['90s', '2000s', '80s', '70s'];
 
@@ -117,7 +115,7 @@ export default function AgentOnboarding({ initial, onComplete }: Props) {
         </div>
       </Section>
 
-      <Section title="your style (pick 3–5)">
+      <Section title="your vibes (pick 3–5)">
         <div className="flex flex-wrap gap-2">
           {STYLE_OPTIONS.map((s) => (
             <Chip key={s} label={s} active={styles.includes(s)} onClick={() => toggle(s, styles, setStyles, 5)} />
