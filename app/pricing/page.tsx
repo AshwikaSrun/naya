@@ -156,7 +156,7 @@ export default function PricingPage() {
               {yearly ? 'billed annually at $59.88' : 'billed monthly · cancel anytime'}
             </p>
             <div className="mt-6">
-              <UpgradeCTA label={CLERK_ENABLED ? 'sign up to upgrade' : 'get premium'} />
+              <UpgradeCTA label="join to upgrade" />
             </div>
             <p className="font-naya-sans mt-4 text-[11px] uppercase tracking-[0.2em] text-white/35">
               everything in free, plus
