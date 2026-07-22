@@ -9,6 +9,7 @@ import {
   SEARCH_COUNT_KEY,
   TRIAL_SEARCH_LIMIT,
   UNLIMITED_STORAGE_KEY,
+  hasCompletedOnboarding,
   hasUnlimitedClientAccess,
   isPurdueEmail,
 } from '@/lib/access';
@@ -417,6 +418,13 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
     platformOverride?: 'all' | Platform
   ) => {
     if (!searchQuery.trim()) return;
+
+    // Trial unlocks only after waitlist email + full onboarding.
+    if (!hasUnlimitedClientAccess() && !hasCompletedOnboarding()) {
+      pendingSearchRef.current = { query: searchQuery, platform: platformOverride };
+      setShowTrialGate(true);
+      return;
+    }
 
     // Waitlist trial: 5 searches. Purdue / invite are unlimited.
     if (!hasUnlimitedClientAccess()) {

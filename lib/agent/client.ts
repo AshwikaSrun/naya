@@ -9,6 +9,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { InteractionType, ParsedFilters, TasteProfile } from './types';
+import { ONBOARDED_COOKIE, ONBOARDED_STORAGE_KEY } from '@/lib/access';
 
 const UID_KEY = 'naya-agent-uid';
 
@@ -169,7 +170,8 @@ export async function completeOnboarding(
       ...(typeof data.error === 'string' ? { error: data.error } : {}),
     };
     if (result.ok && typeof window !== 'undefined') {
-      window.localStorage.setItem('naya-onboarded', '1');
+      window.localStorage.setItem(ONBOARDED_STORAGE_KEY, '1');
+      document.cookie = `${ONBOARDED_COOKIE}=1; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
     }
     if (!result.ok || result.error) {
       console.error('[naya] completeOnboarding returned error:', result);

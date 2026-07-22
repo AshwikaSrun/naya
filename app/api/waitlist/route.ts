@@ -56,7 +56,7 @@ async function persistToSheet(email: string, source: string): Promise<boolean> {
 
 /**
  * Waitlist signup: log email + set site-access cookie.
- * Unlocks onboarding + trial search. Agent stays locked until Purdue/invite.
+ * Unlocks onboarding. Trial search unlocks only after /api/onboarding/complete.
  */
 export async function POST(request: Request) {
   try {

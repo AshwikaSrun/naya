@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect } from 'react';
-import { TRIAL_SEARCH_LIMIT } from '@/lib/access';
 
 type Props = {
   open: boolean;
@@ -11,10 +10,10 @@ type Props = {
 };
 
 const BULLETS = [
-  'Set up your taste profile in about a minute',
-  `${TRIAL_SEARCH_LIMIT} free marketplace searches to try naya now`,
-  'Personalized For you feed — ready for you at launch',
-  'Saved-search matching + style drops after we open the agent',
+  'Personalized For you feed ranked to your taste',
+  'Saved search matching across every resale site',
+  'Taste-scored finds in the Chrome extension',
+  'Style-drop notifications when new matches land',
 ];
 
 async function track(eventType: string, meta: Record<string, unknown> = {}) {
@@ -30,8 +29,8 @@ async function track(eventType: string, meta: Record<string, unknown> = {}) {
 }
 
 /**
- * Waitlist gate modal. When `required`, there is no close / backdrop dismiss —
- * the only path forward is joining and finishing setup.
+ * Waitlist / unlock gate. Look matches the personal-style signup modal;
+ * CTA sends users to /onboarding (email + taste profile).
  */
 export default function PaywallModal({ open, required = true, onClose }: Props) {
   useEffect(() => {
@@ -40,7 +39,6 @@ export default function PaywallModal({ open, required = true, onClose }: Props) 
     void track('value_screen_viewed');
   }, [open]);
 
-  // Block Escape while required modal is open.
   useEffect(() => {
     if (!open || !required) return;
     const onKey = (e: KeyboardEvent) => {
@@ -53,7 +51,6 @@ export default function PaywallModal({ open, required = true, onClose }: Props) 
     return () => window.removeEventListener('keydown', onKey, true);
   }, [open, required]);
 
-  // Warn before leaving the tab if they still haven't joined / finished setup.
   useEffect(() => {
     if (!open || !required) return;
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -64,7 +61,6 @@ export default function PaywallModal({ open, required = true, onClose }: Props) 
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
   }, [open, required]);
 
-  // Lock body scroll while open.
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -81,20 +77,13 @@ export default function PaywallModal({ open, required = true, onClose }: Props) 
 
   if (!open) return null;
 
+  const canClose = !required && !!onClose;
+
   return (
     <div className="fixed inset-0 z-[80] flex items-end justify-center sm:items-center">
-      {/* Backdrop — not clickable when required */}
-      <div
-        aria-hidden
-        className="absolute inset-0 bg-black/45 backdrop-blur-[2px]"
-      />
-      {!required && onClose && (
-        <button
-          type="button"
-          aria-label="Close"
-          className="absolute inset-0"
-          onClick={onClose}
-        />
+      <div aria-hidden className="absolute inset-0 bg-black/45 backdrop-blur-[2px]" />
+      {canClose && (
+        <button type="button" aria-label="Close" className="absolute inset-0" onClick={onClose} />
       )}
       <div
         role="dialog"
@@ -104,9 +93,9 @@ export default function PaywallModal({ open, required = true, onClose }: Props) 
       >
         <div className="mb-5 flex items-center justify-between">
           <p className="font-naya-sans text-[10px] uppercase tracking-[0.22em] text-black/40">
-            waitlist
+            personal style
           </p>
-          {!required && onClose ? (
+          {canClose ? (
             <button
               type="button"
               onClick={onClose}
@@ -115,9 +104,7 @@ export default function PaywallModal({ open, required = true, onClose }: Props) 
               close
             </button>
           ) : (
-            <span className="font-naya-sans text-[10px] uppercase tracking-[0.14em] text-black/25">
-              required
-            </span>
+            <span className="w-10" aria-hidden />
           )}
         </div>
 
@@ -126,11 +113,11 @@ export default function PaywallModal({ open, required = true, onClose }: Props) 
             id="paywall-title"
             className="font-naya-serif text-balance text-[clamp(2rem,5vw,2.75rem)] font-light leading-[1.05] tracking-[-0.03em] text-black"
           >
-            Join the waitlist. Build your profile.
+            Unlock Your Personal Style
           </h2>
           <p className="font-naya-sans mt-4 text-[15px] leading-relaxed text-black/55">
-            naya learns your taste so your account is ready at launch — the shopping
-            agent opens then. for now, finish setup and try a short search trial.
+            naya learns your taste and finds pieces made for you, not just the
+            internet&apos;s best guess.
           </p>
           <ul className="mt-7 space-y-3">
             {BULLETS.map((b) => (
@@ -146,13 +133,10 @@ export default function PaywallModal({ open, required = true, onClose }: Props) 
             onClick={startWaitlist}
             className="pill-solid mt-8 w-full px-6 py-4 text-[13px]"
           >
-            finish setup
+            Sign up to unlock
           </button>
           <p className="font-naya-sans mt-4 text-center text-[12px] text-black/40">
-            profile now · {TRIAL_SEARCH_LIMIT} trial searches · agent after launch
-          </p>
-          <p className="font-naya-sans mt-2 text-center text-[11px] text-black/35">
-            purdue students: use your @purdue.edu email for full access
+            Free while we pilot. Takes about a minute.
           </p>
         </div>
       </div>

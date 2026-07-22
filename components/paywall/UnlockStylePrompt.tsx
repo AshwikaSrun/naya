@@ -1,13 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { ONBOARDED_STORAGE_KEY } from '@/lib/access';
 import PaywallModal from './PaywallModal';
 
-const ONBOARDED_KEY = 'naya-onboarded';
-
 /**
- * Required waitlist / profile gate on the homepage.
- * Stays open until the user has joined and finished setup — no dismiss.
+ * Required unlock gate on the homepage.
+ * Homepage stays visible behind the modal; trial search unlocks after onboarding.
  */
 export default function UnlockStylePrompt({
   autoOpen = true,
@@ -22,8 +21,7 @@ export default function UnlockStylePrompt({
     if (typeof window === 'undefined') return;
     if (!autoOpen) return;
 
-    // Fully through the funnel — no modal.
-    if (window.localStorage.getItem(ONBOARDED_KEY) === '1') {
+    if (window.localStorage.getItem(ONBOARDED_STORAGE_KEY) === '1') {
       setOpen(false);
       return;
     }
@@ -32,11 +30,10 @@ export default function UnlockStylePrompt({
     return () => window.clearTimeout(timer);
   }, [autoOpen, delayMs]);
 
-  // If they somehow clear state mid-session, force the modal back.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const check = () => {
-      const done = window.localStorage.getItem(ONBOARDED_KEY) === '1';
+      const done = window.localStorage.getItem(ONBOARDED_STORAGE_KEY) === '1';
       if (!done) setOpen(true);
       else setOpen(false);
     };

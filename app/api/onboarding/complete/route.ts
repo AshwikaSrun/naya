@@ -5,7 +5,7 @@ import { parseSavedSearch } from '@/lib/agent/parseSavedSearch';
 import { refreshUserSavedSearches } from '@/lib/agent/refreshUser';
 import { vibeWatchQueries } from '@/lib/agent/vibes';
 import type { ParsedFilters, TasteProfile } from '@/lib/agent/types';
-import { ACCESS_TOKEN_COOKIE, isUnlimitedToken } from '@/lib/access';
+import { ACCESS_TOKEN_COOKIE, ONBOARDED_COOKIE, isUnlimitedToken } from '@/lib/access';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -13,6 +13,19 @@ export const maxDuration = 120;
 interface Body {
   saved_search?: string;
   enrich?: Partial<ParsedFilters>;
+}
+
+const ONBOARDED_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
+
+function withOnboardedCookie(res: NextResponse): NextResponse {
+  res.cookies.set(ONBOARDED_COOKIE, '1', {
+    httpOnly: false, // client UnlockStylePrompt / trial gate also read localStorage
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: ONBOARDED_COOKIE_MAX_AGE,
+    path: '/',
+  });
+  return res;
 }
 
 function postOnboardingRedirect(req: NextRequest): string {
@@ -76,13 +89,15 @@ export async function POST(req: NextRequest) {
   if (!db) {
     // No Supabase yet — still finish onboarding so waitlist trial can start.
     console.warn('[onboarding/complete] db_not_configured — completing without persistence');
-    return NextResponse.json({
-      ok: true,
-      configured: false,
-      redirect: postOnboardingRedirect(req),
-      matches: 0,
-      savedSearchCreated: false,
-    });
+    return withOnboardedCookie(
+      NextResponse.json({
+        ok: true,
+        configured: false,
+        redirect: postOnboardingRedirect(req),
+        matches: 0,
+        savedSearchCreated: false,
+      }),
+    );
   }
 
   let body: Body = {};
@@ -168,11 +183,13 @@ export async function POST(req: NextRequest) {
     console.info('[onboarding/complete] skipped first-pass (no saved search)', { userId });
   }
 
-  return NextResponse.json({
-    ok: true,
-    redirect: postOnboardingRedirect(req),
-    savedSearchCreated,
-    matches,
-    configured: true,
-  });
+  return withOnboardedCookie(
+    NextResponse.json({
+      ok: true,
+      redirect: postOnboardingRedirect(req),
+      savedSearchCreated,
+      matches,
+      configured: true,
+    }),
+  );
 }
