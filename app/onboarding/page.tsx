@@ -4,9 +4,14 @@ import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import OnboardingFlow from '@/components/agent/OnboardingFlow';
+import PaywallModal from '@/components/paywall/PaywallModal';
 import { getProfile, recordAccount } from '@/lib/agent/client';
 import type { TasteProfile } from '@/lib/agent/types';
-import { EMAIL_STORAGE_KEY, hasUnlimitedClientAccess, isPurdueEmail, TRIAL_SEARCH_LIMIT } from '@/lib/access';
+import {
+  EMAIL_STORAGE_KEY,
+  hasUnlimitedClientAccess,
+  isPurdueEmail,
+} from '@/lib/access';
 
 function OnboardingInner() {
   const router = useRouter();
@@ -16,10 +21,12 @@ function OnboardingInner() {
   const [confirming, setConfirming] = useState(false);
   const [paidNote, setPaidNote] = useState<string | null>(null);
   const [unlimited, setUnlimited] = useState(false);
+  const [hasEmail, setHasEmail] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     setUnlimited(hasUnlimitedClientAccess());
+    setHasEmail(!!window.localStorage.getItem(EMAIL_STORAGE_KEY));
 
     recordAccount('onboarding');
     (async () => {
@@ -68,7 +75,6 @@ function OnboardingInner() {
       body: JSON.stringify({ eventType: 'onboarding_completed_after_paywall' }),
     }).catch(() => null);
 
-    // Purdue / invite → agent feed. Waitlist trial → home search.
     if (hasUnlimitedClientAccess()) {
       router.push('/for-you');
     } else {
@@ -80,32 +86,62 @@ function OnboardingInner() {
     typeof window !== 'undefined' &&
     isPurdueEmail(window.localStorage.getItem(EMAIL_STORAGE_KEY));
 
+  // Waitlist email uses the personal-style popup — not the quiz card.
+  if (ready && !hasEmail) {
+    return (
+      <div className="relative min-h-screen bg-[#f7f4ee]">
+        <div className="pointer-events-none absolute inset-0 opacity-40">
+          <div className="mx-auto max-w-3xl px-6 pt-16 text-center">
+            <p className="font-naya-serif text-2xl font-light lowercase tracking-[0.12em] text-black">
+              naya
+            </p>
+            <p className="font-naya-serif mt-10 text-[clamp(2rem,5vw,3.5rem)] font-light leading-[1.05] tracking-[-0.03em] text-black/25">
+              search smarter. shop yours.
+            </p>
+          </div>
+        </div>
+        <PaywallModal
+          open
+          required
+          onJoined={() => {
+            setHasEmail(true);
+            setUnlimited(hasUnlimitedClientAccess());
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <div className="mx-auto max-w-4xl px-6 py-10 md:py-14">
         <div className="mb-10 flex items-center justify-center">
-          <Link href="/" className="font-naya-serif text-2xl font-light lowercase tracking-[0.12em] text-black">
+          <Link
+            href="/"
+            className="font-naya-serif text-2xl font-light lowercase tracking-[0.12em] text-black"
+          >
             naya
           </Link>
         </div>
 
         {paidNote && (
           <div className="mb-8 rounded-[20px] border border-black/10 bg-[#f7f4ee] p-5 text-center">
-            <p className="font-naya-serif text-2xl font-light tracking-[-0.02em] text-black">You&apos;re in.</p>
-            <p className="font-naya-sans mt-2 text-[14px] leading-relaxed text-black/55">{paidNote}</p>
+            <p className="font-naya-serif text-2xl font-light tracking-[-0.02em] text-black">
+              You&apos;re in.
+            </p>
+            <p className="font-naya-sans mt-2 text-[14px] leading-relaxed text-black/55">
+              {paidNote}
+            </p>
           </div>
         )}
 
         <div className="mb-8 text-center">
           <p className="font-naya-sans mb-3 text-[10px] uppercase tracking-[0.2em] text-black/30">
-            {purdue ? 'purdue access' : unlimited ? 'early access' : 'join + set up'}
+            {purdue ? 'purdue access' : unlimited ? 'early access' : 'your taste'}
           </p>
-          {!unlimited && (
-            <p className="font-naya-sans text-[13px] text-black/45">
-              email first, then a short taste quiz — then {TRIAL_SEARCH_LIMIT} trial
-              searches on the main page. the shopping agent opens after launch.
-            </p>
-          )}
+          <p className="font-naya-sans text-[13px] text-black/45">
+            a few taps so we know what you&apos;re into — then your trial searches unlock.
+          </p>
         </div>
 
         {confirming || !ready ? (

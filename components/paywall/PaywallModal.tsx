@@ -1,12 +1,19 @@
 'use client';
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  EMAIL_STORAGE_KEY,
+  UNLIMITED_STORAGE_KEY,
+  isPurdueEmail,
+} from '@/lib/access';
 
 type Props = {
   open: boolean;
   /** When true, modal cannot be dismissed — only the CTA continues. */
   required?: boolean;
   onClose?: () => void;
+  /** After waitlist email succeeds — default: continue to taste quiz. */
+  onJoined?: () => void;
 };
 
 const BULLETS = [
@@ -29,10 +36,19 @@ async function track(eventType: string, meta: Record<string, unknown> = {}) {
 }
 
 /**
- * Waitlist / unlock gate. Look matches the personal-style signup modal;
- * CTA sends users to /onboarding (email + taste profile).
+ * Waitlist gate — same personal-style popup look.
+ * Collects email here, then sends users to the taste quiz.
  */
-export default function PaywallModal({ open, required = true, onClose }: Props) {
+export default function PaywallModal({
+  open,
+  required = true,
+  onClose,
+  onJoined,
+}: Props) {
+  const [email, setEmail] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     if (!open) return;
     void track('popup_viewed');
@@ -60,16 +76,66 @@ export default function PaywallModal({ open, required = true, onClose }: Props) 
     };
   }, [open]);
 
-  const startWaitlist = useCallback(() => {
-    void track('payment_started', { mode: 'waitlist_onboarding' });
-    // Full navigation — do not attach beforeunload on this modal or it blocks
-    // the signup CTA in some browsers.
-    window.location.assign('/onboarding');
-  }, []);
+  const joinWaitlist = useCallback(async () => {
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed || !trimmed.includes('@')) {
+      setError('enter a valid email to join.');
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+    void track('payment_started', { mode: 'waitlist_popup' });
+
+    try {
+      if (isPurdueEmail(trimmed)) {
+        const authRes = await fetch('/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: trimmed }),
+        });
+        const authData = await authRes.json().catch(() => ({}));
+        if (!authRes.ok) {
+          throw new Error(
+            typeof authData.error === 'string'
+              ? authData.error
+              : 'Could not unlock Purdue access.',
+          );
+        }
+        window.localStorage.setItem(EMAIL_STORAGE_KEY, trimmed);
+        window.localStorage.removeItem(UNLIMITED_STORAGE_KEY);
+        void fetch('/api/waitlist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: trimmed, source: 'popup_purdue' }),
+        });
+      } else {
+        const res = await fetch('/api/waitlist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: trimmed, source: 'popup_waitlist' }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(
+            typeof data.error === 'string' ? data.error : 'Could not join waitlist.',
+          );
+        }
+        window.localStorage.setItem(EMAIL_STORAGE_KEY, trimmed);
+      }
+
+      if (onJoined) onJoined();
+      else window.location.assign('/onboarding');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong.');
+      setSaving(false);
+    }
+  }, [email, onJoined]);
 
   if (!open) return null;
 
   const canClose = !required && !!onClose;
+  const canSubmit = !!email.trim() && email.includes('@') && !saving;
 
   return (
     <div className="fixed inset-0 z-[80] flex items-end justify-center sm:items-center">
@@ -120,13 +186,48 @@ export default function PaywallModal({ open, required = true, onClose }: Props) 
             ))}
           </ul>
 
-          <button
-            type="button"
-            onClick={startWaitlist}
-            className="pill-solid mt-8 w-full px-6 py-4 text-[13px]"
+          <form
+            className="mt-8"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void joinWaitlist();
+            }}
           >
-            Sign up to unlock
-          </button>
+            <label className="block">
+              <span className="font-naya-sans mb-2 block text-[9px] uppercase tracking-[0.18em] text-black/35">
+                email
+              </span>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@email.com"
+                autoComplete="email"
+                autoCapitalize="none"
+                inputMode="email"
+                disabled={saving}
+                className="font-naya-sans w-full border-b border-black/15 bg-transparent py-2.5 text-[15px] text-black placeholder:text-black/30 focus:border-black focus:outline-none disabled:opacity-50"
+              />
+            </label>
+            <p className="font-naya-sans mt-3 text-[12px] leading-relaxed text-black/40">
+              purdue students: use your @purdue.edu email for unlimited search + the
+              agent.
+            </p>
+
+            <button
+              type="submit"
+              disabled={!canSubmit}
+              className="pill-solid mt-6 w-full px-6 py-4 text-[13px] disabled:opacity-40"
+            >
+              {saving ? 'joining…' : 'Sign up to unlock'}
+            </button>
+          </form>
+
+          {error && (
+            <p className="font-naya-sans mt-3 text-center text-[12px] text-red-600/90">
+              {error}
+            </p>
+          )}
           <p className="font-naya-sans mt-4 text-center text-[12px] text-black/40">
             Free while we pilot. Takes about a minute.
           </p>
