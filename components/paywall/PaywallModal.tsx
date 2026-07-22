@@ -52,16 +52,6 @@ export default function PaywallModal({ open, required = true, onClose }: Props) 
   }, [open, required]);
 
   useEffect(() => {
-    if (!open || !required) return;
-    const onBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = '';
-    };
-    window.addEventListener('beforeunload', onBeforeUnload);
-    return () => window.removeEventListener('beforeunload', onBeforeUnload);
-  }, [open, required]);
-
-  useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -72,7 +62,9 @@ export default function PaywallModal({ open, required = true, onClose }: Props) 
 
   const startWaitlist = useCallback(() => {
     void track('payment_started', { mode: 'waitlist_onboarding' });
-    window.location.href = '/onboarding';
+    // Full navigation — do not attach beforeunload on this modal or it blocks
+    // the signup CTA in some browsers.
+    window.location.assign('/onboarding');
   }, []);
 
   if (!open) return null;
