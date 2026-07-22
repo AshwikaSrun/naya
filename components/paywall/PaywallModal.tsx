@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   EMAIL_STORAGE_KEY,
+  TRIAL_SEARCH_LIMIT,
   UNLIMITED_STORAGE_KEY,
   isPurdueEmail,
 } from '@/lib/access';
@@ -17,9 +18,9 @@ type Props = {
 };
 
 const BULLETS = [
+  `Join the waitlist + get ${TRIAL_SEARCH_LIMIT} free trial searches`,
   'Personalized For you feed ranked to your taste',
   'Saved search matching across every resale site',
-  'Taste-scored finds in the Chrome extension',
   'Style-drop notifications when new matches land',
 ];
 
@@ -151,7 +152,7 @@ export default function PaywallModal({
       >
         <div className="mb-5 flex items-center justify-between">
           <p className="font-naya-sans text-[10px] uppercase tracking-[0.22em] text-black/40">
-            personal style
+            waitlist + free trial
           </p>
           {canClose ? (
             <button
@@ -174,8 +175,9 @@ export default function PaywallModal({
             Unlock Your Personal Style
           </h2>
           <p className="font-naya-sans mt-4 text-[15px] leading-relaxed text-black/55">
-            naya learns your taste and finds pieces made for you, not just the
-            internet&apos;s best guess.
+            Join the waitlist, set up your taste in about a minute, and unlock{' '}
+            {TRIAL_SEARCH_LIMIT} free trial searches — naya finds pieces made for
+            you, not just the internet&apos;s best guess.
           </p>
           <ul className="mt-7 space-y-3">
             {BULLETS.map((b) => (
@@ -219,7 +221,7 @@ export default function PaywallModal({
               disabled={!canSubmit}
               className="pill-solid mt-6 w-full px-6 py-4 text-[13px] disabled:opacity-40"
             >
-              {saving ? 'joining…' : 'Sign up to unlock'}
+              {saving ? 'joining…' : 'Join waitlist + free trial'}
             </button>
           </form>
 
@@ -229,7 +231,8 @@ export default function PaywallModal({
             </p>
           )}
           <p className="font-naya-sans mt-4 text-center text-[12px] text-black/40">
-            Free while we pilot. Takes about a minute.
+            Waitlist now · {TRIAL_SEARCH_LIMIT} free searches after setup · takes about
+            a minute
           </p>
         </div>
       </div>

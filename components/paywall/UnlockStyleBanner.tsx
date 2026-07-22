@@ -26,10 +26,10 @@ export default function UnlockStyleBanner() {
         <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-5 md:flex-row md:items-center md:justify-between md:px-10">
           <div className="min-w-0 flex-1">
             <p className="font-naya-sans text-[10px] uppercase tracking-[0.22em] text-black/40">
-              personal style
+              waitlist + free trial
             </p>
             <p className="font-naya-serif mt-1 text-xl font-light tracking-[-0.02em] text-black md:text-2xl">
-              Unlock your personal style — free while we pilot.
+              Join the waitlist — unlock your personal style + free trial searches.
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-3">
@@ -38,7 +38,7 @@ export default function UnlockStyleBanner() {
               onClick={() => setOpen(true)}
               className="pill-solid px-5 py-3 text-[12px]"
             >
-              Sign up to unlock
+              Join waitlist + free trial
             </button>
           </div>
         </div>
