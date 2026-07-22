@@ -71,9 +71,10 @@ export default function InstallPrompt() {
 
     const dismissed = localStorage.getItem('naya-install-dismissed');
     const standalone = isStandaloneMode();
+    const onboarded = localStorage.getItem('naya-onboarded') === '1';
     let delayedShow: ReturnType<typeof setTimeout> | undefined;
-    if (!dismissed && !standalone) {
-      // Delay so hero / search isn’t covered by install + feedback + campus on first paint
+    // Don't cover the waitlist unlock modal before someone finishes setup.
+    if (!dismissed && !standalone && onboarded) {
       delayedShow = setTimeout(() => setShowBanner(true), 14000);
     }
 

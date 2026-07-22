@@ -63,6 +63,8 @@ export default function NotifyBanner() {
 
     const dismissed = localStorage.getItem('naya-notify-dismissed');
     if (dismissed) return;
+    // Wait until waitlist + onboarding are done so we don't cover the unlock modal.
+    if (localStorage.getItem('naya-onboarded') !== '1') return;
 
     const hasNotif = 'Notification' in window;
     if (!hasNotif) return;
