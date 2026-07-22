@@ -25,7 +25,10 @@ export async function POST(req: NextRequest) {
   const userId = await resolveUserId(req);
   if (!userId) return NextResponse.json({ error: 'no_user' }, { status: 401 });
   const db = getAgentDb();
-  if (!db) return NextResponse.json({ error: 'db_not_configured' }, { status: 503 });
+  if (!db) {
+    // Soft-ok: waitlist onboarding still works without Supabase (profile stays local).
+    return NextResponse.json({ ok: true, configured: false, skipped: true });
+  }
 
   let body: Record<string, unknown> = {};
   try {

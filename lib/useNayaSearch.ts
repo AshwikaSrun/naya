@@ -4,6 +4,16 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { TrendingItem } from '@/lib/campuses';
 import { parseSearchIntent } from '@/lib/searchIntent';
 import { fetchRemoteIntent, understoodChips, type RemoteIntent } from '@/lib/remoteIntent';
+import {
+  EMAIL_STORAGE_KEY,
+  SEARCH_COUNT_KEY,
+  TRIAL_SEARCH_LIMIT,
+  UNLIMITED_STORAGE_KEY,
+  hasUnlimitedClientAccess,
+  isPurdueEmail,
+} from '@/lib/access';
+
+export { TRIAL_SEARCH_LIMIT };
 
 export interface Product {
   title: string;
@@ -91,6 +101,8 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isPurdue, setIsPurdue] = useState(false);
   const [searchCount, setSearchCount] = useState(0);
+  const [showTrialGate, setShowTrialGate] = useState(false);
+  const pendingSearchRef = useRef<{ query: string; platform?: 'all' | Platform } | null>(null);
 
   const [cartOpen, setCartOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
@@ -173,16 +185,18 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
     } catch { /* empty */ }
   }, []);
 
-  // Load auth state
+  // Load waitlist / trial state
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const stored = window.localStorage.getItem('naya-user-email');
+    const stored = window.localStorage.getItem(EMAIL_STORAGE_KEY);
     if (stored) {
       setUserEmail(stored);
-      setIsPurdue(stored.endsWith('@purdue.edu'));
+      setIsPurdue(isPurdueEmail(stored));
+    } else if (window.localStorage.getItem(UNLIMITED_STORAGE_KEY) === '1') {
+      setIsPurdue(false);
     }
-    const count = parseInt(window.localStorage.getItem('naya-search-count') || '0', 10);
-    setSearchCount(count);
+    const count = parseInt(window.localStorage.getItem(SEARCH_COUNT_KEY) || '0', 10);
+    setSearchCount(Number.isFinite(count) ? count : 0);
   }, []);
 
   // URL search hydration
@@ -373,7 +387,7 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
     const newCount = searchCount + 1;
     setSearchCount(newCount);
     if (typeof window === 'undefined') return;
-    window.localStorage.setItem('naya-search-count', String(newCount));
+    window.localStorage.setItem(SEARCH_COUNT_KEY, String(newCount));
 
     const next = [
       searchQuery,
@@ -394,11 +408,28 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
     loadTrending();
   };
 
+  const trialSearchesLeft = hasUnlimitedClientAccess()
+    ? null
+    : Math.max(0, TRIAL_SEARCH_LIMIT - searchCount);
+
   const handleSearch = (
     searchQuery: string,
     platformOverride?: 'all' | Platform
   ) => {
     if (!searchQuery.trim()) return;
+
+    // Waitlist trial: 5 searches. Purdue / invite are unlimited.
+    if (!hasUnlimitedClientAccess()) {
+      const currentCount =
+        typeof window !== 'undefined'
+          ? parseInt(window.localStorage.getItem(SEARCH_COUNT_KEY) || '0', 10)
+          : searchCount;
+      if (currentCount >= TRIAL_SEARCH_LIMIT) {
+        pendingSearchRef.current = { query: searchQuery, platform: platformOverride };
+        setShowTrialGate(true);
+        return;
+      }
+    }
 
     // 1) Instant deterministic parse — gets results on screen with zero added
     //    latency, and works even if the NLP route is down or has no key.
@@ -497,10 +528,14 @@ export function useNayaSearch(defaultTrending: TrendingItem[], campusSlug?: stri
     clearResults,
     handleShareSearch,
     shareCopied,
-    // auth
+    // auth / trial
     userEmail,
     isPurdue,
     searchCount,
+    trialSearchesLeft,
+    showTrialGate,
+    setShowTrialGate,
+    pendingSearchRef,
     // cart
     cartOpen,
     setCartOpen,

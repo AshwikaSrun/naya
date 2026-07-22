@@ -1,16 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { SignInButton, SignUpButton, UserButton, useUser } from '@clerk/nextjs';
+import { SignInButton, UserButton, useUser } from '@clerk/nextjs';
 
 const CLERK_ENABLED = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
 type Tone = 'dark' | 'light';
 
 /**
- * Header auth control. Over the dark hero pass tone="light"; on solid surfaces
- * pass tone="dark". When Clerk isn't configured yet it falls back to a plain
- * link so the nav never looks broken.
+ * Header auth control. "Sign up" goes to onboarding (email waitlist first).
+ * Purdue / invite unlock the personal shopper.
  */
 export default function NayaAuth({
   tone = 'dark',
@@ -21,14 +20,14 @@ export default function NayaAuth({
 }) {
   if (!CLERK_ENABLED) {
     const ghost = tone === 'light' ? 'text-white/85 hover:text-white' : 'text-black/65 hover:text-black';
-    return (
+    return showSignUp ? (
       <Link
-        href="/signup"
+        href="/onboarding"
         className={`font-naya-sans text-[11px] lowercase tracking-[0.16em] transition-colors ${ghost}`}
       >
-        sign up
+        join waitlist
       </Link>
-    );
+    ) : null;
   }
   return <ClerkControls tone={tone} showSignUp={showSignUp} />;
 }
@@ -58,14 +57,12 @@ function ClerkControls({ tone, showSignUp }: { tone: Tone; showSignUp: boolean }
         </button>
       </SignInButton>
       {showSignUp && (
-        <SignUpButton mode="modal" forceRedirectUrl="/onboarding">
-          <button
-            type="button"
-            className={`font-naya-sans rounded-full px-4 py-1.5 text-[11px] lowercase tracking-[0.12em] transition-colors ${solid}`}
-          >
-            sign up
-          </button>
-        </SignUpButton>
+        <Link
+          href="/onboarding"
+          className={`font-naya-sans rounded-full px-4 py-1.5 text-[11px] lowercase tracking-[0.12em] transition-colors ${solid}`}
+        >
+          join waitlist
+        </Link>
       )}
     </div>
   );

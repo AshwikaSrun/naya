@@ -158,22 +158,26 @@ export async function completeOnboarding(
       const error =
         typeof data.error === 'string' ? data.error : `http_${res.status}`;
       console.error('[naya] completeOnboarding failed:', error, data);
-      return { ok: false, redirect: '/for-you', matches: 0, error };
+      return { ok: false, redirect: '/', matches: 0, error };
     }
     const result = {
       ok: data.ok !== false,
-      redirect: typeof data.redirect === 'string' ? data.redirect : '/for-you',
+      redirect: typeof data.redirect === 'string' ? data.redirect : '/',
       matches: typeof data.matches === 'number' ? data.matches : 0,
       configured: data.configured !== false,
       savedSearchCreated: !!data.savedSearchCreated,
       ...(typeof data.error === 'string' ? { error: data.error } : {}),
     };
+    if (result.ok && typeof window !== 'undefined') {
+      window.localStorage.setItem('naya-onboarded', '1');
+    }
     if (!result.ok || result.error) {
       console.error('[naya] completeOnboarding returned error:', result);
     } else {
       console.info('[naya] completeOnboarding ok', {
         matches: result.matches,
         savedSearchCreated: result.savedSearchCreated,
+        configured: result.configured,
       });
     }
     return result;
@@ -181,7 +185,7 @@ export async function completeOnboarding(
     console.error('[naya] completeOnboarding network error:', err);
     return {
       ok: false,
-      redirect: '/for-you',
+      redirect: '/',
       matches: 0,
       error: 'network_error',
     };

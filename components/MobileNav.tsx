@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import NayaAuth from './auth/NayaAuth';
+import { hasUnlimitedClientAccess } from '@/lib/access';
 
 const LINKS = [
-  { href: '/for-you', label: 'for you' },
+  { href: '/for-you', label: 'for you', agentOnly: true },
   { href: '/finds', label: 'shop' },
-  { href: '/app', label: 'concierge' },
+  { href: '/app', label: 'concierge', agentOnly: true },
   { href: '/editorial', label: 'newsletter' },
   // Kept but hidden for now (re-enable by flipping hidden).
   { href: '/pricing', label: 'pricing', hidden: true },
@@ -18,6 +19,11 @@ const LINKS = [
 
 export default function MobileNav({ color = 'dark' }: { color?: 'dark' | 'light' }) {
   const [open, setOpen] = useState(false);
+  const [hasAgent, setHasAgent] = useState(false);
+
+  useEffect(() => {
+    setHasAgent(hasUnlimitedClientAccess());
+  }, []);
 
   const iconColor = color === 'light' ? 'text-white/70' : 'text-black/50';
   const hoverBg = color === 'light' ? 'hover:bg-white/10' : 'hover:bg-black/5';
@@ -56,14 +62,12 @@ export default function MobileNav({ color = 'dark' }: { color?: 'dark' | 'light'
               </button>
             </div>
             <div className="flex flex-col gap-1 px-4">
-              {LINKS.map((link) => (
+              {LINKS.filter((l) => !l.hidden && (hasAgent || !l.agentOnly)).map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
                   onClick={() => setOpen(false)}
-                  className={`rounded-xl px-4 py-3 font-naya-sans text-sm lowercase tracking-[0.08em] text-black/70 transition-colors hover:bg-black/[0.04] hover:text-black ${
-                    link.hidden ? 'hidden' : ''
-                  }`}
+                  className="rounded-xl px-4 py-3 font-naya-sans text-sm lowercase tracking-[0.08em] text-black/70 transition-colors hover:bg-black/[0.04] hover:text-black"
                 >
                   {link.label}
                 </Link>
@@ -71,7 +75,7 @@ export default function MobileNav({ color = 'dark' }: { color?: 'dark' | 'light'
             </div>
             <div className="mt-auto flex items-center justify-between border-t border-black/5 px-6 py-6">
               <p className="text-[10px] lowercase tracking-[0.12em] text-black/30">
-                your AI vintage stylist
+                {hasAgent ? 'your AI vintage stylist' : 'waitlist trial'}
               </p>
               <NayaAuth tone="dark" showSignUp={false} />
             </div>

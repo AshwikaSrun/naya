@@ -5,6 +5,7 @@ import { parseSavedSearch } from '@/lib/agent/parseSavedSearch';
 import { refreshUserSavedSearches } from '@/lib/agent/refreshUser';
 import { vibeWatchQueries } from '@/lib/agent/vibes';
 import type { ParsedFilters, TasteProfile } from '@/lib/agent/types';
+import { ACCESS_TOKEN_COOKIE, isUnlimitedToken } from '@/lib/access';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -12,6 +13,12 @@ export const maxDuration = 120;
 interface Body {
   saved_search?: string;
   enrich?: Partial<ParsedFilters>;
+}
+
+function postOnboardingRedirect(req: NextRequest): string {
+  const token = req.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
+  // Purdue / invite → agent feed. Waitlist trial → home search.
+  return isUnlimitedToken(token) ? '/for-you' : '/';
 }
 
 /** Build watches from hunt field + brands + vibes. */
@@ -67,11 +74,15 @@ export async function POST(req: NextRequest) {
 
   const db = getAgentDb();
   if (!db) {
-    console.error('[onboarding/complete] db_not_configured');
-    return NextResponse.json(
-      { ok: false, error: 'db_not_configured', configured: false, redirect: '/for-you' },
-      { status: 503 },
-    );
+    // No Supabase yet — still finish onboarding so waitlist trial can start.
+    console.warn('[onboarding/complete] db_not_configured — completing without persistence');
+    return NextResponse.json({
+      ok: true,
+      configured: false,
+      redirect: postOnboardingRedirect(req),
+      matches: 0,
+      savedSearchCreated: false,
+    });
   }
 
   let body: Body = {};
@@ -159,7 +170,7 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     ok: true,
-    redirect: '/for-you',
+    redirect: postOnboardingRedirect(req),
     savedSearchCreated,
     matches,
     configured: true,

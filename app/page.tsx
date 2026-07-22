@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import BottomSearchBar from '@/components/BottomSearchBar';
 import ResultsGrid from '@/components/ResultsGrid';
@@ -18,10 +19,12 @@ import ClosingCta from '@/components/ClosingCta';
 import PhiaFooter from '@/components/PhiaFooter';
 import UnlockStylePrompt from '@/components/paywall/UnlockStylePrompt';
 import NayaAuth from '@/components/auth/NayaAuth';
+import TrialLimitModal from '@/components/TrialLimitModal';
+import { TRIAL_SEARCH_LIMIT, hasUnlimitedClientAccess } from '@/lib/access';
 
 const NAV_LINKS = [
   { href: '/finds', label: 'shop' },
-  { href: '/app', label: 'concierge' },
+  { href: '/app', label: 'concierge', agentOnly: true },
   { href: '/editorial', label: 'newsletter' },
   // Kept in the list but hidden for now (re-enable by flipping hidden).
   { href: '/pricing', label: 'pricing', hidden: true },
@@ -57,6 +60,54 @@ const DEFAULT_TRENDING = [
 
 export default function Home() {
   const s = useNayaSearch(DEFAULT_TRENDING);
+  const [showTrialWelcome, setShowTrialWelcome] = useState(false);
+  const [agentLockedNote, setAgentLockedNote] = useState(false);
+  const [hasAgent, setHasAgent] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setHasAgent(hasUnlimitedClientAccess());
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('trial') === '1') {
+      setShowTrialWelcome(true);
+      params.delete('trial');
+      const next = `${window.location.pathname}${params.toString() ? `?${params}` : ''}`;
+      window.history.replaceState({}, '', next);
+      const t = window.setTimeout(() => setShowTrialWelcome(false), 5000);
+      return () => window.clearTimeout(t);
+    }
+    if (params.get('agent') === 'locked') {
+      setAgentLockedNote(true);
+      params.delete('agent');
+      const next = `${window.location.pathname}${params.toString() ? `?${params}` : ''}`;
+      window.history.replaceState({}, '', next);
+      const t = window.setTimeout(() => setAgentLockedNote(false), 4500);
+      return () => window.clearTimeout(t);
+    }
+  }, []);
+
+  const visibleNav = NAV_LINKS.filter((l) => !l.hidden && (hasAgent || !l.agentOnly));
+
+  const accessBadge = s.isPurdue || s.trialSearchesLeft === null ? (
+    <span className="font-naya-sans hidden rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-medium lowercase tracking-[0.08em] text-amber-800 sm:inline-flex">
+      ✦ unlimited
+    </span>
+  ) : s.userEmail ? (
+    <span className="font-naya-sans hidden rounded-full bg-neutral-100 px-2.5 py-1 text-[10px] lowercase tracking-[0.08em] text-black/45 sm:inline-flex">
+      {s.trialSearchesLeft} trial search{(s.trialSearchesLeft ?? 0) === 1 ? '' : 'es'} left
+    </span>
+  ) : null;
+
+  const trialModal = (
+    <TrialLimitModal
+      open={s.showTrialGate}
+      onClose={() => {
+        s.setShowTrialGate(false);
+        s.pendingSearchRef.current = null;
+      }}
+    />
+  );
 
   /* ================================================================
      RESULTS MODE
@@ -87,12 +138,13 @@ export default function Home() {
             </form>
             <div className="flex shrink-0 items-center gap-2">
               <nav className="font-naya-sans hidden items-center gap-2 text-[10px] lowercase tracking-[0.15em] text-black/60 lg:flex">
-                {NAV_LINKS.slice(0, 3).map((link) => (
+                {visibleNav.slice(0, 3).map((link) => (
                   <Link key={link.href} href={link.href} className="px-2 py-1.5 transition-colors hover:text-black">
                     {link.label}
                   </Link>
                 ))}
               </nav>
+              {accessBadge}
               <div className="hidden md:block">
                 <NayaAuth tone="dark" showSignUp={false} />
               </div>
@@ -180,6 +232,7 @@ export default function Home() {
           recentlyViewed={s.recentlyViewed}
         />
         <CartPanel open={s.cartOpen} onClose={() => s.setCartOpen(false)} />
+        {trialModal}
       </div>
     );
   }
@@ -190,7 +243,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#f7f4ee]">
       <StickyHeader
-        navLinks={NAV_LINKS.filter((l) => !l.hidden)}
+        navLinks={visibleNav}
         cartCount={s.cartCount}
         onCartClick={() => s.setCartOpen(true)}
         onSearch={s.handleSearch}
@@ -201,9 +254,21 @@ export default function Home() {
         recentlyViewed={s.recentlyViewed}
         overHero={true}
         heroTone="dark"
+        rightSlot={accessBadge}
       />
 
+      {/* Waitlist / profile setup modal — hides itself once onboarded */}
       <UnlockStylePrompt />
+
+      {(showTrialWelcome || agentLockedNote) && (
+        <div className="pointer-events-none fixed inset-x-0 top-[4.5rem] z-30 flex justify-center px-4">
+          <p className="font-naya-sans rounded-full border border-black/10 bg-white/90 px-4 py-2 text-[11px] lowercase tracking-[0.08em] text-black/55 shadow-sm backdrop-blur">
+            {agentLockedNote
+              ? 'personal shopper locked · purdue / invite unlocks it'
+              : `trial on · ${s.trialSearchesLeft ?? TRIAL_SEARCH_LIMIT} of ${TRIAL_SEARCH_LIMIT} searches left`}
+          </p>
+        </div>
+      )}
 
       <AgentHero
         onSearch={s.handleSearch}
@@ -241,6 +306,7 @@ export default function Home() {
 
       {/* Cart panel */}
       <CartPanel open={s.cartOpen} onClose={() => s.setCartOpen(false)} />
+      {trialModal}
     </div>
   );
 }

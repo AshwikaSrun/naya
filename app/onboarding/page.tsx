@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import OnboardingFlow from '@/components/agent/OnboardingFlow';
 import { getProfile, recordAccount } from '@/lib/agent/client';
 import type { TasteProfile } from '@/lib/agent/types';
+import { EMAIL_STORAGE_KEY, hasUnlimitedClientAccess, isPurdueEmail, TRIAL_SEARCH_LIMIT } from '@/lib/access';
 
 function OnboardingInner() {
   const router = useRouter();
@@ -14,8 +15,12 @@ function OnboardingInner() {
   const [ready, setReady] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [paidNote, setPaidNote] = useState<string | null>(null);
+  const [unlimited, setUnlimited] = useState(false);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setUnlimited(hasUnlimitedClientAccess());
+
     recordAccount('onboarding');
     (async () => {
       const sessionId = searchParams.get('session_id');
@@ -62,8 +67,18 @@ function OnboardingInner() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ eventType: 'onboarding_completed_after_paywall' }),
     }).catch(() => null);
-    router.push('/for-you');
+
+    // Purdue / invite → agent feed. Waitlist trial → home search.
+    if (hasUnlimitedClientAccess()) {
+      router.push('/for-you');
+    } else {
+      router.push('/?trial=1');
+    }
   };
+
+  const purdue =
+    typeof window !== 'undefined' &&
+    isPurdueEmail(window.localStorage.getItem(EMAIL_STORAGE_KEY));
 
   return (
     <div className="min-h-screen bg-white">
@@ -83,11 +98,14 @@ function OnboardingInner() {
 
         <div className="mb-8 text-center">
           <p className="font-naya-sans mb-3 text-[10px] uppercase tracking-[0.2em] text-black/30">
-            welcome. let&apos;s set up your shopper
+            {purdue ? 'purdue access' : unlimited ? 'early access' : 'join + set up'}
           </p>
-          <h1 className="font-naya-serif text-3xl font-light text-black md:text-4xl">
-            a few taps and your feed gets personal.
-          </h1>
+          {!unlimited && (
+            <p className="font-naya-sans text-[13px] text-black/45">
+              email first, then a short taste quiz — then {TRIAL_SEARCH_LIMIT} trial
+              searches on the main page. the shopping agent opens after launch.
+            </p>
+          )}
         </div>
 
         {confirming || !ready ? (

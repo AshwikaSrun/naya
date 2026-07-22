@@ -2,12 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { SignUpButton } from '@clerk/nextjs';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import Reveal from '@/components/Reveal';
-
-const CLERK_ENABLED = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
 const FREE_FEATURES = [
   'unlimited natural-language search',
@@ -44,18 +41,8 @@ function Check({ muted = false }: { muted?: boolean }) {
 function UpgradeCTA({ label }: { label: string }) {
   const cls =
     'group inline-flex w-full items-center justify-center gap-2 rounded-full bg-black px-6 py-4 font-naya-sans text-[12px] font-medium lowercase tracking-[0.12em] text-white transition-colors hover:bg-neutral-800';
-  if (CLERK_ENABLED) {
-    return (
-      <SignUpButton mode="modal" forceRedirectUrl="/onboarding">
-        <button type="button" className={cls}>
-          {label}
-          <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
-        </button>
-      </SignUpButton>
-    );
-  }
   return (
-    <Link href="/app" className={cls}>
+    <Link href="/onboarding" className={cls}>
       {label}
       <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
     </Link>

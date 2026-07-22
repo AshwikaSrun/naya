@@ -53,8 +53,15 @@ create table if not exists app_installs (
 create table if not exists waitlist_signups (
   id bigint generated always as identity primary key,
   email text not null,
+  source text not null default 'signup',
   created_at timestamptz default now()
 );
+
+-- Idempotent upgrades for existing deployments
+alter table waitlist_signups add column if not exists source text;
+update waitlist_signups set source = 'signup' where source is null;
+alter table waitlist_signups alter column source set default 'signup';
+create unique index if not exists waitlist_signups_email_uidx on waitlist_signups (email);
 
 create table if not exists auth_events (
   id bigint generated always as identity primary key,

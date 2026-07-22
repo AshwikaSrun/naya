@@ -3,15 +3,15 @@
 import { useEffect, useState } from 'react';
 import PaywallModal from './PaywallModal';
 
-const DISMISS_KEY = 'naya-unlock-modal-dismissed';
+const ONBOARDED_KEY = 'naya-onboarded';
 
 /**
- * Homepage unlock prompt — a real modal overlay (not a strip under the fixed nav).
- * Opens once per session. Pre-Stripe CTA: signup → onboarding.
+ * Required waitlist / profile gate on the homepage.
+ * Stays open until the user has joined and finished setup — no dismiss.
  */
 export default function UnlockStylePrompt({
   autoOpen = true,
-  delayMs = 900,
+  delayMs = 400,
 }: {
   autoOpen?: boolean;
   delayMs?: number;
@@ -20,38 +20,29 @@ export default function UnlockStylePrompt({
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (window.sessionStorage.getItem(DISMISS_KEY) === '1') return;
+    if (!autoOpen) return;
 
-    let cancelled = false;
-    let timer: number | undefined;
+    // Fully through the funnel — no modal.
+    if (window.localStorage.getItem(ONBOARDED_KEY) === '1') {
+      setOpen(false);
+      return;
+    }
 
-    fetch('/api/subscription/status')
-      .then((r) => r.json())
-      .then((d) => {
-        if (cancelled || d.active || !autoOpen) return;
-        timer = window.setTimeout(() => {
-          if (!cancelled) setOpen(true);
-        }, delayMs);
-      })
-      .catch(() => {
-        if (cancelled || !autoOpen) return;
-        timer = window.setTimeout(() => {
-          if (!cancelled) setOpen(true);
-        }, delayMs);
-      });
-
-    return () => {
-      cancelled = true;
-      if (timer) window.clearTimeout(timer);
-    };
+    const timer = window.setTimeout(() => setOpen(true), delayMs);
+    return () => window.clearTimeout(timer);
   }, [autoOpen, delayMs]);
 
-  const handleClose = () => {
-    setOpen(false);
-    if (typeof window !== 'undefined') {
-      window.sessionStorage.setItem(DISMISS_KEY, '1');
-    }
-  };
+  // If they somehow clear state mid-session, force the modal back.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const check = () => {
+      const done = window.localStorage.getItem(ONBOARDED_KEY) === '1';
+      if (!done) setOpen(true);
+      else setOpen(false);
+    };
+    window.addEventListener('storage', check);
+    return () => window.removeEventListener('storage', check);
+  }, []);
 
-  return <PaywallModal open={open} onClose={handleClose} />;
+  return <PaywallModal open={open} required />;
 }

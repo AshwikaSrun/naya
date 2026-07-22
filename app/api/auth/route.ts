@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase';
+import { getServerSupabase } from '@/lib/supabase';
 
 const PURDUE_EMAIL_SUFFIX = '@purdue.edu';
 
@@ -8,7 +8,7 @@ function isPurdueEmail(value: string): boolean {
 }
 
 async function logAuthEvent(identifier: string, source: string) {
-  const supabase = getSupabase();
+  const supabase = getServerSupabase();
   if (!supabase) return;
   await supabase.from('auth_events').insert({ identifier, source }).then(({ error }) => {
     if (error) console.error('[AUTH] log failed:', error);

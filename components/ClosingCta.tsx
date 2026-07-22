@@ -28,15 +28,17 @@ export default function ClosingCta() {
         </Reveal>
 
         <Reveal delay={120}>
+          <p className="font-naya-sans mt-8 max-w-md text-[14px] leading-relaxed text-black/50">
+            join the waitlist, set up your taste profile, and try a short search trial.
+          </p>
+        </Reveal>
+
+        <Reveal delay={180}>
           <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row">
             <Magnetic strength={0.4}>
-              <span
-                aria-disabled
-                title="Chrome extension coming soon"
-                className="pill-solid cursor-default px-8 py-4 text-[13px] opacity-90"
-              >
-                Add to Chrome · coming soon
-              </span>
+              <Link href="/onboarding" className="pill-solid px-8 py-4 text-[13px]">
+                join &amp; set up
+              </Link>
             </Magnetic>
             <Link href="/finds" className="pill-outline px-7 py-4 text-[13px]">
               browse live finds
@@ -44,7 +46,7 @@ export default function ClosingCta() {
           </div>
         </Reveal>
 
-        <Reveal delay={200}>
+        <Reveal delay={240}>
           <p className="font-naya-sans mt-10 text-[13px] text-black/55">updated hourly</p>
         </Reveal>
       </div>
